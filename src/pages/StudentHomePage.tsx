@@ -55,12 +55,13 @@ export function StudentHomePage() {
   const { id } = useParams();
   const [student, setStudent] = useState<any>(null);
 
-  const [showCalendar, setShowCalendar] = useState(false);
+//   const [showCalendar, setShowCalendar] = useState(false);
   const [week, setWeek] = useState<WeekData | null>(null);
   const [tutorSettings, setTutorSettings] = useState<any>(null);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [manualMessage, setManualMessage] = useState("");
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [slotOptions, setSlotOptions] = useState<{
@@ -144,7 +145,7 @@ export function StudentHomePage() {
     const data = await res.json();
 
     setWeek(data.week);
-    setShowCalendar(true);
+//     setShowCalendar(true);
   };
 
   function addDays(dateString: string, days: number): string {

@@ -16,7 +16,9 @@ export interface Skill {
 }
 
 export function useSkillsApi() {
-  const [loading, setLoading] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [loading] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
   function listSkills(parent: number | null = null): Promise<Skill[]> {

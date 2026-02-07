@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch"
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 
 export function TutorCreatePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<any>(null);
-  const navigate = useNavigate();
+//   const navigate = useNavigate();
 
 
   async function handleSubmit(e: any) {
