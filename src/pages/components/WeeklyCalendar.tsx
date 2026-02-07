@@ -1,6 +1,6 @@
 import React from "react";
 import { WeekData } from "../../types/weekly";
-import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
+// import { apiFetch } from "../../utils/apiFetch"
 
 interface WeeklyCalendarProps {
   week: WeekData;

@@ -1,4 +1,4 @@
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 
 export function useValidationApi() {
   async function validateTemplate(data: { content: string }) {

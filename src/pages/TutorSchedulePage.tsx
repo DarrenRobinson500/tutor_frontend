@@ -4,7 +4,7 @@ import { Layout } from "./components/Layout";
 import { WeeklyAvailabilityEditor } from "./components/WeeklyAvailabilityEditor";
 import { BlockedDaysEditor } from "./components/BlockedDaysEditor";
 import { WeeklyCalendarSimple} from "./components/WeeklyCalendarSimple"
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 
 export function TutorSchedulePage() {
   const { id } = useParams();

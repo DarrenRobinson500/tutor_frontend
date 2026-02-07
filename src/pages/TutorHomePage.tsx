@@ -3,10 +3,10 @@ import { useParams } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
 import { TutorStudentList } from "./components/TutorStudentList";
-import { TutorTemplateList } from "./components/TutorTemplateList";
+// import { TutorTemplateList } from "./components/TutorTemplateList";
 import { WeeklyCalendar } from "./components/WeeklyCalendar";
 import { WeekData } from "../types/weekly";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 
 function getSundayStart(date: Date): string {
   const d = new Date(date);
@@ -32,11 +32,6 @@ useEffect(() => {
     });
 }, [id]);
 
-
-  useEffect(() => {
-    loadCalendar();
-  }, []);
-
   const loadCalendar = async (startOverride?: string) => {
     const start = startOverride || getSundayStart(new Date());
     setWeekStart(start);
@@ -48,6 +43,10 @@ useEffect(() => {
     const data = await res.json();
     setWeek(data.week);
   };
+
+  useEffect(() => {
+    loadCalendar();
+  }, []);
 
   function addDays(dateString: string, days: number): string {
     const d = new Date(dateString);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Layout } from "./components/Layout";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetchJson } from "../utils/apiFetch"
 
 interface Note {
   id: number;

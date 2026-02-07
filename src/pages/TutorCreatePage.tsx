@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Layout } from "./components/Layout";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 import { useNavigate } from "react-router-dom";
 
 export function TutorCreatePage() {
@@ -24,14 +24,14 @@ export function TutorCreatePage() {
     setResult(data);
   }
 
-  {result && (
-  <div className="alert alert-success mt-4">
-    <h5>Student Created</h5>
-    <p><strong>Name:</strong> {result.name}</p>
-    <p><strong>Email:</strong> {result.email}</p>
-    {result.password && (
-      <p><strong>Password:</strong> {result.password}</p>
-    )}
+//   {result && (
+//   <div className="alert alert-success mt-4">
+//     <h5>Student Created</h5>
+//     <p><strong>Name:</strong> {result.name}</p>
+//     <p><strong>Email:</strong> {result.email}</p>
+//     {result.password && (
+//       <p><strong>Password:</strong> {result.password}</p>
+//     )}
 
 <button
   className="btn btn-primary mt-3"

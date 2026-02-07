@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { WeeklyCalendar } from "./components/WeeklyCalendar";
 import { Layout } from "./components/Layout";
 import { WeekData } from "../types/weekly";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 
 
 export interface Segment {
@@ -55,13 +55,13 @@ export function StudentHomePage() {
   const { id } = useParams();
   const [student, setStudent] = useState<any>(null);
 
-  const [showCalendar, setShowCalendar] = useState(false);
+//   const [showCalendar, setShowCalendar] = useState(false);
   const [week, setWeek] = useState<WeekData | null>(null);
   const [tutorSettings, setTutorSettings] = useState<any>(null);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-  const [manualMessage, setManualMessage] = useState("");
+//   const [manualMessage, setManualMessage] = useState("");
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [slotOptions, setSlotOptions] = useState<{
     date: string;
@@ -123,7 +123,9 @@ export function StudentHomePage() {
     if (tutorId) {
       loadCalendar();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tutorId]);
+
 
   // Load weekly calendar
   const loadCalendar = async (startOverride?: string) => {

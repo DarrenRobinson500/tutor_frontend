@@ -18,7 +18,9 @@ export function TemplateListPage() {
       setTemplates(data);
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
 
   async function handleDelete(e: React.MouseEvent, id: number) {
     e.stopPropagation(); // prevent row click navigation

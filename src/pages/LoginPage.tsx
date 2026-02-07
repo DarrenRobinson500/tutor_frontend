@@ -1,6 +1,6 @@
-import { Layout } from "./components/Layout";
+// import { Layout } from "./components/Layout";
 import React, { useState, useEffect } from "react";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");

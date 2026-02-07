@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Latex } from "./Latex";
 import "katex/dist/katex.min.css";
-import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
+import { apiFetch } from "../../utils/apiFetch"
 
 interface PreviewPanelProps {
   preview: any;

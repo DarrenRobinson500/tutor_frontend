@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
+import { useEffect, useState } from "react";
+import { apiFetch } from "../../utils/apiFetch"
 
 export function TutorStudentList({ tutorId }: { tutorId: string }) {
   const [students, setStudents] = useState([]);

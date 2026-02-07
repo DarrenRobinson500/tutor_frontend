@@ -1,6 +1,6 @@
 import { useState } from "react";
 // import { fetchJson } from "./fetchJson";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+import { apiFetchJson } from "../utils/apiFetch"
 
 
 export interface Skill {
@@ -16,8 +16,8 @@ export interface Skill {
 }
 
 export function useSkillsApi() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState<string | null>(null);
 
   function listSkills(parent: number | null = null): Promise<Skill[]> {
     const url = parent

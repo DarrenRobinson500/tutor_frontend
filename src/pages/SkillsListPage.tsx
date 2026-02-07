@@ -17,8 +17,8 @@ export function SkillsListPage({ parentId, onSelect }: SkillsListProps) {
 
   useEffect(() => {
     listSkills(parentId).then(setSkills);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentId]);
-
 
   const handleLoad = () => {
     loadSyllabus()

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
+import { apiFetch } from "../../utils/apiFetch"
 
 interface BlockedDay {
   id: number;

@@ -85,13 +85,13 @@ export function useTemplateApi() {
 
     }
 
-    async function saveDiagram(id: number, svg: string) {
-      return apiFetchJson(`/api/templates/${id}/diagram/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ svg })
-      });
-    }
+//     async function saveDiagram(id: number, svg: string) {
+//       return apiFetchJson(`/api/templates/${id}/diagram/`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ svg })
+//       });
+//     }
 
 
 

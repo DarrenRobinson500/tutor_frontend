@@ -1,11 +1,11 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 import { TemplateListPage } from "./pages/TemplateListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
 import { NewTemplatePage } from "./pages/NewTemplatePage";
-import { SkillsListPage } from "./pages/SkillsListPage";
+// import { SkillsListPage } from "./pages/SkillsListPage";
 import { SkillCreatePage } from "./pages/SkillCreatePage";
 import { TutorListPage } from "./pages/TutorListPage";
 import { TutorHomePage } from "./pages/TutorHomePage";
@@ -23,9 +23,9 @@ import { Navigate } from "react-router-dom";
 
 import "bootstrap/dist/css/bootstrap.min.css";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
+// interface ProtectedRouteProps {
+//   children: React.ReactNode;
+// }
 
 // ------------------------------------------------------------
 // PROTECTED ROUTE WRAPPER

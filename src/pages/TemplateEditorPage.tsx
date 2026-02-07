@@ -7,11 +7,11 @@ import { TemplateMetadataBar } from "./components/TemplateMetadataBar";
 import { EditorPanel } from "./components/EditorPanel";
 import { ValuesPanel } from "./components/ValuesPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
-import { LogsPanel } from "./components/LogsPanel";
+// import { LogsPanel } from "./components/LogsPanel";
 import { Layout } from "./components/Layout";
-import { DiagramEditor } from "./components/DiagramEditor";
-import { renderDiagramFromCode } from "../diagram/engine";
-import { apiFetch, apiFetchJson } from "../utils/apiFetch"
+// import { DiagramEditor } from "./components/DiagramEditor";
+// import { renderDiagramFromCode } from "../diagram/engine";
+import { apiFetch } from "../utils/apiFetch"
 
 // API hooks
 import { useTemplateApi } from "../api/useTemplateApi";
@@ -50,17 +50,17 @@ export function TemplateEditorPage() {
   const params = useParams();
   const { id } = params;
   const [metadata, setMetadata] = useState<TemplateMetadata>(emptyMetadata);
-  const isNew = id === "new";
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+//   const isNew = id === "new";
+//   const [isSaving, setIsSaving] = useState(false);
+//   const [saveError, setSaveError] = useState<string | null>(null);
+//   const [saveSuccess, setSaveSuccess] = useState(false);
   const [content, setContent] = useState<string>("");
   const [validationResult, setValidationResult] = useState<any>(null);
-  const [previewResult, setPreviewResult] = useState<any>(null);
+//   const [previewResult, setPreviewResult] = useState<any>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
-  const { getTemplate, saveTemplate } = useTemplateApi();
+//   const { getTemplate, saveTemplate } = useTemplateApi();
   const { validateTemplate } = useValidationApi();
-  const { previewTemplate } = usePreviewApi();
+//   const { previewTemplate } = usePreviewApi();
 
   function buildMetadataFromTemplate(tpl: any): TemplateMetadata {
     return {
@@ -98,14 +98,14 @@ export function TemplateEditorPage() {
     }, 400)
   ).current;
 
-  function extractDiagramSvg(yamlText: string): string {
-    try {
-      const parsed: any = yaml.load(yamlText);
-      return parsed?.diagram?.svg || "";
-    } catch {
-      return "";
-    }
-  }
+//   function extractDiagramSvg(yamlText: string): string {
+//     try {
+//       const parsed: any = yaml.load(yamlText);
+//       return parsed?.diagram?.svg || "";
+//     } catch {
+//       return "";
+//     }
+//   }
 
 // function updateYamlWithDiagram(originalYaml: string, newSvg: string, newCode: string): string {
 //   let parsed: any;
@@ -128,31 +128,30 @@ export function TemplateEditorPage() {
 // }
 
 
-  useEffect(() => {
-    async function load() {
-      if (!id) return;
+useEffect(() => {
+  async function load() {
+    if (!id) return;
 
-      const tpl = await getTemplate(id);
-      if (!tpl) return;
+    const tpl = await getTemplate(id);
+    if (!tpl) return;
 
-      // 1. Load YAML into the editor
-      setContent(tpl.content);
+    setContent(tpl.content);
+    setMetadata(buildMetadataFromTemplate(tpl));
 
-      // 2. Load metadata
-      setMetadata(buildMetadataFromTemplate(tpl));
+    const res = await apiFetch("/api/templates/preview/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: tpl.content }),
+    });
 
-      // 3. Generate initial preview
-      const res = await apiFetch("/api/templates/preview/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: tpl.content }),
-      });
-      const data = await res.json();
-      setPreview(data.preview);
-      console.log("FRONTEND RECEIVED PREVIEW:", data);
-    }
-    load();
-  }, [id]);
+    const data = await res.json();
+    setPreview(data.preview);
+  }
+  load();
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [id]);
+
 
   // Handler - Change
   function handleContentChange(newContent: string) {

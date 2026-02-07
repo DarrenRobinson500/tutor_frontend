@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
+import { apiFetch } from "../../utils/apiFetch"
 
 interface WeeklyAvailabilityProps {
   tutorId: string;
@@ -47,19 +47,19 @@ export function WeeklyAvailabilityEditor({
     ]);
   }
 
-  async function removeSlot(id: number) {
-    await apiFetch(`/api/tutors/${tutorId}/remove_availability/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+//   async function removeSlot(id: number) {
+//     await apiFetch(`/api/tutors/${tutorId}/remove_availability/`, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ id }),
+//     });
+//
+//     setAvailability(availability.filter(a => a.id !== id));
+//   }
 
-    setAvailability(availability.filter(a => a.id !== id));
-  }
-
-  function weekdayName(n: number) {
-    return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][n];
-  }
+//   function weekdayName(n: number) {
+//     return ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][n];
+//   }
 
   return (
     <div>
