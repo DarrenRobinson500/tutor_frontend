@@ -1,6 +1,6 @@
 import { Layout } from "./components/Layout";
 import React, { useState, useEffect } from "react";
-
+import { apiFetch, apiFetchJson } from "../utils/apiFetch"
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -12,7 +12,7 @@ useEffect(() => {
   if (!token) return;
 
   // Validate token with backend
-  fetch("/api/auth/me/", {
+  apiFetch("/api/auth/me/", {
     headers: { Authorization: `Bearer ${token}` },
   })
     .then((res) => {
@@ -46,7 +46,7 @@ useEffect(() => {
     setError("");
 
     // 1. Call JWT login endpoint
-    const res = await fetch("/api/auth/login/", {
+    const res = await apiFetch("/api/auth/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -64,7 +64,7 @@ useEffect(() => {
     localStorage.setItem("refresh", tokens.refresh);
 
     // 3. Fetch current user info using the access token
-    const meRes = await fetch("/api/auth/me/", {
+    const meRes = await apiFetch("/api/auth/me/", {
       headers: {
         "Authorization": `Bearer ${tokens.access}`,
       },
@@ -89,7 +89,6 @@ useEffect(() => {
   };
 
   return (
-    <Layout>
       <div className="container mt-4" style={{ maxWidth: 400 }}>
         <h1>Login</h1>
 
@@ -118,6 +117,5 @@ useEffect(() => {
           <button className="btn btn-primary">Login</button>
         </form>
       </div>
-    </Layout>
   );
 }

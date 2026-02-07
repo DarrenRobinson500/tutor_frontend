@@ -18,6 +18,8 @@ import SkillsPage from "./pages/SkillsPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import LoginPage from "./pages/LoginPage";
+import { Navigate } from "react-router-dom";
+
 
 import "bootstrap/dist/css/bootstrap.min.css";
 

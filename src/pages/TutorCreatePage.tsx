@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { Layout } from "./components/Layout";
 import { apiFetch, apiFetchJson } from "../utils/apiFetch"
-
+import { useNavigate } from "react-router-dom";
 
 export function TutorCreatePage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [result, setResult] = useState<any>(null);
+  const navigate = useNavigate();
+
 
   async function handleSubmit(e: any) {
     e.preventDefault();
@@ -21,6 +23,26 @@ export function TutorCreatePage() {
     const data = await res.json();
     setResult(data);
   }
+
+  {result && (
+  <div className="alert alert-success mt-4">
+    <h5>Student Created</h5>
+    <p><strong>Name:</strong> {result.name}</p>
+    <p><strong>Email:</strong> {result.email}</p>
+    {result.password && (
+      <p><strong>Password:</strong> {result.password}</p>
+    )}
+
+<button
+  className="btn btn-primary mt-3"
+  onClick={() => navigate("/admin/tutors")}
+>
+  Return to Tutor List
+</button>
+
+  </div>
+  )}
+
 
   return (
   <Layout>

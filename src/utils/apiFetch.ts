@@ -1,53 +1,68 @@
 export async function apiFetch(url: string, options: any = {}) {
-
-if (!access) {
-  // No token → do not attempt refresh
-  return fetch(url, { ...options, headers });
-}
-
-
+  const API_URL = process.env.REACT_APP_API_URL;
+  console.log("API URL:", API_URL)
   const access = localStorage.getItem("access");
 
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
-    ...(access ? { "Authorization": `Bearer ${access}` } : {}),
+    ...(access ? { Authorization: `Bearer ${access}` } : {}),
   };
 
-  let res = await fetch(url, { ...options, headers });
-
-if (res.status === 401) {
-  const refresh = localStorage.getItem("refresh");
-
-  if (!refresh) {
-    localStorage.removeItem("access");
-    localStorage.removeItem("user");
-    return res;
+  // No access token → no refresh attempt
+  if (!access) {
+    return fetch(`${API_URL}${url}`, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
   }
 
-  const refreshRes = await fetch("/api/auth/refresh/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh }),
+  // First attempt
+  let res = await fetch(`${API_URL}${url}`, {
+    ...options,
+    headers,
+    credentials: "include",
   });
 
-  if (!refreshRes.ok) {
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("user");
-    return res;
+  // If expired → try refresh
+  if (res.status === 401) {
+    const refresh = localStorage.getItem("refresh");
+
+    if (!refresh) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("user");
+      return res;
+    }
+
+    const refreshRes = await fetch(`${API_URL}/api/auth/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+      credentials: "include",
+    });
+
+    if (!refreshRes.ok) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("user");
+      return res;
+    }
+
+    const data = await refreshRes.json();
+    localStorage.setItem("access", data.access);
+
+    const retryHeaders = {
+      ...headers,
+      Authorization: `Bearer ${data.access}`,
+    };
+
+    res = await fetch(`${API_URL}${url}`, {
+      ...options,
+      headers: retryHeaders,
+      credentials: "include",
+    });
   }
-
-  const data = await refreshRes.json();
-  localStorage.setItem("access", data.access);
-
-  const retryHeaders = {
-    ...headers,
-    "Authorization": `Bearer ${data.access}`,
-  };
-
-  res = await fetch(url, { ...options, headers: retryHeaders });
-}
 
   return res;
 }

@@ -1,39 +1,38 @@
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { apiFetch, apiFetchJson } from "../../utils/apiFetch"
 
 
-
-
 export function Layout({ children }: { children: React.ReactNode }) {
-
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
+  const access = localStorage.getItem("access");
 
-  if (!localStorage.getItem("access")) {
-    // User is not logged in
-    return <div>{children}</div>;
-  }
-
+  // Hooks must always run
   useEffect(() => {
-    const stored = localStorage.getItem("user");
-    if (!stored) {
+    // If no access token, do nothing — Layout will just render children
+    if (!access) return;
+
+    if (!user) {
       window.location.href = "/login";
       return;
     }
 
-    const user = JSON.parse(stored);
+//     if (user.role === "tutor") {
+//       window.location.href = `/tutor/${user.id}`;
+//     } else if (user.role === "student") {
+//       window.location.href = `/student/${user.id}`;
+//     } else if (user.role === "parent") {
+//       window.location.href = `/parent/${user.id}`;
+//     } else if (user.role === "admin") {
+//       window.location.href = `/admin/tutors`;
+//     }
+  }, [access, user]);
 
-    if (user.role === "tutor") {
-      window.location.href = `/tutor/${user.id}`;
-    } else if (user.role === "student") {
-      window.location.href = `/student/${user.id}`;
-    } else if (user.role === "parent") {
-      window.location.href = `/parent/${user.id}`;
-    } else if (user.role === "admin") {
-      window.location.href = `/admin`;
-    }
-  }, []);
-
+  // Early return is now AFTER the hook
+  if (!access) {
+    return <div>{children}</div>;
+  }
 
   return (
     <>
