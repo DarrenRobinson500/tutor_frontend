@@ -33,15 +33,15 @@ export function TutorCreatePage() {
 //       <p><strong>Password:</strong> {result.password}</p>
 //     )}
 
-<button
-  className="btn btn-primary mt-3"
-  onClick={() => navigate("/admin/tutors")}
->
-  Return to Tutor List
-</button>
-
-  </div>
-  )}
+// <button
+//   className="btn btn-primary mt-3"
+//   onClick={() => navigate("/admin/tutors")}
+// >
+//   Return to Tutor List
+// </button>
+//
+//   </div>
+//   )}
 
 
   return (
