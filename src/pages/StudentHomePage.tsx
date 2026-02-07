@@ -55,13 +55,13 @@ export function StudentHomePage() {
   const { id } = useParams();
   const [student, setStudent] = useState<any>(null);
 
-//   const [showCalendar, setShowCalendar] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [week, setWeek] = useState<WeekData | null>(null);
   const [tutorSettings, setTutorSettings] = useState<any>(null);
   const [manualDate, setManualDate] = useState("");
   const [manualTime, setManualTime] = useState("");
   const [repeatWeekly, setRepeatWeekly] = useState(false);
-//   const [manualMessage, setManualMessage] = useState("");
+  const [manualMessage, setManualMessage] = useState("");
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [slotOptions, setSlotOptions] = useState<{
     date: string;

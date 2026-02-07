@@ -19,7 +19,7 @@ export function SkillDetail({ skillId }: SkillDetailProps) {
 //   const skillId = Number(id);
 
   const navigate = useNavigate();
-  const { getSkill, getParents, listSkills, deleteSkill, loading, error } = useSkillsApi();
+  const { getSkill, getParents, listSkills, deleteSkill } = useSkillsApi();
   const [parents, setParents] = useState<Skill[]>([]);
   const [skill, setSkill] = useState<Skill | null>(null);
   const [children, setChildren] = useState<Skill[]>([]);

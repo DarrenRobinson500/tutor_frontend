@@ -51,14 +51,14 @@ export function TemplateEditorPage() {
   const { id } = params;
   const [metadata, setMetadata] = useState<TemplateMetadata>(emptyMetadata);
 //   const isNew = id === "new";
-//   const [isSaving, setIsSaving] = useState(false);
-//   const [saveError, setSaveError] = useState<string | null>(null);
-//   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [content, setContent] = useState<string>("");
   const [validationResult, setValidationResult] = useState<any>(null);
-//   const [previewResult, setPreviewResult] = useState<any>(null);
+  const [previewResult, setPreviewResult] = useState<any>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
-//   const { getTemplate, saveTemplate } = useTemplateApi();
+  const { getTemplate, saveTemplate } = useTemplateApi();
   const { validateTemplate } = useValidationApi();
 //   const { previewTemplate } = usePreviewApi();
 
