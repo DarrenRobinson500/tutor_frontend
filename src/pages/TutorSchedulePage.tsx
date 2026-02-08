@@ -24,6 +24,14 @@ export function TutorSchedulePage() {
     <Layout>
       <div className="container mt-4">
         <h2>My Schedule</h2>
+
+        <button
+          className="btn btn-outline-primary"
+          onClick={() => window.location.href = `/tutor/${id}`}
+        >
+          ← Back
+        </button>
+
         <p className="text-muted">Set your weekly availability and block out days.</p>
 
 

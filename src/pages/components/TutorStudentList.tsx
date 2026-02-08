@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch"
 
+interface Student {
+  id: number;
+  first_name: string;
+  last_name: string;
+}
+
+
 export function TutorStudentList({ tutorId }: { tutorId: string }) {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     apiFetch(`/api/tutors/${tutorId}/students/`)
@@ -11,23 +18,30 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
   }, [tutorId]);
 
   return (
-<ul className="list-group mt-3">
-  {students.map((s: any) => (
-    <li
-      key={s.id}
-      className="list-group-item d-flex justify-content-between align-items-center"
-    >
-      <span>{s.first_name} {s.last_name}</span>
+    <ul className="list-group mt-3">
+      {students
+        .slice() // avoid mutating original array
+        .sort((a, b) => {
+          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        })
+        .map((s: any) => (
+          <li
+            key={s.id}
+            className="list-group-item d-flex justify-content-between align-items-center"
+          >
+            <span>{s.first_name} {s.last_name}</span>
 
-      <a
-        className="btn btn-outline-primary btn-sm"
-        href={`/student/${s.id}`}
-      >
-        View Student Home Page
-      </a>
-    </li>
-  ))}
-</ul>
+            <a
+              className="btn btn-outline-primary btn-sm"
+              href={`/student/${s.id}`}
+            >
+              View {s.first_name}'s Home Page
+            </a>
+          </li>
+        ))}
+    </ul>
 
   );
 }

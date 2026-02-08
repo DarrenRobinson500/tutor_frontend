@@ -58,7 +58,7 @@ export function BlockedDaysEditor({
           value={date}
           onChange={e => setDate(e.target.value)}
         />
-        <button className="btn btn-warning" onClick={blockDay}>
+        <button className="btn btn-outline-primary" onClick={blockDay}>
           Block Day
         </button>
       </div>

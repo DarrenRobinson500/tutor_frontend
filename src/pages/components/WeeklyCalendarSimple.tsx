@@ -47,9 +47,11 @@ export function WeeklyCalendarSimple({ availability, onRemove }: WeeklyCalendarP
             {grouped[index].map(slot => (
             <div
               key={slot.id}
-              className="p-1 m-1 bg-primary text-white rounded small d-flex justify-content-between align-items-center"
+              className="p-1 m-1 bg-white text-dark border border-primary rounded small d-flex justify-content-between align-items-center"
             >
-              <span>{slot.start_time} – {slot.end_time}</span>
+                <span>
+                  {slot.start_time.slice(0, 5)} – {slot.end_time.slice(0, 5)}
+                </span>
 
                 <button
                   className="delete-btn"

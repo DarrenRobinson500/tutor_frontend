@@ -78,7 +78,7 @@ export function WeeklyAvailabilityEditor({
         <input type="time" className="form-control" value={start} onChange={e => setStart(e.target.value)} />
         <input type="time" className="form-control" value={end} onChange={e => setEnd(e.target.value)} />
 
-        <button className="btn btn-primary" onClick={addSlot}>Add</button>
+        <button className="btn btn-outline-primary" onClick={addSlot}>Add</button>
       </div>
 
     </div>
