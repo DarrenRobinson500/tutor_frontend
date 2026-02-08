@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useParams } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { WeeklyCalendar } from "./components/WeeklyCalendar";
