@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
-import { apiFetch } from "../../utils/apiFetch"
+import { Link } from "react-router-dom";
+import { apiFetch } from "../../utils/apiFetch";
 
-interface Student {
-  id: number;
+export interface Student {
+  user_id: number;          // User ID (used for routing)
+  profile_id: number;       // StudentProfile ID
   first_name: string;
   last_name: string;
+  email: string;
+  year_level: string | null;
+  area_of_study: string | null;
 }
 
 
@@ -17,31 +22,52 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
       .then(data => setStudents(data));
   }, [tutorId]);
 
-  return (
-    <ul className="list-group mt-3">
-      {students
-        .slice() // avoid mutating original array
-        .sort((a, b) => {
-          const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
-          const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
-          return nameA.localeCompare(nameB);
-        })
-        .map((s: any) => (
-          <li
-            key={s.id}
-            className="list-group-item d-flex justify-content-between align-items-center"
-          >
-            <span>{s.first_name} {s.last_name}</span>
+return (
+  <ul className="list-group mt-3">
+    {/* Header */}
+    <li className="list-group-item">
+      <div className="row fw-bold">
+        <div className="col-3">Name</div>
+        <div className="col-2">Year</div>
+        <div className="col-2">Area</div>
+        <div className="col-3">Email</div>
+        <div className="col-2 text-center">Actions</div>
+      </div>
+    </li>
 
-            <a
-              className="btn btn-outline-primary btn-sm"
-              href={`/student/${s.id}`}
-            >
-              View {s.first_name}'s Home Page
-            </a>
-          </li>
-        ))}
-    </ul>
-
-  );
+    {/* Rows */}
+    {students
+      .slice()
+      .sort((a, b) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      })
+      .map((s) => (
+        <li key={s.user_id} className="list-group-item">
+          <div className="row align-items-center">
+            <div className="col-3 fw-bold">
+              {s.first_name} {s.last_name} {s.user_id} {s.profile_id}
+            </div>
+            <div className="col-2">{s.year_level || "No year"}</div>
+            <div className="col-2">{s.area_of_study || "No area"}</div>
+            <div className="col-3">{s.email}</div>
+            <div className="col-2 text-center">
+              <Link
+                className="btn btn-outline-primary btn-sm"
+                to={`/student/${s.user_id}`}
+                style={{
+                  minWidth: "160px",
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
+                }}
+              >
+                {s.first_name}'s Home Page
+              </Link>
+            </div>
+          </div>
+        </li>
+      ))}
+  </ul>
+);
 }

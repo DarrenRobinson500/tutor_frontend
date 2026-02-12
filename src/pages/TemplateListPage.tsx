@@ -57,8 +57,9 @@ export function TemplateListPage() {
           <table className="table table-hover">
             <thead className="table-light">
               <tr>
-                <th>Name</th>
-                <th>Description</th>
+                <th>Grade</th>
+                <th>Skill</th>
+                <th>Difficulty</th>
                 <th>Subject</th>
                 <th>Status</th>
                 <th>Updated</th>
@@ -73,8 +74,9 @@ export function TemplateListPage() {
                   onClick={() => navigate(`/templates/${tpl.id}`)}
                   style={{ cursor: "pointer" }}
                 >
-                  <td>{tpl.name}</td>
-                  <td>{tpl.description}</td>
+                  <td>{tpl.grade}</td>
+                  <td>{tpl.skill}</td>
+                  <td>{tpl.difficulty}</td>
                   <td>{tpl.subject}</td>
                   <td>{tpl.status}</td>
                   <td>{new Date(tpl.updated_at).toLocaleString()}</td>

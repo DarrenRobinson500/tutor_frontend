@@ -36,19 +36,11 @@ export function SkillsListPage({ parentId, onSelect }: SkillsListProps) {
   return (
 
     <div className="container mt-4">
-
-       <button className="btn btn-primary mb-3" onClick={handleLoad}>Load Syllabus</button>
+      <button className="btn btn-primary mb-3" onClick={handleLoad}>Load Syllabus</button>
 
       {message && <div className="alert alert-info">{message}</div>}
 
       <h1 className="h3">Skills</h1>
-
-{/*       <button */}
-{/*         className="btn btn-primary mb-3" */}
-{/*         onClick={() => navigate("/skills/new")} */}
-{/*       > */}
-{/*         Add Skill */}
-{/*       </button> */}
 
       {loading && <p>Loading…</p>}
       {error && <p className="text-danger">{error}</p>}

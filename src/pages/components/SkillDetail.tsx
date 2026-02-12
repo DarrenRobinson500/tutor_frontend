@@ -4,8 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSkillsApi, Skill } from "../../api/useSkillsApi";
 import { useTemplateApi } from "../../api/useTemplateApi";
 import type { TemplateSummary } from "../../types/TemplateMetadata";
-
-
 import { Layout } from "./Layout";
 import { Breadcrumbs } from "./Breadcrumbs";
 
@@ -16,8 +14,6 @@ interface SkillDetailProps {
 export function SkillDetail({ skillId }: SkillDetailProps) {
 
   const { id } = useParams();
-//   const skillId = Number(id);
-
   const navigate = useNavigate();
   const { getSkill, getParents, listSkills, deleteSkill } = useSkillsApi();
   const [parents, setParents] = useState<Skill[]>([]);
@@ -42,16 +38,16 @@ export function SkillDetail({ skillId }: SkillDetailProps) {
     navigate("/skills");
   }
 
-    function handleCreateTemplate() {
-      generateTemplate(Number(skillId))
-        .then((template) => {
-          console.log("Generated template:", template);
-          navigate(`/templates/${template.id}`);
-        })
-        .catch((err) => {
-          console.error("Template generation failed:", err);
-        });
-    }
+//     function handleCreateTemplate() {
+//       generateTemplate(Number(skillId))
+//         .then((template) => {
+//           console.log("Generated template:", template);
+//           navigate(`/templates/${template.id}`);
+//         })
+//         .catch((err) => {
+//           console.error("Template generation failed:", err);
+//         });
+//     }
 
 
   if (!skill) return <p>Loading…</p>;
@@ -80,11 +76,11 @@ export function SkillDetail({ skillId }: SkillDetailProps) {
 {/*         Add Sub‑Skill */}
 {/*       </button> */}
 
-        {skill.children_count === 0 && (
-          <button className="btn btn-success" onClick={handleCreateTemplate}>
-            Create Template
-          </button>
-        )}
+{/*         {skill.children_count === 0 && ( */}
+{/*           <button className="btn btn-success" onClick={handleCreateTemplate}> */}
+{/*             Create Template */}
+{/*           </button> */}
+{/*         )} */}
 
       <h2 className="h5 mt-4">Sub‑Skills</h2>
 

@@ -1,40 +1,45 @@
 export async function apiFetch(url: string, options: any = {}) {
-  const API_URL = process.env.REACT_APP_API_URL;
-  console.log("API URL:", API_URL)
+  // Normalise base URL (remove trailing slash)
+  const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+  const fullUrl = `${API_URL}${url}`;
+
   const access = localStorage.getItem("access");
 
+  // Merge headers safely
   const headers = {
     "Content-Type": "application/json",
     ...(options.headers || {}),
     ...(access ? { Authorization: `Bearer ${access}` } : {}),
   };
 
-  // No access token → no refresh attempt
-  if (!access) {
-    return fetch(`${API_URL}${url}`, {
+  // Helper to perform a fetch with merged headers
+  const doFetch = (overrideHeaders = headers) =>
+    fetch(fullUrl, {
       ...options,
-      headers,
+      headers: overrideHeaders,
       credentials: "include",
     });
+
+  // If no access token, just do a simple fetch
+  if (!access) {
+    return doFetch();
   }
 
   // First attempt
-  let res = await fetch(`${API_URL}${url}`, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
+  let res = await doFetch();
 
-  // If expired → try refresh
+  // If unauthorized → try refresh
   if (res.status === 401) {
     const refresh = localStorage.getItem("refresh");
 
     if (!refresh) {
       localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
       localStorage.removeItem("user");
       return res;
     }
 
+    // Attempt refresh
     const refreshRes = await fetch(`${API_URL}/api/auth/refresh/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -49,6 +54,7 @@ export async function apiFetch(url: string, options: any = {}) {
       return res;
     }
 
+    // Store new access token
     const data = await refreshRes.json();
     localStorage.setItem("access", data.access);
 
@@ -57,11 +63,8 @@ export async function apiFetch(url: string, options: any = {}) {
       Authorization: `Bearer ${data.access}`,
     };
 
-    res = await fetch(`${API_URL}${url}`, {
-      ...options,
-      headers: retryHeaders,
-      credentials: "include",
-    });
+    // Retry original request with new token
+    res = await doFetch(retryHeaders);
   }
 
   return res;

@@ -7,6 +7,7 @@ import { SkillsListPage } from "./SkillsListPage";
 // import { SkillDetail } from "./components/SkillDetail";
 import { useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "./components/Breadcrumbs";
+import { SkillsMatrix } from "./components/SkillsMatrix";
 import { useSkillsApi, Skill } from "../api/useSkillsApi";
 import { Layout } from "./components/Layout";
 import { useTemplateApi } from "../api/useTemplateApi";
@@ -18,12 +19,19 @@ export default function SkillsPage() {
   const [parents, setParents] = useState<Skill[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const { generateTemplate } = useTemplateApi();
+  const { listSkills, loadSyllabus, loading, error } = useSkillsApi();
+  const [message, setMessage] = useState("");
+  const [skills, setSkills] = useState<Skill[]>([]);
+
+
+
 
 
   const { id } = useParams();
   const navigate = useNavigate();
   const [skill, setSkill] = useState<Skill | null>(null);
   const skillId = Number(id);
+
 
 //   const handleSelect = (skillId: number) => {
 //     navigate(`/skills/${skillId}`);
@@ -43,27 +51,39 @@ export default function SkillsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const handleLoad = () => {
+    loadSyllabus()
+      .then(() => {
+        setMessage("Syllabus loaded successfully");
+        return listSkills(null);
+      })
+      .then(setSkills)
+      .catch((err) => {
+        setMessage(err.error || "Failed to load syllabus");
+      });
+  };
 
-useEffect(() => {
-  if (!id) {
-    setTemplates([]);
-    return;
-  }
-  apiFetch(`/api/skills/${id}/direct_templates/`)
-    .then(res => res.json())
-    .then(data => setTemplates(data));
-}, [id]);
 
-function handleCreateTemplate() {
-  generateTemplate(Number(skillId))
-    .then((template) => {
-      console.log("Generated template:", template);
-      navigate(`/templates/${template.id}`);
-    })
-    .catch((err) => {
-      console.error("Template generation failed:", err);
-    });
-}
+  useEffect(() => {
+    if (!id) {
+      setTemplates([]);
+      return;
+    }
+    apiFetch(`/api/skills/${id}/direct_templates/`)
+      .then(res => res.json())
+      .then(data => setTemplates(data));
+  }, [id]);
+
+// function handleCreateTemplate() {
+//   generateTemplate(Number(skillId))
+//     .then((template) => {
+//       console.log("Generated template:", template);
+//       navigate(`/templates/${template.id}`);
+//     })
+//     .catch((err) => {
+//       console.error("Template generation failed:", err);
+//     });
+// }
 
 
     if (id && !skill) {
@@ -73,23 +93,19 @@ function handleCreateTemplate() {
     return (
       <Layout>
         <div className="container mt-4">
-
-          {/* If a skill is selected, show its details */}
           {skill && (
             <>
               <Breadcrumbs parents={parents} current={skill} />
 
               <h1 className="skill-heading">{skill.description}</h1>
-
               <div className="skill-meta">
                 <span>Grade: {skill.grade_level}</span>
               </div>
-
-                {skill.children_count === 0 && (
-                  <button className="btn btn-success" onClick={handleCreateTemplate}>
-                    Create Templates (this will take a minute or two)
-                  </button>
-                )}
+{/*                 {skill.children_count === 0 && ( */}
+{/*                   <button className="btn btn-success" onClick={handleCreateTemplate}> */}
+{/*                     Create Templates (this will take a minute or two) */}
+{/*                   </button> */}
+{/*                 )} */}
 
               {templates.length > 0 && (
                 <>
@@ -110,10 +126,15 @@ function handleCreateTemplate() {
           )}
 
 
-          <SkillsListPage
-            parentId={id ? Number(id) : undefined}
-            onSelect={(skillId) => navigate(`/skills/${skillId}`)}
-          />
+{/*           <SkillsListPage */}
+{/*             parentId={id ? Number(id) : undefined} */}
+{/*             onSelect={(skillId) => navigate(`/skills/${skillId}`)} */}
+{/*           /> */}
+
+          <h1>Skills</h1>
+          <button className="btn btn-primary mb-3" onClick={handleLoad}>Load Syllabus</button>
+          <SkillsMatrix/>
+
 
         </div>
       </Layout>

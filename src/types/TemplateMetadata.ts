@@ -1,12 +1,13 @@
-export type TemplateSummary = {
+export interface TemplateSummary {
   id: number;
-  name: string;
-  description: string;
-  subject: string;
-  topic: string;
+  grade: string;
+  skill: string;
+  difficulty: string
+  subject: string
   status: string;
   updated_at: string;
-};
+}
+
 
 export type TemplateMetadata = {
   id: number | null;
@@ -16,6 +17,7 @@ export type TemplateMetadata = {
   topic: string;
   subtopic: string;
   difficulty: string;
+  grade: string | null;
   tags: string[];
   curriculum: any[];
   status: string;
@@ -31,10 +33,12 @@ export const emptyMetadata: TemplateMetadata = {
   topic: "",
   subtopic: "",
   difficulty: "",
+  grade: "",
   tags: [],
   curriculum: [],
   status: "draft",
   version: 1,
   skill: null,
+
 };
 

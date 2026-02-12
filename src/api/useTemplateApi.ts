@@ -74,15 +74,29 @@ export function useTemplateApi() {
       });
     }
 
-    function generateTemplate(skillId: number): Promise<TemplateSummary> {
+    function generateTemplate(skillId: number, grade: (string | number)): Promise<TemplateSummary> {
         return apiFetchJson("/api/templates/generate/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ skill_id: skillId }),
+          body: JSON.stringify({ skill_id: skillId, grade: grade }),
         });
 
+    }
+
+    async function getFirstTemplate(skillId: number, grade: string | number) {
+      const params = new URLSearchParams({
+        skill: String(skillId),
+        grade: String(grade),
+        difficulty: "Easy",
+      });
+
+      const res = await apiFetch(`/api/templates/filtered/?${params.toString()}`);
+      if (!res.ok) return null;
+
+      const list = await res.json();
+      return list.length > 0 ? list[0] : null;
     }
 
 //     async function saveDiagram(id: number, svg: string) {
@@ -102,6 +116,7 @@ export function useTemplateApi() {
       autosaveTemplate,
       deleteTemplate,
       generateTemplate,
+      getFirstTemplate,
       loading,
       error,
     }

@@ -49,7 +49,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin/tutors">Tutors</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
-                  <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                 </>
               )}
 
@@ -64,9 +63,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               {user?.role === "student" && (
                 <>
                   <li className="nav-item"><Link className="nav-link" to={`/student/${user.id}/`}>Home</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to={`/student/${user.id}/booking`}>Booking</Link></li>
                 </>
               )}
 
+              <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
               <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
               <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
 
