@@ -23,14 +23,14 @@ interface MatrixResponse {
   skills: SkillRow[];
 }
 
-type Skill = {
-  id: number;
-  parent_id: number | null;
-  children_count: number;
-  depth: number;
-  description: string;
-  cells: Record<string, { colour: string; count: number }>;
-};
+// type Skill = {
+//   id: number;
+//   parent_id: number | null;
+//   children_count: number;
+//   depth: number;
+//   description: string;
+//   cells: Record<string, { colour: string; count: number }>;
+// };
 
 // type FlatRow = [Skill, number];
 
