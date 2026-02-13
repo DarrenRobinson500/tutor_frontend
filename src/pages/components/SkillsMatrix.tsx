@@ -32,7 +32,7 @@ type Skill = {
   cells: Record<string, { colour: string; count: number }>;
 };
 
-type FlatRow = [Skill, number];
+// type FlatRow = [Skill, number];
 
 export function SkillsMatrix() {
   const [data, setData] = useState<MatrixResponse | null>(null);

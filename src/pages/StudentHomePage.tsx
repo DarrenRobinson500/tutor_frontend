@@ -1,9 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+
 import { useParams, useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
-import { WeeklyCalendar } from "./components/WeeklyCalendar";
+// import { WeeklyCalendar } from "./components/WeeklyCalendar";
 import { Layout } from "./components/Layout";
-import { WeekData } from "../types/weekly";
+// import { WeekData } from "../types/weekly";
 import { apiFetch } from "../utils/apiFetch";
 
 interface CellData {
@@ -24,9 +25,9 @@ interface SkillRow {
 export function StudentHomePage() {
   const { id } = useParams();
   const [student, setStudent] = useState<any>(null);
-  const [tutorSettings, setTutorSettings] = useState<any>(null);
+//   const [tutorSettings, setTutorSettings] = useState<any>(null);
   const navigate = useNavigate();
-  const { studentId } = useParams();
+//   const { studentId } = useParams();
   const [syllabus, setSyllabus] = useState<SkillRow[]>([]);
 
   useEffect(() => {
@@ -35,17 +36,18 @@ export function StudentHomePage() {
       .then(async (data) => {
         setStudent(data);
 
-        if (data.tutor_id) {
-          const tutorRes = await apiFetch(
-            `/api/tutors/${data.tutor_id}/session_settings/`
-          );
-          const tutorSettings = await tutorRes.json();
-          setTutorSettings(tutorSettings);
-        }
+//         if (data.tutor_id) {
+//           const tutorRes = await apiFetch(
+//             `/api/tutors/${data.tutor_id}/session_settings/`
+//           );
+//           // eslint-disable-next-line @typescript-eslint/no-unused-vars
+//           const tutorSettings_temp = await tutorRes.json();
+//           setTutorSettings(tutorSettings_temp);
+//         }
       });
   }, [id]);
 
-  const tutorId = student?.tutor_id;
+//   const tutorId = student?.tutor_id;
 
   useEffect(() => {
     if (!student?.year_level) return;

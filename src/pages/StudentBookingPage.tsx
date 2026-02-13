@@ -62,7 +62,7 @@ export function StudentBookingPage() {
   const [loading, setLoading] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
   const navigate = useNavigate();
-  const { studentId } = useParams();
+//   const { studentId } = useParams();
 
   const [slotOptions, setSlotOptions] = useState<{
     date: string;

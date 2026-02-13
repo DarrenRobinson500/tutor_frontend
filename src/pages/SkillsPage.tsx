@@ -2,40 +2,22 @@ import React from "react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Link } from "react-router-dom";
-
-import { SkillsListPage } from "./SkillsListPage";
-// import { SkillDetail } from "./components/SkillDetail";
-import { useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "./components/Breadcrumbs";
 import { SkillsMatrix } from "./components/SkillsMatrix";
 import { useSkillsApi, Skill } from "../api/useSkillsApi";
 import { Layout } from "./components/Layout";
-import { useTemplateApi } from "../api/useTemplateApi";
-// import { TemplateSummary } from "../types/TemplateMetadata";
 import { apiFetch } from "../utils/apiFetch"
 
 export default function SkillsPage() {
   const { getSkill, getParents, } = useSkillsApi();
   const [parents, setParents] = useState<Skill[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
-  const { generateTemplate } = useTemplateApi();
-  const { listSkills, loadSyllabus, loading, error } = useSkillsApi();
-  const [message, setMessage] = useState("");
-  const [skills, setSkills] = useState<Skill[]>([]);
-
-
-
-
-
+//   const { listSkills } = useSkillsApi();
+  const { loadSyllabus } = useSkillsApi();
+//   const [message, setMessage] = useState("");
+//   const [skills, setSkills] = useState<Skill[]>([]);
   const { id } = useParams();
-  const navigate = useNavigate();
   const [skill, setSkill] = useState<Skill | null>(null);
-  const skillId = Number(id);
-
-
-//   const handleSelect = (skillId: number) => {
-//     navigate(`/skills/${skillId}`);
-//   };
 
   useEffect(() => {
     if (!id) {
@@ -47,22 +29,20 @@ export default function SkillsPage() {
     const skillId = Number(id);
     getSkill(skillId).then((s) => setSkill(s));
     getParents(skillId).then((p) => setParents(p));
+  }, [id, getSkill, getParents]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
 
   const handleLoad = () => {
     loadSyllabus()
-      .then(() => {
-        setMessage("Syllabus loaded successfully");
-        return listSkills(null);
-      })
-      .then(setSkills)
-      .catch((err) => {
-        setMessage(err.error || "Failed to load syllabus");
-      });
+//       .then(() => {
+// //         setMessage("Syllabus loaded successfully");
+//         return listSkills(null);
+//       })
+//       .then(setSkills)
+//       .catch((err) => {
+// //         setMessage(err.error || "Failed to load syllabus");
+//       });
   };
-
 
   useEffect(() => {
     if (!id) {
@@ -73,18 +53,6 @@ export default function SkillsPage() {
       .then(res => res.json())
       .then(data => setTemplates(data));
   }, [id]);
-
-// function handleCreateTemplate() {
-//   generateTemplate(Number(skillId))
-//     .then((template) => {
-//       console.log("Generated template:", template);
-//       navigate(`/templates/${template.id}`);
-//     })
-//     .catch((err) => {
-//       console.error("Template generation failed:", err);
-//     });
-// }
-
 
     if (id && !skill) {
       return <div>Loading...</div>;
