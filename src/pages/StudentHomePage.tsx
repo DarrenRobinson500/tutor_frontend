@@ -29,6 +29,8 @@ export function StudentHomePage() {
   const navigate = useNavigate();
 //   const { studentId } = useParams();
   const [syllabus, setSyllabus] = useState<SkillRow[]>([]);
+  const [mastery, setMastery] = useState<any>({});
+
 
   useEffect(() => {
     apiFetch(`/api/students/${id}/home/`)
@@ -52,10 +54,11 @@ export function StudentHomePage() {
   useEffect(() => {
     if (!student?.year_level) return;
 
-    apiFetch(`/api/skills/matrix/?grade=${student.year_level}`)
+    apiFetch(`/api/skills/matrix/?grade=${student.year_level}&student_id=${id}`)
       .then(res => res.json())
       .then(data => {
         setSyllabus(data.skills);
+        setMastery(data.mastery);
       });
   }, [student]);
 
@@ -116,11 +119,22 @@ export function StudentHomePage() {
                 </td>
 
                 <td>
-                {templateCount}
+                  {mastery[skill.id]?.competence_label ?? "—"}
                 </td>
 
                 <td>
+                  {templateCount !== null && templateCount > 0 && (
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={() =>
+                        navigate(`/students/${id}/test/${skill.id}`)
+                      }
+                    >
+                      Practice
+                    </button>
+                  )}
                 </td>
+
 
               </tr>
             );

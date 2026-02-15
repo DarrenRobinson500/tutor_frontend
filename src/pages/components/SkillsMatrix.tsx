@@ -71,21 +71,29 @@ export function SkillsMatrix() {
       });
   }
 
-  async function handleViewTemplate(skillId: number, grade: string | number) {
-    apiFetch("/api/templates/filtered/?skill=208&grade=3&difficulty=Easy")
-      .then(res => console.log("Status:", res.status))
+async function handleViewTemplate(skillId: number, grade: string | number) {
+  try {
+    const res = await apiFetch("/api/templates/preview/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        skill: skillId,
+        grade: grade,
+        difficulty: "easy"
+      })
+    });
 
-    try {
-      const template = await getFirstTemplate(skillId, grade);
-      if (template) {
-        navigate(`/templates/${template.id}`);
-      } else {
-        alert("No templates exist yet for this skill.");
-      }
-    } catch (err) {
-      console.error("Failed to load first template:", err);
+    const data = await res.json();
+
+    if (data.ok) {
+      navigate(`/templates/${data.template_id}`);
+    } else {
+      alert(data.error || "No templates exist yet for this skill.");
     }
+  } catch (err) {
+    console.error("Failed to load first template:", err);
   }
+}
 
   if (!data) {
     return (

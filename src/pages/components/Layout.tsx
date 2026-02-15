@@ -8,6 +8,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const user = storedUser ? JSON.parse(storedUser) : null;
   const access = localStorage.getItem("access");
 
+  async function devSwitch(name: string) {
+    const res = await fetch("/api/auth/dev_login/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: name })
+    });
+
+    const data = await res.json();
+
+    if (data.id) {
+      localStorage.setItem("user", JSON.stringify(data));
+      window.location.reload();
+    }
+  }
+
+
   // Hooks must always run
   useEffect(() => {
     // If no access token, do nothing — Layout will just render children
@@ -56,7 +72,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <>
                   <li className="nav-item"><Link className="nav-link" to={`/tutor/${user.id}/`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
-                  <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                 </>
               )}
 
@@ -70,6 +85,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
               <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
               <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
+
+
+              {/* Dev quick-switch users */}
+              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("darren")}>Admin (Darren)</a></li>
+              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("alex")}>Tutor (Alex)</a></li>
+              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("blair")}>Student (Blair)</a></li>
+
 
               {!user && (
                 <li className="nav-item"><Link className="nav-link" to="/login">Login</Link></li>

@@ -28,9 +28,6 @@ export function TemplateEditorPage() {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [skills, setSkills] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
-
-
-
   const emptyMetadata = {
     id: null,
     name: "",
@@ -314,6 +311,11 @@ export function TemplateEditorPage() {
     }
   };
 
+  useEffect(() => {
+    console.log("FULL PREVIEW OBJECT:", preview);
+  }, [preview]);
+
+
 
 
   return (
@@ -379,9 +381,15 @@ export function TemplateEditorPage() {
             >
               <PreviewPanel
                 preview={preview}
+                mode="editor"
                 templateContent={content}
-                onNext={(newPreview) => setPreview(newPreview)}
+                onEditorNext={(newPreview) => {
+                  setPreview(newPreview);
+                  goNext();
+                }}
               />
+
+
             </div>
           </div>
         </div>
