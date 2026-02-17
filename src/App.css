@@ -258,3 +258,9 @@
 .skills-matrix tbody tr {
   height: 48px;
 }
+
+.matrix-cell {
+  padding: 8px 12px;
+  min-width: 80px;
+  text-align: center;
+}

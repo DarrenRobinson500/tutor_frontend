@@ -114,7 +114,17 @@ export function TemplateMetadataBar({
       {saveSuccess && <span style={{ color: "green" }}>Saved successfully</span>}
       {saveError && <span style={{ color: "red" }}>{saveError}</span>}
 
-      <button onClick={onValidate} className="btn btn-primary">Validate</button>
+      <button
+        onClick={onValidate}
+        className={
+          metadata.validated
+            ? "btn btn-primary"
+            : "btn btn-outline-primary"
+        }
+      >
+        {metadata.validated ? "Validated" : "Validate"}
+      </button>
+
       <button onClick={onPreview} className="btn btn-primary">Preview</button>
     </div>
   );

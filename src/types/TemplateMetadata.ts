@@ -23,6 +23,7 @@ export type TemplateMetadata = {
   status: string;
   version: number;
   skill: number | null;
+  validated: boolean;
 }
 
 export const emptyMetadata: TemplateMetadata = {
@@ -39,6 +40,7 @@ export const emptyMetadata: TemplateMetadata = {
   status: "draft",
   version: 1,
   skill: null,
+  validated: false,
 
 };
 

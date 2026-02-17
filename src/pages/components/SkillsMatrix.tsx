@@ -6,7 +6,10 @@ import { useNavigate } from "react-router-dom";
 interface CellData {
   colour: string;
   count: number | null;
+  validated: number;
+  unvalidated: number;
 }
+
 
 interface SkillRow {
   id: number;
@@ -37,7 +40,7 @@ interface MatrixResponse {
 export function SkillsMatrix() {
   const [data, setData] = useState<MatrixResponse | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<string | number | null>(null);
-  const { generateTemplate, getFirstTemplate } = useTemplateApi();
+  const { generateTemplate } = useTemplateApi();
   const navigate = useNavigate();
   const [loadingCell, setLoadingCell] = useState<{ skillId: number; grade: string | number } | null>(null);
 
@@ -148,8 +151,6 @@ async function handleViewTemplate(skillId: number, grade: string | number) {
               loadingCell.skillId === skill.id &&
               loadingCell.grade === selectedGrade;
 
-            const templateCount = gradeStr && cell ? cell.count : null;
-
             return (
               <tr key={skill.id} className={isParent ? "parent-row" : ""}>
 
@@ -157,9 +158,25 @@ async function handleViewTemplate(skillId: number, grade: string | number) {
                   {skill.description}
                 </td>
 
-                <td>
-                  {templateCount !== null ? templateCount : "-"}
-                </td>
+<td className="matrix-cell">
+  {cell ? (
+    <>
+      {cell.unvalidated > 0 && (
+        <span className="badge bg-warning text-dark me-1">
+          {cell.unvalidated}
+        </span>
+      )}
+      {cell.validated > 0 && (
+        <span className="badge bg-success me-1">
+          {cell.validated}
+        </span>
+      )}
+    </>
+  ) : "-"}
+</td>
+
+
+
 
                 <td className="d-flex gap-2 align-items-center">
 

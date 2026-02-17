@@ -10,7 +10,7 @@ import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch"
 
 import { useTemplateApi } from "../api/useTemplateApi";
-import { useValidationApi } from "../api/useValidationApi";
+// import { useValidationApi } from "../api/useValidationApi";
 import type { TemplateMetadata } from "../types/TemplateMetadata";
 
 interface PreviewResponse {
@@ -42,6 +42,7 @@ export function TemplateEditorPage() {
     status: "draft",
     version: 1,
     skill: null,
+    validated: false,
   };
 
   const navigate = useNavigate();
@@ -55,14 +56,15 @@ export function TemplateEditorPage() {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [content, setContent] = useState<string>("");
-  const [validationResult, setValidationResult] = useState<any>(null);
+  const [validationResult] = useState<any>(null);
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [previewResult, setPreviewResult] = useState<any>(null);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { getTemplate, saveTemplate } = useTemplateApi();
-  const { validateTemplate } = useValidationApi();
+//   const { validateTemplate } = useValidationApi();
 
   function buildMetadataFromTemplate(tpl: any): TemplateMetadata {
     return {
@@ -79,8 +81,31 @@ export function TemplateEditorPage() {
       status: tpl.status ?? "draft",
       version: tpl.version ?? 1,
       skill: tpl.skill ?? null,
+      validated: tpl.validated ?? false,
     };
   }
+
+  // Handle Validated Toggler
+  const handleToggleValidated = async () => {
+    if (!metadata.id) return;
+
+    const res = await apiFetch(`/api/templates/${metadata.id}/toggle_validated/`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      alert("Failed to toggle validation");
+      return;
+    }
+
+    const data = await res.json();
+
+    setMetadata(prev => ({
+      ...prev,
+      validated: data.validated,
+    }));
+  };
+
 
   // Debounced function
   const debouncedPreview = useRef(
@@ -254,11 +279,6 @@ export function TemplateEditorPage() {
   setMetadata(prev => ({ ...prev, ...data }));
 };
 
-  const handleValidate = async () => {
-    const result = await validateTemplate({ content });
-    setValidationResult(result);
-  };
-
   const handlePreview = async () => {
     setPreviewResult({
       text: "This is a preview of your template.\n\nMore features coming soon."
@@ -327,7 +347,7 @@ export function TemplateEditorPage() {
       metadata={metadata}
       onChange={handleMetadataChange}
       onSave={handleSave}
-      onValidate={handleValidate}
+      onValidate={handleToggleValidated}
       onPreview={handlePreview}
       onToSkill={handleToSkill}
       isSaving={isSaving}
@@ -366,7 +386,12 @@ export function TemplateEditorPage() {
           <div className="card shadow-sm flex-grow-1">
             <div className="card-header">Question Definition (Values Populated)</div>
             <div className="card-body overflow-auto">
-              <ValuesPanel substitutedYaml={preview?.substituted_yaml ?? null} />
+              <ValuesPanel
+                substitutedYaml={preview?.substituted_yaml ?? null}
+                diagramCode={preview?.diagram_code ?? null}
+                backendSvg={preview?.diagram_svg ?? null}
+              />
+
             </div>
           </div>
         </div>
