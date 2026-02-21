@@ -50,28 +50,33 @@ export function StudentQuestionPage() {
     );
   }
 
-  return (
-    <Layout>
-      <div className="container mt-4">
-        <h2>{skillName} ({competence}) {mastery}</h2>
+return (
+  <Layout>
+    <div className="container mt-4">
 
-        {current && (
-          <PreviewPanel
-            preview={current}
-            mode="student"
-            studentId={Number(studentId)}
-            templateId={templateId!}
-            onStudentNext={(result: StudentRecordResponse) => {
-              console.log("About to update templateId to:", result.template_id);
-              setTemplateId(result.template_id);
-              setCurrent(result.next_question);
-              setMastery(result.mastery);
-              setCompetence(result.competence_label);
-            }}
-          />
-        )}
+      {current && (
+        <div className="row justify-content-center">
+          <div className="col-md-4">
+      <h2>{skillName} ({competence}) {mastery}</h2>
+      <hr/>
+            <PreviewPanel
+              preview={current}
+              mode="student"
+              studentId={Number(studentId)}
+              templateId={templateId!}
+              onStudentNext={(result: StudentRecordResponse) => {
+                console.log("About to update templateId to:", result.template_id);
+                setTemplateId(result.template_id);
+                setCurrent(result.next_question);
+                setMastery(result.mastery);
+                setCompetence(result.competence_label);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
-      </div>
-    </Layout>
-  );
+    </div>
+  </Layout>
+);
 }

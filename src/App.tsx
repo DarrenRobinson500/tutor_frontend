@@ -10,6 +10,7 @@ import { TutorListPage } from "./pages/TutorListPage";
 import { TutorHomePage } from "./pages/TutorHomePage";
 import { TutorCreatePage } from "./pages/TutorCreatePage";
 import { TutorSchedulePage } from "./pages/TutorSchedulePage";
+import { TutorBookingPage } from "./pages/TutorBookingPage";
 import { StudentListPage } from "./pages/StudentListPage";
 import { StudentEditPage } from "./pages/StudentEditPage";
 import { StudentQuestionPage } from "./pages/StudentQuestionPage";
@@ -65,6 +66,7 @@ function App() {
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />
         <Route path="/tutor/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
         <Route path="/tutor/:id/schedule" element={<ProtectedRoute><TutorSchedulePage /></ProtectedRoute>} />
+        <Route path="/tutor/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />

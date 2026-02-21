@@ -49,22 +49,15 @@ export function TemplateEditorPage() {
   const params = useParams();
   const { id } = params;
   const [metadata, setMetadata] = useState<TemplateMetadata>(emptyMetadata);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isSaving, setIsSaving] = useState(false);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [saveError, setSaveError] = useState<string | null>(null);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [content, setContent] = useState<string>("");
   const [validationResult] = useState<any>(null);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [previewResult, setPreviewResult] = useState<any>(null);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { getTemplate, saveTemplate } = useTemplateApi();
-//   const { validateTemplate } = useValidationApi();
 
   function buildMetadataFromTemplate(tpl: any): TemplateMetadata {
     return {
@@ -120,19 +113,13 @@ export function TemplateEditorPage() {
       console.log("Preview response:", data.preview);
       console.log("Sending content to preview:", content);
 
+      // ⭐ Only update the preview — do NOT modify metadata
       setPreview(data.preview);
-      if (data.preview) {
-        setMetadata(prev => ({
-          ...prev,
-          skill: data.preview.skill ?? prev.skill,
-          grade: data.preview.grade ?? prev.grade,
-          difficulty: data.preview.difficulty ?? prev.difficulty,
-        }));
-      }
 
     }, 400)
   ).current;
 
+  // Load
   useEffect(() => {
     async function load() {
       if (!id) return;
@@ -153,10 +140,9 @@ export function TemplateEditorPage() {
       setPreview(data.preview);
     }
     load();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Load Skills, Subjects
   useEffect(() => {
     async function loadSkills() {
       const grade = metadata.grade ?? "";
@@ -172,13 +158,11 @@ export function TemplateEditorPage() {
       new Set(filteredList.map(t => t.subject).filter(Boolean))
     );
     setSubjects(uniqueSubjects);
-    console.log("Filtered templates:", filteredList);
-
   }, [filteredList]);
 
+  // Handle Subject Change
   const handleSubjectChange = (subject: string) => {
     setMetadata(prev => ({ ...prev, subject }));
-
     if (!subject) {
       // Reset to full filtered list
       setCurrentIndex(0);
@@ -188,21 +172,21 @@ export function TemplateEditorPage() {
       return;
     }
 
-    // Filter templates by subject
-    const subjectFiltered = filteredList.filter(t => t.subject === subject);
-
+  // Filter templates by subject
+  const subjectFiltered = filteredList.filter(t => t.subject === subject);
     if (subjectFiltered.length > 0) {
       setCurrentIndex(0);
       navigate(`/templates/${subjectFiltered[0].id}`);
     }
   };
 
-
+  // Handle Content Change
   function handleContentChange(newContent: string) {
     setContent(newContent);
     debouncedPreview(newContent);
   }
 
+  // Handle going to skill
   const handleToSkill = () => {
     if (metadata.skill) {
       navigate(`/skills/${metadata.skill}`);
@@ -265,6 +249,7 @@ export function TemplateEditorPage() {
     body: JSON.stringify(payload),
   });
 
+  // No data yet
   if (!res.ok) {
     const errorText = await res.text();
     console.error("Template UPDATE failed:", errorText);
@@ -278,6 +263,37 @@ export function TemplateEditorPage() {
   // Update metadata (in case backend modifies anything)
   setMetadata(prev => ({ ...prev, ...data }));
 };
+
+  // Delete
+  const handleDelete = async () => {
+    if (!metadata.id) return;
+
+    const confirmed = window.confirm("Are you sure you want to delete this template?");
+    if (!confirmed) return;
+
+    const res = await apiFetch(`/api/templates/${metadata.id}/`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      alert("Failed to delete template");
+      return;
+    }
+
+    // After deletion, navigate somewhere sensible
+    if (filteredList.length > 1) {
+      // Remove deleted template from list
+      const remaining = filteredList.filter(t => t.id !== metadata.id);
+      setFilteredList(remaining);
+      setCurrentIndex(0);
+      navigate(`/templates/${remaining[0].id}`);
+    } else {
+      // No templates left
+      navigate(`/templates/new`);
+    }
+  };
+
+
 
   const handlePreview = async () => {
     setPreviewResult({
@@ -342,11 +358,12 @@ export function TemplateEditorPage() {
 <Layout>
   <div className="template-editor-page">
 
-    {/* Top metadata + actions */}
+    {/* Metadata */}
     <TemplateMetadataBar
       metadata={metadata}
       onChange={handleMetadataChange}
       onSave={handleSave}
+      onDelete={handleDelete}
       onValidate={handleToggleValidated}
       onPreview={handlePreview}
       onToSkill={handleToSkill}
@@ -410,7 +427,7 @@ export function TemplateEditorPage() {
                 templateContent={content}
                 onEditorNext={(newPreview) => {
                   setPreview(newPreview);
-                  goNext();
+//                   goNext();
                 }}
               />
 

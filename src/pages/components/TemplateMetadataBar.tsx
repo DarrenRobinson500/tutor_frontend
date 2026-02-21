@@ -4,6 +4,7 @@ interface TemplateMetadataBarProps {
   metadata: TemplateMetadata;
   onChange: (updated: Partial<TemplateMetadata>) => void;
   onSave: () => void;
+  onDelete: () => void;
   isSaving: boolean;
   saveSuccess: boolean;
   saveError: string | null;
@@ -22,6 +23,7 @@ export function TemplateMetadataBar({
   metadata,
   onChange,
   onSave,
+  onDelete,
   onValidate,
   onPreview,
   onToSkill,
@@ -73,7 +75,7 @@ export function TemplateMetadataBar({
       {/* Difficulty */}
       <select
         className="form-select"
-        style={{ width: "90px" }}
+        style={{ width: "120px" }}
         value={metadata.difficulty ?? ""}
         onChange={(e) => onChange({ difficulty: e.target.value })}
       >
@@ -91,11 +93,9 @@ export function TemplateMetadataBar({
         onChange={(e) => onSubjectChange(e.target.value)}
       >
         <option value="">All subjects</option>
-        {subjects.map((subj) => (
-          <option key={subj} value={subj}>
-            {subj}
-          </option>
-        ))}
+          {(subjects ?? []).map((subj) => (
+            <option key={subj} value={subj}>{subj}</option>
+          ))}
       </select>
 
       <button className="btn btn-secondary" onClick={onPrev}>Previous</button>
@@ -125,7 +125,13 @@ export function TemplateMetadataBar({
         {metadata.validated ? "Validated" : "Validate"}
       </button>
 
-      <button onClick={onPreview} className="btn btn-primary">Preview</button>
+      <button
+        className="btn btn-danger"
+        onClick={onDelete}
+        disabled={!metadata.id}
+      >
+        Delete
+      </button>
     </div>
   );
 }

@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
 import { useParams, useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 // import { WeeklyCalendar } from "./components/WeeklyCalendar";
@@ -10,6 +8,8 @@ import { apiFetch } from "../utils/apiFetch";
 interface CellData {
   colour: string;
   count: number | null;
+  validated: number;
+  unvalidated: number;
 }
 
 interface SkillRow {
@@ -107,7 +107,7 @@ export function StudentHomePage() {
             const isParent = skill.children_count > 0;
             const gradeStr = student.year_level ? String(student.year_level) : null;
             const cell = gradeStr ? skill.cells[gradeStr] : null;
-            const templateCount = gradeStr && cell ? cell.count : null;
+            const templateCount = gradeStr && cell ? cell.validated : null;
 
 
 
