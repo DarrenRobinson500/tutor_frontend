@@ -356,6 +356,11 @@ export function StudentBookingPage() {
         <strong>Your next {title.toLowerCase()}:</strong>
         <br />
         {weekday}, {date} at {time}
+        {!booking.confirmed && (
+          <span style={{ color: "#b00", fontWeight: 600 }}>
+            (unconfirmed)
+          </span>
+        )}
       </div>
     );
   };

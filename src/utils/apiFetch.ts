@@ -1,6 +1,8 @@
 export async function apiFetch(url: string, options: any = {}) {
   // Normalise base URL (remove trailing slash)
-  const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+//   const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+  const API_URL = "http://localhost:8000";
+
   const fullUrl = `${API_URL}${url}`;
 
   const access = localStorage.getItem("access");
@@ -17,7 +19,6 @@ export async function apiFetch(url: string, options: any = {}) {
     fetch(fullUrl, {
       ...options,
       headers: overrideHeaders,
-      credentials: "include",
     });
 
   // If no access token, just do a simple fetch

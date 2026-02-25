@@ -33,6 +33,7 @@ export function TutorBookingPage() {
   const [editStart, setEditStart] = useState("");
   const [editDuration, setEditDuration] = useState(60);
   const [editLoading, setEditLoading] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState<number | null>(null);
 
 
 
@@ -145,6 +146,39 @@ export function TutorBookingPage() {
       setMessage("Error booking weekly session.");
     }
   };
+
+  const handleConfirmWeeklyBooking = async (bookingId: number) => {
+    try {
+      const res = await apiFetch(`/api/tutors/${id}/confirm_weekly_booking/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: bookingId }),
+      });
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        setMessage(data.error || "Could not confirm booking.");
+      } else {
+        setMessage(data.confirmed ? "Booking confirmed." : "Booking unconfirmed.");
+      }
+
+      // Reload
+      const reload = await apiFetch(`/api/tutors/${id}/booking/`);
+      const fresh = await reload.json();
+      setWeeklyAvailability(fresh.weekly_availability);
+      setStudents(fresh.students);
+
+      setEditingBooking(null);
+    } catch (err) {
+      setMessage("Error confirming booking.");
+    } finally {
+      setConfirmLoading(null);
+    }
+  };
+
+
+
 
   const handleManualWeeklyCreate = async () => {
     if (!selectedStudentId) {
@@ -351,7 +385,7 @@ export function TutorBookingPage() {
           marginTop: "6px",
           borderRadius: "6px",
           border: "1px solid #ddd",
-          background: "#f8f9fa",
+          background: b.confirmed ? "#e7f1ff" : "#f8f9fa",
           fontSize: "0.8rem",
         }}
         onClick={() => openEditor(weekday, idx, b)}
@@ -362,6 +396,12 @@ export function TutorBookingPage() {
           const duration = computeDuration(b.start_time, b.end_time);
           return duration !== 60 ? `(${duration}m)` : "";
         })()}
+        {!b.confirmed && (
+          <span style={{ color: "#b00", fontWeight: 600 }}>
+            (unconfirmed)
+          </span>
+        )}
+
       </button>
 
 
@@ -424,6 +464,25 @@ export function TutorBookingPage() {
                 "Save"
               )}
             </button>
+
+            <button
+              className="btn btn-primary"
+              onClick={() => handleConfirmWeeklyBooking(b.id)}
+              disabled={confirmLoading === b.id}
+            >
+              {confirmLoading === b.id ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                  ></span>
+                  Confirming…
+                </>
+              ) : (
+                "Confirm"
+              )}
+            </button>
+
 
 
           </div>

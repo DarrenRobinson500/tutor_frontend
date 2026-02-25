@@ -1,6 +1,6 @@
 import "./App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { TemplateListPage } from "./pages/TemplateListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
@@ -20,17 +20,52 @@ import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
-import LoginPage from "./pages/LoginPage";
+
+import AuthPage from "./pages/AuthPage/AuthPage";   // NEW
 
 import "bootstrap/dist/css/bootstrap.min.css";
+
+
+// ------------------------------------------------------------
+// FETCH CURRENT USER (session-based auth)
+// ------------------------------------------------------------
+function useCurrentUser() {
+  const [user, setUser] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/auth/me/")
+      .then((res) => {
+        if (res.status === 401) {
+          setUser(null);
+          setLoading(false);
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data) setUser(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setUser(null);
+        setLoading(false);
+      });
+  }, []);
+
+  return { user, loading };
+}
 
 
 // ------------------------------------------------------------
 // PROTECTED ROUTE WRAPPER
 // ------------------------------------------------------------
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem("access");
-  if (!token) return <Navigate to="/login" replace />;
+  const { user, loading } = useCurrentUser();
+
+  if (loading) return <div>Loading...</div>;
+  if (!user) return <Navigate to="/auth" replace />;
+
   return <>{children}</>;
 }
 
@@ -39,7 +74,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // MAIN APP
 // ------------------------------------------------------------
 function App() {
-
   useEffect(() => {
     window.addEventListener("error", (e) => {
       console.log("GLOBAL ERROR:", e.error);
@@ -51,7 +85,7 @@ function App() {
       <Routes>
 
         {/* PUBLIC */}
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth" element={<AuthPage />} />
 
         {/* PROTECTED */}
         <Route path="/templates" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
@@ -62,20 +96,28 @@ function App() {
         <Route path="/skills/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
         <Route path="/skills/:id" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/:parentId/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
+
         <Route path="/admin/tutors" element={<ProtectedRoute><TutorListPage /></ProtectedRoute>} />
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />
+
         <Route path="/tutor/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
         <Route path="/tutor/:id/schedule" element={<ProtectedRoute><TutorSchedulePage /></ProtectedRoute>} />
         <Route path="/tutor/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
+
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
+
         <Route path="/student/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
         <Route path="/student/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
+
         <Route path="/principles" element={<ProtectedRoute><PrinciplesPage /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
-        <Route path="*" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
+
+        {/* DEFAULT */}
+        <Route path="*" element={<Navigate to="/auth" replace />} />
+
       </Routes>
     </BrowserRouter>
   );
