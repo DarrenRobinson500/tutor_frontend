@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../utils/apiFetch";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -14,7 +15,6 @@ export default function LoginForm() {
     const res = await fetch("/api/auth/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({ email, password }),
     });
 
@@ -23,8 +23,6 @@ export default function LoginForm() {
 //       body: JSON.stringify({ email, password }),
 //     });
 
-
-
     const data = await res.json();
 
     if (!res.ok) {
@@ -32,10 +30,14 @@ export default function LoginForm() {
       return;
     }
 
-    // Redirect based on role
-    if (data.role === "tutor") navigate("/tutor/home");
-    if (data.role === "parent") navigate("/parent/home");
-    if (data.role === "student") navigate("/student/home");
+    localStorage.setItem("access", data.access);
+    localStorage.setItem("refresh", data.refresh);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    const role = data.user.role;
+    if (role === "tutor") navigate(`/tutor/${data.user.id}`);
+    if (role === "student") navigate(`/student/${data.user.id}`);
+    if (role === "parent") navigate(`/parent/${data.user.id}`);
   }
 
   return (

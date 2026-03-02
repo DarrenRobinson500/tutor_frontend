@@ -65,6 +65,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin/tutors">Tutors</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
                 </>
               )}
 
@@ -83,15 +86,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 </>
               )}
 
-              <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
-              <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
-
-
-              {/* Dev quick-switch users */}
-              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("darren")}>Admin (Darren)</a></li>
-              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("alex")}>Tutor (Alex)</a></li>
-              <li className="nav-item"><a className="nav-link" style={{cursor:"pointer"}} onClick={() => devSwitch("blair")}>Student (Blair)</a></li>
 
 
               {!user && (

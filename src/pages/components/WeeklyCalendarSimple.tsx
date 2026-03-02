@@ -11,7 +11,7 @@ interface WeeklyCalendarProps {
 }
 
 export function WeeklyCalendarSimple({ availability, onRemove }: WeeklyCalendarProps) {
-  const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday",];
 
   // Group availability by weekday
   const grouped: Record<number, Availability[]> = {

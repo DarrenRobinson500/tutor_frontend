@@ -20,11 +20,10 @@ import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
-
-import AuthPage from "./pages/AuthPage/AuthPage";   // NEW
+import AuthPage from "./pages/AuthPage/AuthPage";
+import { apiFetch } from "./utils/apiFetch";
 
 import "bootstrap/dist/css/bootstrap.min.css";
-
 
 // ------------------------------------------------------------
 // FETCH CURRENT USER (session-based auth)
@@ -34,7 +33,7 @@ function useCurrentUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/auth/me/")
+    apiFetch("/api/auth/me/")
       .then((res) => {
         if (res.status === 401) {
           setUser(null);
