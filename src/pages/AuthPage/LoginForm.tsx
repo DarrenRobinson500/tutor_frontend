@@ -12,7 +12,7 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
 
-    const res = await fetch("https://web-production-f1310.up.railway.app/api/auth/register/", {
+    const res = await fetch("https://web-production-f1310.up.railway.app/api/auth/login/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
