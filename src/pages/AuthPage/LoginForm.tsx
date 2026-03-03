@@ -15,7 +15,7 @@ export default function LoginForm() {
     await fetch("https://web-production-f1310.up.railway.app/api/auth/register/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, role }),
+      body: JSON.stringify({ email, password }),
     });
 
 //     const res = await apiFetch("/api/auth/login/", {
