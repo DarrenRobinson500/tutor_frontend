@@ -16,10 +16,18 @@ export default function RegisterForm() {
     setError("");
     setSuccess("");
 
-    const res = await apiFetch("/api/auth/register/", {
+//     const res = await apiFetch("/api/auth/register/", {
+//       method: "POST",
+//       body: JSON.stringify({ email, password, role }),
+//     });
+
+    await fetch("https://web-production-f1310.up.railway.app/api/auth/register/", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, role }),
     });
+
+
 
     const data = await res.json();
 

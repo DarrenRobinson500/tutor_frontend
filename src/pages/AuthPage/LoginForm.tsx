@@ -12,9 +12,10 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
 
-    const res = await apiFetch("/api/auth/login/", {
+    await fetch("https://web-production-f1310.up.railway.app/api/auth/register/", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, role }),
     });
 
 //     const res = await apiFetch("/api/auth/login/", {
