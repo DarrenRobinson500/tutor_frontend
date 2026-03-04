@@ -1,7 +1,7 @@
 export async function apiFetch(url: string, options: any = {}) {
 //   const API_URL = "http://localhost:8000";
-//   const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
-  const API_URL = "https://web-production-f1310.up.railway.app";
+  const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+//   const API_URL = "https://web-production-f1310.up.railway.app";
 
   const fullUrl = `${API_URL}${url}`;
 
