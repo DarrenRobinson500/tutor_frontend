@@ -306,11 +306,10 @@ const createAdhoc = () => {
                   onClick={createWeekly}
                   disabled={weeklyLoading}
                 >
-                  {weeklyLoading ? "Creating…" : "Set up weekly booking"}
+                  {weeklyLoading ? "Creating…" : "Create weekly booking"}
                 </button>
               </div>
             </div>
-
 
             <h4>Create One-off Booking</h4>
 

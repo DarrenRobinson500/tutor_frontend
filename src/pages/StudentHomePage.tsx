@@ -38,14 +38,6 @@ export function StudentHomePage() {
       .then(async (data) => {
         setStudent(data);
 
-//         if (data.tutor_id) {
-//           const tutorRes = await apiFetch(
-//             `/api/tutors/${data.tutor_id}/session_settings/`
-//           );
-//           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-//           const tutorSettings_temp = await tutorRes.json();
-//           setTutorSettings(tutorSettings_temp);
-//         }
       });
   }, [id]);
 
@@ -80,10 +72,11 @@ export function StudentHomePage() {
         </p>
         <button
           className="btn btn-outline-primary"
-          onClick={() => navigate(`/students/${id}/edit`)}
+          onClick={() => navigate(`/students/${id}/edit?returnTo=/students/${id}`)}
         >
           Edit My Details
         </button>
+
 
 
         <hr />

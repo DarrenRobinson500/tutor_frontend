@@ -147,15 +147,20 @@ export function ExistingBookingsWeek({
                       }
                     }}
                   >
-                    <div>
-                      <strong>{formatTime(b.start_time)}</strong>{" "}
-                      <b>{b.student_name}</b>{" "}
-                      {!b.confirmed && (
-                        <span style={{ color: "#b00", fontWeight: 600 }}>
-                          (unconfirmed)
-                        </span>
-                      )}
-                    </div>
+<div>
+  <strong>{formatTime(b.start_time)}</strong>{" "}
+  <b>{b.student_name}</b>{" "}
+  {b.duration_minutes !== 60 && (
+    <span style={{ fontSize: "0.75rem", color: "#333" }}>
+      &nbsp;{b.duration_minutes} min
+    </span>
+  )}
+  {!b.confirmed && (
+    <span style={{ color: "#b00", fontWeight: 600 }}>
+      &nbsp;(unconfirmed)
+    </span>
+  )}
+</div>
 
                     <div style={{ fontSize: "0.7rem", color: "#555", marginTop: "2px" }}>
                       {b.booking_type === "weekly" && "Weekly"}

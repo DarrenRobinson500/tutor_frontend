@@ -99,17 +99,16 @@ function App() {
         <Route path="/admin/tutors" element={<ProtectedRoute><TutorListPage /></ProtectedRoute>} />
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />
 
-        <Route path="/tutor/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
-        <Route path="/tutor/:id/schedule" element={<ProtectedRoute><TutorSchedulePage /></ProtectedRoute>} />
-        <Route path="/tutor/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
+        <Route path="/tutors/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
+        <Route path="/tutors/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
 
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
 
-        <Route path="/student/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
-        <Route path="/student/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
+        <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
+        <Route path="/students/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
 
         <Route path="/principles" element={<ProtectedRoute><PrinciplesPage /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />

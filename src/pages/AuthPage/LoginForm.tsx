@@ -37,9 +37,9 @@ export default function LoginForm() {
     localStorage.setItem("user", JSON.stringify(data.user));
 
     const role = data.user.role;
-    if (role === "tutor") navigate(`/tutor/${data.user.id}`);
-    if (role === "student") navigate(`/student/${data.user.id}`);
-    if (role === "parent") navigate(`/parent/${data.user.id}`);
+    if (role === "tutor") navigate(`/tutors/${data.user.id}`);
+    if (role === "student") navigate(`/students/${data.user.id}`);
+    if (role === "parent") navigate(`/parents/${data.user.id}`);
   }
 
   return (
