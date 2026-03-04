@@ -12,7 +12,9 @@ export default function LoginForm() {
     e.preventDefault();
     setError("");
 
-    const res = await fetch("https://web-production-f1310.up.railway.app/api/auth/login/", {
+    const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
+
+    const res = await fetch(`${API_URL}/api/auth/login/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),

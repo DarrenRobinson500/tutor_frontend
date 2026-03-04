@@ -20,13 +20,13 @@ export default function RegisterForm() {
 //       method: "POST",
 //       body: JSON.stringify({ email, password, role }),
 //     });
+    const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
 
-    const res = await fetch("https://web-production-f1310.up.railway.app/api/auth/register/", {
+    const res = await fetch(`${API_URL}/api/auth/register/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, role }),
     });
-
 
 
     const data = await res.json();
