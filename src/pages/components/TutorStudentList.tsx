@@ -86,7 +86,7 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                   className={`btn btn-sm ${
                     s.active ? "btn-outline-primary" : "btn-outline-secondary disabled"
                   }`}
-                  to={`/student/${s.user_id}`}
+                  to={`/students/${s.user_id}`}
                   style={{
                     minWidth: "160px",
                     whiteSpace: "nowrap",

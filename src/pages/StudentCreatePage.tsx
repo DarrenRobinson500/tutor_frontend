@@ -32,7 +32,7 @@ export function StudentCreatePage() {
 
     if (tutorId) {
       setTimeout(() => {
-        navigate(`/tutor/${tutorId}`);
+        navigate(`/tutors/${tutorId}`);
       }, 1500);
     }
   }

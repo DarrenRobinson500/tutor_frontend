@@ -304,7 +304,7 @@ export function ExistingBookingsWeek({
                             handleBookingAction(b.id!, b.booking_type, "confirm")
                           }
                         >
-                          Confirm
+                          {b.confirmed ? "Unconfirm" : "Confirm"}
                         </button>
 
                       </div>
