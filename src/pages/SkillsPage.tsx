@@ -4,12 +4,17 @@ import { Breadcrumbs } from "./components/Breadcrumbs";
 import { SkillsMatrix } from "./components/SkillsMatrix";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
+import { useSkillsApi, Skill } from "../api/useSkillsApi";
+
 
 export default function SkillsPage() {
   const { id } = useParams();
   const [skill, setSkill] = useState<any>(null);
   const [parents, setParents] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
+  const { listSkills, loadSyllabus, loading, error } = useSkillsApi();
+  const [message, setMessage] = useState("");
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   // Load skill + parents
   useEffect(() => {
@@ -46,37 +51,35 @@ export default function SkillsPage() {
     return <Layout><div className="container mt-4">Loading...</div></Layout>;
   }
 
+  const handleLoad = () => {
+    loadSyllabus()
+      .then(() => {
+        setMessage("Syllabus loaded successfully");
+        return listSkills(null);
+      })
+      .then(setSkills)
+      .catch((err) => {
+        setMessage(err.error || "Failed to load syllabus");
+      });
+  };
+
   return (
     <Layout>
       <div className="container mt-4">
 
-        {skill && (
-          <>
-            <Breadcrumbs parents={parents} current={skill} />
 
-            <h1 className="skill-heading">{skill.description}</h1>
-            <div className="skill-meta">
-              <span>Grade: {skill.grade_level}</span>
-            </div>
-
-            {templates.length > 0 && (
-              <>
-                <h2>Templates for this Skill</h2>
-                <ul className="template-list">
-                  {templates.map(t => (
-                    <li key={t.id} className="template-item">
-                      <Link to={`/templates/${t.id}`}>
-                        {t.subject}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </>
-        )}
+      {message && <div className="alert alert-info">{message}</div>}
 
         <h1>Skills</h1>
+        <button
+          className="btn btn-primary mb-3"
+          onClick={handleLoad}
+          disabled={loading}
+        >
+        {loading ? "Loading?" : "Load Syllabus"}
+      </button>
+
+
         <SkillsMatrix />
       </div>
     </Layout>

@@ -48,6 +48,11 @@ export function WeeklyBookingCalendar({
       ? [0, 1, 2, 3, 4, 5, 6]
       : Object.keys(availability);
 
+if (!availability || !bookings) {
+  return <div>Loading calendar…</div>;
+}
+
+
   return (
     <div
       className="weekly-booking-grid"

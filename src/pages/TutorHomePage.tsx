@@ -34,39 +34,6 @@ export function TutorHomePage() {
       });
   }, [id]);
 
-//   const loadCalendar = async (startOverride?: string) => {
-//     const start = startOverride || getSundayStart(new Date());
-//     setWeekStart(start);
-//
-//     const res = await apiFetch(
-//       `/api/tutors/${id}/weekly_slots/?week_start=${start}&tutor_view=true`
-//     );
-//
-//     const data = await res.json();
-//     setWeek(data.week);
-//   };
-
-// eslint-disable-next-line react-hooks/exhaustive-deps
-// useEffect(() => {
-//   loadCalendar();
-// }, []);
-
-
-//   function addDays(dateString: string, days: number): string {
-//     const d = new Date(dateString);
-//     d.setDate(d.getDate() + days);
-//     return d.toISOString().slice(0, 10);
-//   }
-
-//   const handleDeleteBooking = async (bookingId: number) => {
-//     await apiFetch(`/api/tutors/${id}/delete_booking/`, {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ booking_id: bookingId })
-//     });
-//
-//     loadCalendar();
-//   };
 
   if (!tutor) return <div className="container mt-4">Loading…</div>;
 
@@ -74,9 +41,25 @@ export function TutorHomePage() {
   <Layout>
     <div className="container mt-4">
       <h2>{tutor.name}</h2>
-      <p>Email: {tutor.email}</p>
+      <p>
+        Email: {tutor.email}<br/>
+        Mobile: {tutor.mobile || "Not set"}<br/>
+        Address: {tutor.address || "Not set"}
+      </p>
 
+      <button
+        className="btn btn-outline-primary mb-3"
+        onClick={() =>
+          window.location.href = `/tutors/${id}/edit?returnTo=/tutors/${id}`
+        }
+      >
+        Edit My Details
+      </button>
+      <a className="btn btn-outline-primary mb-3" href={`/tutors/${id}/sms`}>
+        View SMS Messages
+      </a>
       <hr />
+
 
       <h4 className="mt-4">Students</h4>
       <div className="d-flex justify-content-between align-items-center mb-3">

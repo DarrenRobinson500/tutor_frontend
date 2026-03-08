@@ -13,6 +13,9 @@ export function StudentEditPage() {
   const [yearLevel, setYearLevel] = useState("");
   const [areaOfStudy, setAreaOfStudy] = useState("");
   const [active, setActive] = useState(true);
+  const [mobile, setMobile] = useState("");
+  const [address, setAddress] = useState("");
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +24,9 @@ export function StudentEditPage() {
         const data = await res.json();
         setYearLevel(data.year_level || "");
         setAreaOfStudy(data.area_of_study || "");
-        setActive(data.active);   // NEW
+        setMobile(data.mobile || "");
+        setAddress(data.address || "");
+        setActive(data.active);
       })
       .finally(() => setLoading(false));
   }, [studentId]);
@@ -34,6 +39,8 @@ export function StudentEditPage() {
         fields: {
           year_level: yearLevel,
           area_of_study: areaOfStudy,
+          mobile: mobile,
+          address: address,
           active: active,
         },
       }),
@@ -66,6 +73,26 @@ export function StudentEditPage() {
           onChange={(e) => setAreaOfStudy(e.target.value)}
         />
       </div>
+      <div className="mb-3">
+        <label className="form-label">Mobile</label>
+        <input
+          type="text"
+          className="form-control"
+          value={mobile}
+          onChange={(e) => setMobile(e.target.value)}
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label">Address</label>
+        <textarea
+          className="form-control"
+          value={address}
+          onChange={(e) => setAddress(e.target.value)}
+        />
+      </div>
+
+
 
       <div className="form-check mb-3">
         <input

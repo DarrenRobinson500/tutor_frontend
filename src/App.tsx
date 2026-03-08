@@ -8,9 +8,13 @@ import { NewTemplatePage } from "./pages/NewTemplatePage";
 import { SkillCreatePage } from "./pages/SkillCreatePage";
 import { TutorListPage } from "./pages/TutorListPage";
 import { TutorHomePage } from "./pages/TutorHomePage";
+import { TutorEditPage } from "./pages/TutorEditPage";
 import { TutorCreatePage } from "./pages/TutorCreatePage";
 import { TutorSchedulePage } from "./pages/TutorSchedulePage";
 import { TutorBookingPage } from "./pages/TutorBookingPage";
+import { TutorSMSInboxPage } from "./pages/TutorSMSInboxPage";
+import { TutorSMSConversationPage } from "./pages/TutorSMSConversationPage";
+
 import { StudentListPage } from "./pages/StudentListPage";
 import { StudentEditPage } from "./pages/StudentEditPage";
 import { StudentQuestionPage } from "./pages/StudentQuestionPage";
@@ -101,12 +105,15 @@ function App() {
 
         <Route path="/tutors/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
         <Route path="/tutors/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
+        <Route path="/tutors/:id/edit" element={<ProtectedRoute><TutorEditPage /></ProtectedRoute>} />
+        <Route path="/tutors/:id/sms" element={<TutorSMSInboxPage />} />
+        <Route path="/tutors/:id/sms/:conversationId" element={<TutorSMSConversationPage />} />
 
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
+
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
-
         <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
         <Route path="/students/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
 
