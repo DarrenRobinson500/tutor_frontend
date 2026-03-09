@@ -55,6 +55,7 @@ export function TutorHomePage() {
       >
         Edit My Details
       </button>
+
       <a className="btn btn-outline-primary mb-3" href={`/tutors/${id}/sms`}>
         View SMS Messages
       </a>

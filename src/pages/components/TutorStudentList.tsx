@@ -7,6 +7,7 @@ export interface Student {
   profile_id: number;
   first_name: string;
   last_name: string;
+  mobile: string;
   email: string;
   active: boolean;
   year_level: string | null;
@@ -46,8 +47,9 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
       <li className="list-group-item">
         <div className="row fw-bold">
           <div className="col-2">Name</div>
-          <div className="col-2">Year</div>
-          <div className="col-2">Area</div>
+          <div className="col-1">Mobile</div>
+          <div className="col-1">Year</div>
+          <div className="col-1">Area</div>
           <div className="col-3">Email</div>
           <div className="col-3">Actions</div>
         </div>
@@ -72,13 +74,11 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                 {!s.active && (
                   <span className="badge bg-secondary ms-2">inactive</span>
                 )}
-                {s.active && (
-                  <span className="badge bg-success ms-2">active</span>
-                )}
               </div>
 
-              <div className="col-2">{s.year_level || "No year"}</div>
-              <div className="col-2">{s.area_of_study || "No area"}</div>
+              <div className="col-1">{s.mobile || ""}</div>
+              <div className="col-1">{s.year_level || ""}</div>
+              <div className="col-1">{s.area_of_study || ""}</div>
               <div className="col-3">{s.email}</div>
 
               <div className="col-3 d-flex flex-row gap-2">
