@@ -27,21 +27,28 @@ export function StudentBookingPage() {
       .then(data => setStudent(data));
   }, [id]);
 
-  // -----------------------------
-  // Load booking data when student.id is known
-  // -----------------------------
-  const loadBookingData = async () => {
-    const res = await apiFetch(`/api/students/${student.id}/booking/`);
-    const data = await res.json();
-    setWeeklySlots(data.weekly_slots);
-    setWeeklyBookings(data.weekly_bookings);
-    setAdhocSlots(data.adhoc_slots);
-    setAdhocBookings(data.adhoc_bookings);
-  };
-
   useEffect(() => {
-    if (student?.id) loadBookingData();
-  }, [student?.id]);
+    loadData();
+  }, [id]);
+
+
+  const loadData = async () => {
+    if (!id) return;
+
+    // Load student home data
+    const homeRes = await apiFetch(`/api/students/${id}/home/`);
+    const homeData = await homeRes.json();
+    setStudent(homeData);
+
+    // Load booking data
+    const bookingRes = await apiFetch(`/api/students/${id}/booking/`);
+    const bookingData = await bookingRes.json();
+
+    setWeeklySlots(bookingData.weekly_slots);
+    setWeeklyBookings(bookingData.weekly_bookings);
+    setAdhocSlots(bookingData.adhoc_slots);
+    setAdhocBookings(bookingData.adhoc_bookings);
+  };
 
   // -----------------------------
   // Unified booking action
@@ -66,7 +73,7 @@ export function StudentBookingPage() {
             id: bookingId,
             type: bookingType,
             action,
-            student_id: student.id,
+            student_id: Number(id),
             ...extra,
           }),
         }
@@ -85,9 +92,9 @@ export function StudentBookingPage() {
       else if (action === "remove_skip") setMessage("Skip removed.");
       else if (action === "edit") setMessage("Booking updated.");
 
-      await loadBookingData();
+      await loadData();
 
-      const homeRes = await apiFetch(`/api/students/${student.id}/home/`);
+      const homeRes = await apiFetch(`/api/students/${id}/home/`);
       setStudent(await homeRes.json());
 
     } catch {
@@ -100,6 +107,7 @@ export function StudentBookingPage() {
   // -----------------------------
   // Render next appointment card
   // -----------------------------
+
   const renderNextCard = (booking: any) => {
     if (!booking) {
       return (
@@ -109,7 +117,8 @@ export function StudentBookingPage() {
       );
     }
 
-    const start = new Date(booking.start);
+    // New backend format → reconstruct JS Date
+    const start = new Date(booking.start_iso);
     const weekday = start.toLocaleDateString([], { weekday: "long" });
     const date = start.toLocaleDateString([], { day: "numeric", month: "long" });
     const time = start.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -127,7 +136,9 @@ export function StudentBookingPage() {
           student.next_weekly_booking && (
             <div className="mt-2" style={{ fontSize: "0.9rem" }}>
               {(() => {
-                const w = new Date(student.next_weekly_booking.start);
+                const w = new Date(
+                  `${student.next_weekly_booking.day_str}T${student.next_weekly_booking.start_time}:00`
+                );
                 const wDay = w.toLocaleDateString([], { weekday: "long" });
                 const wTime = w.toLocaleTimeString([], {
                   hour: "2-digit",
@@ -151,7 +162,7 @@ export function StudentBookingPage() {
               }
               disabled={actionLoading || !booking.student_can_edit}
             >
-              Delete this appointment
+              Delete this one-off appointment
             </button>
           )}
 
@@ -252,12 +263,9 @@ export function StudentBookingPage() {
             )}
 
             <div>
-              {student.booking_mode === "no_booking" &&
-                weeklySlots &&
-                weeklyBookings && (
+              {student.booking_mode === "no_booking" && weeklySlots && (
                   <WeeklyBookingCalendar
                     availability={weeklySlots}
-                    bookings={weeklyBookings}
                     mode="weekly"
                     onBook={(weekday, time) =>
                       handleBookingAction(null, "weekly", "create", {
@@ -274,12 +282,9 @@ export function StudentBookingPage() {
                   />
                 )}
 
-              {modifyingWeekly &&
-                adhocSlots &&
-                adhocBookings && (
+              {modifyingWeekly && adhocSlots && (
                   <WeeklyBookingCalendar
                     availability={adhocSlots}
-                    bookings={adhocBookings}
                     mode="modify_weekly"
                     onBook={(dayKey, time) => {
                       const isoStart = new Date(`${dayKey}T${time}:00`).toISOString();

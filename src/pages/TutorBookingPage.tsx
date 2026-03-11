@@ -37,6 +37,10 @@ export function TutorBookingPage() {
   const [adhocDate, setAdhocDate] = useState("");
   const [adhocTime, setAdhocTime] = useState("16:00");
   const [adhocLoading, setAdhocLoading] = useState(false);
+  const [smsJobs, setSmsJobs] = useState<any[]>([]);
+  const [smsMessages, setSmsMessages] = useState<any[]>([]);
+  const [smsLoading, setSmsLoading] = useState(false);
+
 
   const [editing, setEditing] = useState<{
     date: string;
@@ -49,34 +53,59 @@ export function TutorBookingPage() {
   const [confirmLoading, setConfirmLoading] = useState<number | null>(null);
 
 
-  // -----------------------------
-  // Load booking data
-  // -----------------------------
+  // Load booking and message data
+
   const load = async () => {
     if (!id) return;
 
     setLoading(true);
-    try {
-      const res = await apiFetch(`/api/tutors/${id}/booking/`);
-      const data = await res.json();
+    setSmsLoading(true);
 
-      setStudents(data.students || []);
-      setWeek1(data.week1 || null);
-      setWeek2(data.week2 || null);
+    try {
+      const [bookingRes, smsRes] = await Promise.all([
+        apiFetch(`/api/tutors/${id}/booking/`),
+        apiFetch(`/api/tutors/${id}/sms/activity/`)
+      ]);
+
+      const bookingData = await bookingRes.json();
+      const smsData = await smsRes.json();
+
+      // Booking data
+      setStudents(bookingData.students || []);
+      setWeek1(bookingData.week1 || null);
+      setWeek2(bookingData.week2 || null);
+
+      // SMS data
+      setSmsJobs(smsData.jobs || []);
+      setSmsMessages(smsData.messages || []);
+
     } finally {
       setLoading(false);
+      setSmsLoading(false);
     }
   };
+
 
   useEffect(() => {
     load();
   }, [id]);
 
-  const reload = async () => load();
+  // Timer
 
-  // -----------------------------
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSmsJobs(jobs =>
+        jobs.map(j => ({
+          ...j,
+          time_until_sent_seconds: j.time_until_sent_seconds - 1
+        }))
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Booking actions
-  // -----------------------------
 
   const openEditor = (date: string, booking: any, index: number) => {
     setEditing({ date, booking, index });
@@ -123,9 +152,9 @@ export function TutorBookingPage() {
       } else if (action === "edit") {
         setMessage("Booking updated.");
       }
+      setEditing(null);
 
-
-      await reload();
+      await load();
     } catch {
       setMessage("Error performing booking action.");
     }
@@ -196,6 +225,8 @@ const createAdhoc = () => {
             <ExistingBookingsWeek
               week={week1}
               handleBookingAction={handleBookingAction}
+              editing={editing}
+              setEditing={setEditing}
             />
           </>
         )}
@@ -205,6 +236,8 @@ const createAdhoc = () => {
             <ExistingBookingsWeek
               week={week2}
               handleBookingAction={handleBookingAction}
+              editing={editing}
+              setEditing={setEditing}
             />
           </>
         )}
@@ -366,7 +399,77 @@ const createAdhoc = () => {
 
 </div>
 
+<h3 className="mt-5">Pending SMS Jobs</h3>
 
+{smsLoading && (
+  <div className="text-center my-3">
+    <div className="spinner-border text-primary" role="status" />
+  </div>
+)}
+
+<table className="table table-striped">
+  <thead>
+    <tr>
+      <th>Student</th>
+      <th>Body</th>
+      <th>Created</th>
+      <th>Scheduled For</th>
+      <th>Send</th>
+    </tr>
+  </thead>
+  <tbody>
+    {smsJobs.map(job => (
+      <tr key={job.id}>
+        <td>{job.student_name}</td>
+        <td>{job.body}</td>
+        <td>{new Date(job.created_at).toLocaleString()}</td>
+        <td>{new Date(job.scheduled_for).toLocaleString()}</td>
+        <td>
+          {Math.max(0, Math.floor(job.time_until_sent_seconds))}s
+        </td>
+      </tr>
+    ))}
+    {smsJobs.length === 0 && (
+      <tr>
+        <td colSpan={5} className="text-center text-muted">
+          No pending SMS jobs.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
+
+<h3 className="mt-5">SMS Messages</h3>
+
+<table className="table table-striped">
+  <thead>
+    <tr>
+      <th>Direction</th>
+      <th>Student</th>
+      <th>Body</th>
+      <th>Created</th>
+      <th>Sent At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {smsMessages.map(msg => (
+      <tr key={msg.id}>
+        <td>{msg.direction}</td>
+        <td>{msg.student_name}</td>
+        <td>{msg.body}</td>
+        <td>{new Date(msg.created_at).toLocaleString()}</td>
+        <td>{msg.sent_at ? new Date(msg.sent_at).toLocaleString() : "-"}</td>
+      </tr>
+    ))}
+    {smsMessages.length === 0 && (
+      <tr>
+        <td colSpan={5} className="text-center text-muted">
+          No messages yet.
+        </td>
+      </tr>
+    )}
+  </tbody>
+</table>
 
 
 

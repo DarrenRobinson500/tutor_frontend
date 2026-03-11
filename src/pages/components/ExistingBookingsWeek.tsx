@@ -24,13 +24,15 @@ interface ExistingBookingsWeekProps {
     action: "confirm" | "delete" | "skip" | "remove_skip" | "edit",
     extra?: any
   ) => void;
+  editing: { date: string; booking: any; index: number } | null;
+  setEditing: (value: any) => void;
 }
 
 export function ExistingBookingsWeek({
   week,
   handleBookingAction,
+  editing, setEditing
 }: ExistingBookingsWeekProps) {
-  const [expanded, setExpanded] = useState<{ date: string; index: number } | null>(null);
 
   // Single editor state (safe)
   const [editWeekday, setEditWeekday] = useState<number>(0);
@@ -57,7 +59,7 @@ export function ExistingBookingsWeek({
   const bookingBackground = (type: string) => {
     if (type === "weekly_paused") return "#E0E0E0";
     if (type === "weekly") return "#CFF4FC";
-    if (type === "adhoc") return "#FFF3CD";
+    if (type === "adhoc") return "#D1E7DD";
     return "#FFF";
   };
 
@@ -84,7 +86,7 @@ export function ExistingBookingsWeek({
         });
 
     }
-    setExpanded(null);
+    setEditing(null);
   };
 
   return (
@@ -121,9 +123,10 @@ export function ExistingBookingsWeek({
 
             {day.bookings.map((b, idx) => {
               const isOpen =
-                expanded &&
-                expanded.date === dateStr &&
-                expanded.index === idx;
+                editing &&
+                editing.date === dateStr &&
+                editing.index === idx;
+
 
               return (
                 <div key={idx}>
@@ -140,16 +143,16 @@ export function ExistingBookingsWeek({
                     }}
                     onClick={() => {
                       if (isOpen) {
-                        setExpanded(null);
+                        setEditing(null);
                       } else {
-                        setExpanded({ date: dateStr, index: idx });
+                        setEditing({ date: dateStr, index: idx });
                         openEditor(dateStr, b);
                       }
                     }}
                   >
                     <div>
                       <strong>{formatTime(b.start_time)}</strong>{" "}
-                      <b>{b.student_name} {b.student_id}</b>{" "}
+                      <b>{b.student_name}</b>{" "}
                       {b.duration_minutes !== 60 && (
                         <span style={{ fontSize: "0.75rem", color: "#333" }}>
                           &nbsp;{b.duration_minutes} min

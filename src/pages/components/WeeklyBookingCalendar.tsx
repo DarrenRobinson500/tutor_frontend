@@ -9,7 +9,6 @@ interface Booking {
 
 interface WeeklyBookingCalendarProps {
   availability: Record<any, string[]>;
-  bookings: Record<any, Booking[]>;
   mode: "weekly" | "modify_weekly";
   onBook: (dayKey: any, time: string) => void;
   onDelete: (dayKey: any, time: string) => void;
@@ -17,7 +16,6 @@ interface WeeklyBookingCalendarProps {
 
 export function WeeklyBookingCalendar({
   availability,
-  bookings,
   mode,
   onBook,
   onDelete,
@@ -48,7 +46,7 @@ export function WeeklyBookingCalendar({
       ? [0, 1, 2, 3, 4, 5, 6]
       : Object.keys(availability);
 
-if (!availability || !bookings) {
+if (!availability ) {
   return <div>Loading calendar…</div>;
 }
 
@@ -64,7 +62,6 @@ if (!availability || !bookings) {
     >
       {dayKeys.map((key: any) => {
         const slots = availability[key] || [];
-        const dayBookings = (bookings[key] || []).filter(b => b.start);
 
         return (
           <div
@@ -94,40 +91,6 @@ if (!availability || !bookings) {
                     {formatTime(time)}
                   </button>
                 ))}
-
-                {dayBookings.map((b: Booking) => {
-                  const start = new Date(b.start);
-                  const label = start.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-
-                  return (
-                    <div
-                      key={b.id}
-                      className={`p-1 mt-1 ${
-                        b.status === "booked_self"
-                          ? "bg-success text-white"
-                          : "bg-secondary text-white"
-                      }`}
-                      style={{ fontSize: "0.75rem", borderRadius: "4px" }}
-                    >
-                      {label}
-
-                      {mode === "weekly" && (
-                        <button
-                          className="btn btn-sm btn-light ms-2"
-                          style={{ padding: "0px 4px", fontSize: "0.7rem" }}
-                          onClick={() =>
-                            onDelete(key, new Date(b.start).toISOString())
-                          }
-                        >
-                          X
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
               </>
             )}
           </div>
