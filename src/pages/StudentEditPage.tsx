@@ -18,18 +18,30 @@ export function StudentEditPage() {
 
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    apiFetch(`/api/students/${studentId}/`)
-      .then(async (res) => {
-        const data = await res.json();
-        setYearLevel(data.year_level || "");
-        setAreaOfStudy(data.area_of_study || "");
-        setMobile(data.mobile || "");
-        setAddress(data.address || "");
-        setActive(data.active);
-      })
-      .finally(() => setLoading(false));
-  }, [studentId]);
+useEffect(() => {
+  const url = `/api/students/${studentId}/`;
+
+  console.log("Fetching:", url);
+
+  apiFetch(url)
+    .then(async (res) => {
+      console.log("Raw response from", url, res);
+
+      const data = await res.json();
+      console.log("Parsed JSON from", url, data);
+
+      setYearLevel(data.year_level || "");
+      setAreaOfStudy(data.area_of_study || "");
+      setMobile(data.mobile || "");
+      setAddress(data.address || "");
+      setActive(data.active);
+    })
+    .catch((err) => {
+      console.error("Error fetching", url, err);
+    })
+    .finally(() => setLoading(false));
+}, [studentId]);
+
 
   const handleSave = async () => {
     await apiFetch(`/api/students/${studentId}/edit/`, {

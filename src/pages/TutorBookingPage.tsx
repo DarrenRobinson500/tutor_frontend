@@ -40,7 +40,7 @@ export function TutorBookingPage() {
   const [smsJobs, setSmsJobs] = useState<any[]>([]);
   const [smsMessages, setSmsMessages] = useState<any[]>([]);
   const [smsLoading, setSmsLoading] = useState(false);
-
+  const [smsActive, setSmsActive] = useState<boolean | null>(null);
 
   const [editing, setEditing] = useState<{
     date: string;
@@ -78,6 +78,8 @@ export function TutorBookingPage() {
       // SMS data
       setSmsJobs(smsData.jobs || []);
       setSmsMessages(smsData.messages || []);
+      setSmsActive(smsData.active);
+
 
     } finally {
       setLoading(false);
@@ -399,7 +401,20 @@ const createAdhoc = () => {
 
 </div>
 
-<h3 className="mt-5">Pending SMS Jobs</h3>
+<h3 className="mt-5">
+  Pending SMS Jobs{" "}
+  {smsActive === null ? (
+    <span className="text-muted">Loading…</span>
+  ) : smsActive ? (
+    <span className="text-success">Active</span>
+  ) : (
+    <span className="text-danger">Inactive</span>
+  )}
+</h3>
+
+
+
+
 
 {smsLoading && (
   <div className="text-center my-3">

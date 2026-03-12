@@ -23,35 +23,24 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
       .then(data => setStudents(data));
   }, [tutorId]);
 
-  const toggleActive = async (student: Student) => {
-    const newActive = !student.active;
+  function formatMobile(m: string | null | undefined) {
+    if (!m) return "";
+    const digits = m.replace(/\D/g, "");
+    if (digits.length !== 10) return m; // fallback
+    return `${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7)}`;
+  }
 
-    await apiFetch(`/api/students/${student.user_id}/edit/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fields: { active: newActive },
-      }),
-    });
-
-    // Update local UI immediately
-    setStudents(prev =>
-      prev.map(s =>
-        s.user_id === student.user_id ? { ...s, active: newActive } : s
-      )
-    );
-  };
 
   return (
     <ul className="list-group mt-3">
       <li className="list-group-item">
         <div className="row fw-bold">
           <div className="col-2">Name</div>
-          <div className="col-1">Mobile</div>
+          <div className="col-2">Mobile</div>
           <div className="col-1">Year</div>
           <div className="col-1">Area</div>
           <div className="col-3">Email</div>
-          <div className="col-3">Actions</div>
+          <div className="col-2">Actions</div>
         </div>
       </li>
 
@@ -76,12 +65,13 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                 )}
               </div>
 
-              <div className="col-1">{s.mobile || ""}</div>
+              <div className="col-2">{formatMobile(s.mobile)}</div>
+
               <div className="col-1">{s.year_level || ""}</div>
               <div className="col-1">{s.area_of_study || ""}</div>
               <div className="col-3">{s.email}</div>
 
-              <div className="col-3 d-flex flex-row gap-2">
+              <div className="col-2 d-flex flex-row gap-2">
                 <Link
                   className={`btn btn-sm ${
                     s.active ? "btn-outline-primary" : "btn-outline-secondary disabled"
