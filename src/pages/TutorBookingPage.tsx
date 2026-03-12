@@ -79,6 +79,8 @@ export function TutorBookingPage() {
       setSmsJobs(smsData.jobs || []);
       setSmsMessages(smsData.messages || []);
       setSmsActive(smsData.active);
+      console.log("Set SMS Active:", smsActive)
+      console.log("Set SMS Messages:", smsMessages)
 
 
     } finally {

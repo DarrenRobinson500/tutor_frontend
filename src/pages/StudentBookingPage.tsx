@@ -45,9 +45,9 @@ export function StudentBookingPage() {
     const bookingData = await bookingRes.json();
 
     setWeeklySlots(bookingData.weekly_slots);
-    setWeeklyBookings(bookingData.weekly_bookings);
+  //  setWeeklyBookings(bookingData.weekly_bookings);
     setAdhocSlots(bookingData.adhoc_slots);
-    setAdhocBookings(bookingData.adhoc_bookings);
+  //  setAdhocBookings(bookingData.adhoc_bookings);
   };
 
   // -----------------------------
@@ -154,7 +154,7 @@ export function StudentBookingPage() {
           )}
 
         <div className="mt-3 d-flex gap-2">
-          {student.booking_mode === "weekly_booking_but_adhoc_this_week" && (
+          {(student.booking_mode === "weekly_booking_but_adhoc_this_week" || student.booking_mode === "adhoc") && (
             <button
               className="btn btn-secondary btn-sm"
               onClick={() =>
@@ -223,7 +223,6 @@ export function StudentBookingPage() {
 
         <div className="row mt-4">
           <div className="col-md-12">
-            <h2>Weekly Appointments</h2>
 
             {renderNextCard(student.next_booking)}
 
