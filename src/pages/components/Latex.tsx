@@ -6,67 +6,96 @@ interface LatexProps {
   children: string;
 }
 
+function renderInlineMath(content: string, key: number | string) {
+  try {
+    const html = katex.renderToString(content, { displayMode: false, throwOnError: true });
+    return <span key={key} dangerouslySetInnerHTML={{ __html: html }} />;
+  } catch (err: any) {
+    return <span key={key} style={{ color: "red", fontFamily: "monospace" }}>LaTeX error: {err.message}</span>;
+  }
+}
+
+function renderDisplayMath(content: string, key: number | string) {
+  try {
+    const html = katex.renderToString(content, { displayMode: true, throwOnError: true });
+    return <span key={key} dangerouslySetInnerHTML={{ __html: html }} />;
+  } catch (err: any) {
+    return <span key={key} style={{ color: "red", fontFamily: "monospace" }}>LaTeX error: {err.message}</span>;
+  }
+}
+
+// Splits a plain-text string into text and bare LaTeX math segments.
+// e.g. "What is \frac{3}{5} + \frac{1}{2}?" →
+//   [{type:"text", content:"What is "}, {type:"math", content:"\\frac{3}{5} + \\frac{1}{2}"}, {type:"text", content:"?"}]
+function splitBareLatex(text: string): Array<{ type: "text" | "math"; content: string }> {
+  if (!text.includes("\\")) return [{ type: "text", content: text }];
+
+  // Split on LaTeX commands with their {} arguments (handles up to 2 levels of nesting)
+  const rawParts = text.split(/(\\[a-zA-Z]+(?:\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})*)/g);
+
+  const result: Array<{ type: "text" | "math"; content: string }> = [];
+  let i = 0;
+
+  while (i < rawParts.length) {
+    const part = rawParts[i];
+    if (!part) { i++; continue; }
+
+    if (/^\\[a-zA-Z]/.test(part)) {
+      // Merge consecutive math commands connected by operators/spaces
+      let math = part;
+      let j = i + 1;
+      while (j < rawParts.length) {
+        const sep = rawParts[j] ?? "";
+        const next = rawParts[j + 1] ?? "";
+        if (/^[\s+\-*/=^_<>|!:,.()\[\]]*$/.test(sep) && /^\\[a-zA-Z]/.test(next)) {
+          math += sep + next;
+          j += 2;
+        } else {
+          break;
+        }
+      }
+      result.push({ type: "math", content: math });
+      i = j;
+    } else {
+      result.push({ type: "text", content: part });
+      i++;
+    }
+  }
+
+  return result;
+}
+
 export function Latex({ children }: LatexProps) {
-  // Split into text and math segments
-  // Captures $...$ and $$...$$ as separate tokens
-  const parts = children.split(/(\${1,2}[\s\S]*?\${1,2})/g);
+  // Split on delimited math: $$...$$, $...$, \[...\], \(...\)
+  const parts = children.split(/(\${1,2}[\s\S]*?\${1,2}|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <>
-      {parts.map((part, i) => {
+      {parts.flatMap((part, i) => {
         const trimmed = part.trim();
 
-        // Block math: $$ ... $$
+        // Block math: $$ ... $$ or \[ ... \]
         if (trimmed.startsWith("$$") && trimmed.endsWith("$$")) {
-          const content = trimmed.slice(2, -2);
-          try {
-            const html = katex.renderToString(content, {
-              displayMode: true,
-              throwOnError: true,
-            });
-            return (
-              <span
-                key={i}
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            );
-          } catch (err: any) {
-            return (
-              <span key={i} style={{ color: "red", fontFamily: "monospace" }}>
-                LaTeX error: {err.message}
-              </span>
-            );
-          }
+          return [renderDisplayMath(trimmed.slice(2, -2), i)];
+        }
+        if (trimmed.startsWith("\\[") && trimmed.endsWith("\\]")) {
+          return [renderDisplayMath(trimmed.slice(2, -2), i)];
         }
 
-        // Inline math: $ ... $
+        // Inline math: $ ... $ or \( ... \)
         if (trimmed.startsWith("$") && trimmed.endsWith("$")) {
-          const content = trimmed.slice(1, -1);
-          try {
-            const html = katex.renderToString(content, {
-              displayMode: false,
-              throwOnError: true,
-            });
-            return (
-              <span
-                key={i}
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            );
-          } catch (err: any) {
-            return (
-              <span key={i} style={{ color: "red", fontFamily: "monospace" }}>
-                LaTeX error: {err.message}
-              </span>
-            );
-          }
+          return [renderInlineMath(trimmed.slice(1, -1), i)];
+        }
+        if (trimmed.startsWith("\\(") && trimmed.endsWith("\\)")) {
+          return [renderInlineMath(trimmed.slice(2, -2), i)];
         }
 
-        // Plain text — preserve spaces and newlines
-        return (
-          <span key={i} style={{ whiteSpace: "pre-wrap" }}>
-            {part}
-          </span>
+        // Plain text — detect and render bare LaTeX commands (e.g. \frac, \sqrt)
+        const subParts = splitBareLatex(part);
+        return subParts.map((sp, j) =>
+          sp.type === "math"
+            ? renderInlineMath(sp.content, `${i}-${j}`)
+            : <span key={`${i}-${j}`} style={{ whiteSpace: "pre-wrap" }}>{sp.content}</span>
         );
       })}
     </>

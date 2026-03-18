@@ -22,10 +22,12 @@ import { StudentHomePage } from "./pages/StudentHomePage";
 import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
+import { SkillOverviewPage } from "./pages/SkillOverviewPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import AuthPage from "./pages/AuthPage/AuthPage";
 import { apiFetch } from "./utils/apiFetch";
+import { usePreferenceStore } from "./utils/pref";
 
 import "bootstrap/dist/css/bootstrap.min.css";
 
@@ -83,6 +85,16 @@ function App() {
     });
   }, []);
 
+  useEffect(() => {
+    async function loadPrefs() {
+      const res = await apiFetch("/api/preferences/flat/");
+      const data = await res.json();
+      usePreferenceStore.getState().load(data);
+    }
+    loadPrefs();
+  }, []);
+
+
   return (
     <BrowserRouter>
       <Routes>
@@ -93,12 +105,15 @@ function App() {
         {/* PROTECTED */}
         <Route path="/templates" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
         <Route path="/templates/new" element={<ProtectedRoute><NewTemplatePage /></ProtectedRoute>} />
+        <Route path="/templates/editor" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
 
         <Route path="/skills" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
         <Route path="/skills/:id" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/:parentId/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
+        <Route path="/skills/:skillId/overview/:grade" element={<ProtectedRoute><SkillOverviewPage /></ProtectedRoute>} />
+        <Route path="/skills/:skillId/overview" element={<ProtectedRoute><SkillOverviewPage /></ProtectedRoute>} />
 
         <Route path="/admin/tutors" element={<ProtectedRoute><TutorListPage /></ProtectedRoute>} />
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />

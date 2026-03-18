@@ -8,6 +8,7 @@ import { ValuesPanel } from "./components/ValuesPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch"
+import { usePreferenceStore } from "../utils/pref";
 
 import { useTemplateApi } from "../api/useTemplateApi";
 // import { useValidationApi } from "../api/useValidationApi";
@@ -28,6 +29,10 @@ export function TemplateEditorPage() {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [skills, setSkills] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const savedValidatedFilter = usePreferenceStore((s) =>
+    s.get("template.validated_filter")
+  );
+
   const emptyMetadata = {
     id: null,
     name: "",
@@ -43,7 +48,9 @@ export function TemplateEditorPage() {
     version: 1,
     skill: null,
     validated: false,
+    validated_filter: savedValidatedFilter ?? "all",
   };
+
 
   const navigate = useNavigate();
   const params = useParams();
@@ -59,46 +66,70 @@ export function TemplateEditorPage() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const { getTemplate, saveTemplate } = useTemplateApi();
 
-  function buildMetadataFromTemplate(tpl: any): TemplateMetadata {
-    return {
-      id: tpl.id ?? null,
-      name: tpl.name ?? "",
-      description: tpl.description ?? "",
-      subject: tpl.subject ?? "",
-      topic: tpl.topic ?? "",
-      subtopic: tpl.subtopic ?? "",
-      difficulty: tpl.difficulty ?? "",
-      grade: tpl.grade ?? null,
-      tags: tpl.tags ?? [],
-      curriculum: tpl.curriculum ?? [],
-      status: tpl.status ?? "draft",
-      version: tpl.version ?? 1,
-      skill: tpl.skill ?? null,
-      validated: tpl.validated ?? false,
-    };
+function buildMetadataFromTemplate(
+  tpl: any,
+  currentFilter: "all" | "validated" | "unvalidated"
+): TemplateMetadata {
+  return {
+    id: tpl.id ?? null,
+    name: tpl.name ?? "",
+    description: tpl.description ?? "",
+    subject: tpl.subject ?? "",
+    topic: tpl.topic ?? "",
+    subtopic: tpl.subtopic ?? "",
+    difficulty: tpl.difficulty ?? "",
+    grade: tpl.grade ?? null,
+    tags: tpl.tags ?? [],
+    curriculum: tpl.curriculum ?? [],
+    status: tpl.status ?? "draft",
+    version: tpl.version ?? 1,
+    skill: tpl.skill ?? null,
+    validated: tpl.validated ?? false,
+
+    // ⭐ Always preserve the user's validated filter preference
+    validated_filter: currentFilter,
+  };
+}
+
+
+const handleToggleValidated = async () => {
+  if (!metadata.id) return;
+
+  const res = await apiFetch(`/api/templates/${metadata.id}/toggle_validated/`, {
+    method: "POST",
+  });
+
+  if (!res.ok) {
+    alert("Failed to toggle validation");
+    return;
   }
 
-  // Handle Validated Toggler
-  const handleToggleValidated = async () => {
-    if (!metadata.id) return;
+  const data = await res.json();
+  const currentId = metadata.id;
+  const saved = usePreferenceStore.getState().get("template.validated_filter");
 
-    const res = await apiFetch(`/api/templates/${metadata.id}/toggle_validated/`, {
-      method: "POST",
-    });
+  const removedFromFilter =
+    (saved === "unvalidated" && data.validated) ||
+    (saved === "validated" && !data.validated);
 
-    if (!res.ok) {
-      alert("Failed to toggle validation");
-      return;
+  if (removedFromFilter) {
+    const remaining = filteredList.filter(t => t.id !== currentId);
+    setFilteredList(remaining);
+
+    if (remaining.length > 0) {
+      setCurrentIndex(0);
+      navigate(`/templates/${remaining[0].id}`);
+    } else {
+      setCurrentIndex(0);
+      setMetadata(prev => ({ ...prev, id: null, validated: data.validated }));
+      setContent("");
+      setPreview(null);
+      navigate("/templates/editor");
     }
-
-    const data = await res.json();
-
-    setMetadata(prev => ({
-      ...prev,
-      validated: data.validated,
-    }));
-  };
-
+  } else {
+    setMetadata(prev => ({ ...prev, validated: data.validated }));
+  }
+};
 
   // Debounced function
   const debouncedPreview = useRef(
@@ -121,6 +152,16 @@ export function TemplateEditorPage() {
 
   // Load
   useEffect(() => {
+    if (savedValidatedFilter) {
+      setMetadata((prev) => ({
+        ...prev,
+        validated_filter: savedValidatedFilter
+      }));
+    }
+  }, [savedValidatedFilter]);
+
+
+  useEffect(() => {
     async function load() {
       if (!id) return;
 
@@ -128,7 +169,23 @@ export function TemplateEditorPage() {
       if (!tpl) return;
 
       setContent(tpl.content);
-      setMetadata(buildMetadataFromTemplate(tpl));
+      const currentFilter = usePreferenceStore.getState().get("template.validated_filter") ?? "all";
+      setMetadata(prev =>
+        buildMetadataFromTemplate(tpl, prev.validated_filter ?? currentFilter)
+      );
+
+      // Load the filtered list so subjects/navigation work without needing a filter change
+      const queryParams = new URLSearchParams({
+        skill: String(tpl.skill ?? ""),
+        grade: String(tpl.grade ?? ""),
+        difficulty: String(tpl.difficulty ?? ""),
+        validated: currentFilter,
+      });
+      const listRes = await apiFetch(`/api/templates/filtered/?${queryParams.toString()}`);
+      const list = await listRes.json();
+      setFilteredList(list);
+      const idx = list.findIndex((t: any) => t.id === tpl.id);
+      setCurrentIndex(idx >= 0 ? idx : 0);
 
       const res = await apiFetch("/api/templates/preview/", {
         method: "POST",
@@ -154,11 +211,18 @@ export function TemplateEditorPage() {
   }, [metadata.grade]);
 
   useEffect(() => {
-    const uniqueSubjects = Array.from(
-      new Set(filteredList.map(t => t.subject).filter(Boolean))
-    );
-    setSubjects(uniqueSubjects);
-  }, [filteredList]);
+    const controller = new AbortController();
+    const params = new URLSearchParams();
+    if (metadata.skill) params.set("skill", String(metadata.skill));
+    if (metadata.grade) params.set("grade", String(metadata.grade));
+    if (metadata.difficulty) params.set("difficulty", String(metadata.difficulty));
+    if (metadata.validated_filter) params.set("validated", String(metadata.validated_filter));
+    apiFetch(`/api/templates/subjects/?${params.toString()}`, { signal: controller.signal })
+      .then(res => res.json())
+      .then(data => setSubjects(data))
+      .catch(err => { if (err.name !== "AbortError") console.error("[subjects] error", err); });
+    return () => controller.abort();
+  }, [metadata.skill, metadata.grade, metadata.difficulty, metadata.validated_filter]);
 
   // Handle Subject Change
   const handleSubjectChange = (subject: string) => {
@@ -280,16 +344,33 @@ export function TemplateEditorPage() {
       return;
     }
 
-    // After deletion, navigate somewhere sensible
-    if (filteredList.length > 1) {
-      // Remove deleted template from list
-      const remaining = filteredList.filter(t => t.id !== metadata.id);
+    // Remove deleted template from the local list
+    const remaining = filteredList.filter(t => t.id !== metadata.id);
+
+    if (remaining.length > 0) {
       setFilteredList(remaining);
       setCurrentIndex(0);
       navigate(`/templates/${remaining[0].id}`);
     } else {
-      // No templates left
-      navigate(`/templates/new`);
+      // filteredList may be empty (user navigated directly by URL without applying filters).
+      // Fetch from the API to find any other template with the same filters.
+      const queryParams = new URLSearchParams({
+        skill: String(metadata.skill ?? ""),
+        grade: String(metadata.grade ?? ""),
+        difficulty: String(metadata.difficulty ?? ""),
+        validated: metadata.validated_filter ?? "all",
+      });
+      const listRes = await apiFetch(`/api/templates/filtered/?${queryParams.toString()}`);
+      const list = await listRes.json();
+      const others = list.filter((t: any) => t.id !== metadata.id);
+
+      if (others.length > 0) {
+        setFilteredList(others);
+        setCurrentIndex(0);
+        navigate(`/templates/${others[0].id}`);
+      } else {
+        navigate(`/skills`);
+      }
     }
   };
 
@@ -305,12 +386,20 @@ export function TemplateEditorPage() {
     const newMeta = { ...metadata, ...updated };
     setMetadata(newMeta);
 
-    // If any of the 3 filters changed, reload the list
-    if (updated.skill || updated.grade || updated.difficulty) {
+    if (updated.validated_filter) {
+      usePreferenceStore.getState().set(
+        "template.validated_filter",
+        updated.validated_filter
+      );
+    }
+
+    // If any of the filters change, reload the list
+    if (updated.skill || updated.grade || updated.difficulty || updated.validated_filter) {
       const params = new URLSearchParams({
         skill: String(newMeta.skill ?? ""),
         grade: String(newMeta.grade ?? ""),
         difficulty: String(newMeta.difficulty ?? ""),
+        validated: newMeta.validated_filter ?? "all",
       });
 
       if (updated.grade) {

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
 import { useTemplateApi } from "../../api/useTemplateApi";
 import { useNavigate } from "react-router-dom";
+import { usePreferenceStore } from "../../utils/pref";
+
 
 interface CellData {
   colour: string;
@@ -26,29 +28,13 @@ interface MatrixResponse {
   skills: SkillRow[];
 }
 
-// type Skill = {
-//   id: number;
-//   parent_id: number | null;
-//   children_count: number;
-//   depth: number;
-//   description: string;
-//   cells: Record<string, { colour: string; count: number }>;
-// };
-
-// type FlatRow = [Skill, number];
-
 export function SkillsMatrix() {
   const [data, setData] = useState<MatrixResponse | null>(null);
-  const [selectedGrade, setSelectedGrade] = useState<string | number | null>(null);
   const { generateTemplate } = useTemplateApi();
   const navigate = useNavigate();
   const [loadingCell, setLoadingCell] = useState<{ skillId: number; grade: string | number } | null>(null);
-
-  useEffect(() => {
-    apiFetch(`/api/skills/matrix/?grade=All`)
-      .then(res => res.json())
-      .then(data => setData(data));
-  }, []);
+  const savedGrade = usePreferenceStore(s => s.get("skills.selected_grade"));
+  const [selectedGrade, setSelectedGrade] = useState<string | number | null>(savedGrade ?? null);
 
   useEffect(() => {
     const grade = selectedGrade ?? "All";
@@ -81,20 +67,29 @@ async function handleViewTemplate(skillId: number, grade: string | number) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         skill: skillId,
-        grade: grade,
-        difficulty: "easy"
+        grade: grade
       })
     });
 
     const data = await res.json();
 
-    if (data.ok) {
-      navigate(`/templates/${data.template_id}`);
-    } else {
-      alert(data.error || "No templates exist yet for this skill.");
+    // Show the error if preview failed
+    if (!data.ok) {
+      alert(data.error || "Preview failed, opening template for editing.");
     }
+
+    // Always navigate if a template_id exists
+    if (data.template_id) {
+      navigate(`/templates/${data.template_id}`);
+      return;
+    }
+
+    // If no template_id was returned, fall back to a safe message
+    alert("No templates exist yet for this skill and grade.");
+
   } catch (err) {
     console.error("Failed to load first template:", err);
+    alert("Unexpected error loading template.");
   }
 }
 
@@ -117,15 +112,23 @@ async function handleViewTemplate(skillId: number, grade: string | number) {
           <button
             key={g}
             className={`btn ${selectedGrade === g ? "btn-primary" : "btn-outline-primary"}`}
-            onClick={() => setSelectedGrade(g)}
+            onClick={() => {
+              setSelectedGrade(g);
+              usePreferenceStore.getState().set("skills.selected_grade", g);
+            }}
           >
             {g}
           </button>
         ))}
 
+
         <button
           className={`btn ${selectedGrade === null ? "btn-secondary" : "btn-outline-secondary"}`}
-          onClick={() => setSelectedGrade(null)}
+          onClick={() => {
+            setSelectedGrade(null);
+            usePreferenceStore.getState().set("skills.selected_grade", null);
+          }}
+
         >
           All
         </button>
@@ -204,6 +207,16 @@ async function handleViewTemplate(skillId: number, grade: string | number) {
                           onClick={() => handleViewTemplate(skill.id, selectedGrade)}
                         >
                           View Templates
+                        </button>
+                      )}
+
+                      {/* Overview button */}
+                      {!isLoading && cell?.count! > 0 && (
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => navigate(`/skills/${skill.id}/overview/${selectedGrade}`)}
+                        >
+                          Overview
                         </button>
                       )}
 

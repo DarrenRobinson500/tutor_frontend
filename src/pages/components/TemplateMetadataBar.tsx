@@ -15,9 +15,11 @@ interface TemplateMetadataBarProps {
   onPrev: () => void;
   skills: Array<{ id: number; description: string }>;
   subjects: string[];
+  validated_filter?: "all" | "validated" | "unvalidated";
   onSubjectChange: (subject: string) => void;
-
 }
+
+
 
 export function TemplateMetadataBar({
   metadata,
@@ -71,6 +73,26 @@ export function TemplateMetadataBar({
           </option>
         ))}
       </select>
+
+      {/* Validated filter */}
+      <select
+        className="form-select"
+        style={{ width: "150px" }}
+        value={metadata.validated_filter ?? "all"}
+        onChange={(e) =>
+          onChange({
+            validated_filter: e.target.value as "all" | "validated" | "unvalidated"
+          })
+        }
+      >
+        <option value="all">All</option>
+        <option value="validated">Validated only</option>
+        <option value="unvalidated">Unvalidated only</option>
+      </select>
+
+
+
+
 
       {/* Difficulty */}
       <select

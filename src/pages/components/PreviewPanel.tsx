@@ -164,7 +164,10 @@ export function PreviewPanel({
       const result = await recordAttempt(answer, correct);
 
       if (correct) {
-        onStudentNext?.(result);
+          setTimeout(() => {
+            onStudentNext?.(result);
+          }, 1000);
+          return;
       } else {
         setShowIncorrectFeedback(true);
         setBackendResult(result);
@@ -172,8 +175,12 @@ export function PreviewPanel({
     }
 
     if (mode === "editor" && correct) {
-      await loadNextEditorPreview();
+      setTimeout(() => {
+        loadNextEditorPreview();
+      }, 1000);
+      return;
     }
+
   }
 
   if (!preview) {
@@ -232,23 +239,35 @@ export function PreviewPanel({
       {answers.length > 0 && (
         <div className="d-flex flex-row flex-wrap gap-2">
           {answers.map((a: any, i: number) => {
-            const text = safeLatex(a?.text);
             const isSelected = selected === i;
+            const btnClass = `btn btn-sm w-auto ${
+              isSelected
+                ? isCorrect
+                  ? "btn-success"
+                  : "btn-danger"
+                : "btn-outline-primary"
+            }`;
+
+            if (a?.diagram_svg) {
+              return (
+                <button
+                  key={i}
+                  className={btnClass}
+                  style={{ padding: "4px" }}
+                  onClick={() => handleAnswerClick(i, a)}
+                  dangerouslySetInnerHTML={{ __html: a.diagram_svg }}
+                />
+              );
+            }
 
             return (
               <button
                 key={i}
-                className={`btn btn-sm w-auto ${
-                  isSelected
-                    ? isCorrect
-                      ? "btn-success"
-                      : "btn-danger"
-                    : "btn-outline-primary"
-                }`}
+                className={btnClass}
                 style={{ minWidth: "90px" }}
                 onClick={() => handleAnswerClick(i, a)}
               >
-                <Latex>{text}</Latex>
+                <Latex>{safeLatex(a?.text)}</Latex>
               </button>
             );
           })}

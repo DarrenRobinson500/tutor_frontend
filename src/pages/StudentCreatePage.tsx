@@ -73,9 +73,6 @@ export function StudentCreatePage() {
             <h5>Student Created</h5>
             <p><strong>Name:</strong> {result.name}</p>
             <p><strong>Email:</strong> {result.email}</p>
-            {result.password && (
-              <p><strong>Password:</strong> {result.password}</p>
-            )}
           </div>
         )}
       </div>

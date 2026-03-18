@@ -24,6 +24,8 @@ export type TemplateMetadata = {
   version: number;
   skill: number | null;
   validated: boolean;
+  validated_filter?: "all" | "validated" | "unvalidated";
+
 }
 
 export const emptyMetadata: TemplateMetadata = {
