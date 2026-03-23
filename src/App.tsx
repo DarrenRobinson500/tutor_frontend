@@ -23,8 +23,11 @@ import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
 import { SkillOverviewPage } from "./pages/SkillOverviewPage";
+import { TemplateMetadataPage } from "./pages/TemplateMetadataPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
+import { DocsPage } from "./pages/DocsPage";
+import { KnowledgeEditorPage } from "./pages/KnowledgeEditorPage";
 import AuthPage from "./pages/AuthPage/AuthPage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
@@ -107,6 +110,7 @@ function App() {
         <Route path="/templates/new" element={<ProtectedRoute><NewTemplatePage /></ProtectedRoute>} />
         <Route path="/templates/editor" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
+        <Route path="/templates/:id/metadata" element={<ProtectedRoute><TemplateMetadataPage /></ProtectedRoute>} />
 
         <Route path="/skills" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
@@ -132,8 +136,12 @@ function App() {
         <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
         <Route path="/students/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
 
+        <Route path="/knowledge/new" element={<ProtectedRoute><KnowledgeEditorPage /></ProtectedRoute>} />
+        <Route path="/knowledge/:id" element={<ProtectedRoute><KnowledgeEditorPage /></ProtectedRoute>} />
+
         <Route path="/principles" element={<ProtectedRoute><PrinciplesPage /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
+        <Route path="/docs" element={<ProtectedRoute><DocsPage /></ProtectedRoute>} />
 
         {/* DEFAULT */}
         <Route path="*" element={<Navigate to="/auth" replace />} />

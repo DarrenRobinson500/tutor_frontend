@@ -65,33 +65,45 @@ function splitBareLatex(text: string): Array<{ type: "text" | "math"; content: s
   return result;
 }
 
+// Private-use Unicode character used as a placeholder for \$ (escaped dollar sign).
+// Replaced before splitting so \$ never acts as a math delimiter.
+const DOLLAR_PLACEHOLDER = "\uE000";
+
 export function Latex({ children }: LatexProps) {
+  // Replace \$ with placeholder so it is never treated as a math delimiter
+  const text = children.replace(/\\\$/g, DOLLAR_PLACEHOLDER);
+
   // Split on delimited math: $$...$$, $...$, \[...\], \(...\)
-  const parts = children.split(/(\${1,2}[\s\S]*?\${1,2}|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
+  const parts = text.split(/(\${1,2}[\s\S]*?\${1,2}|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\))/g);
 
   return (
     <>
       {parts.flatMap((part, i) => {
         const trimmed = part.trim();
 
+        // Restore \$ inside math blocks so KaTeX can render a literal dollar sign
+        const mathContent = (s: string) => s.replace(new RegExp(DOLLAR_PLACEHOLDER, "g"), "\\$");
+        // Restore \$ in text segments as a plain $ character
+        const textContent = (s: string) => s.replace(new RegExp(DOLLAR_PLACEHOLDER, "g"), "$");
+
         // Block math: $$ ... $$ or \[ ... \]
         if (trimmed.startsWith("$$") && trimmed.endsWith("$$")) {
-          return [renderDisplayMath(trimmed.slice(2, -2), i)];
+          return [renderDisplayMath(mathContent(trimmed.slice(2, -2)), i)];
         }
         if (trimmed.startsWith("\\[") && trimmed.endsWith("\\]")) {
-          return [renderDisplayMath(trimmed.slice(2, -2), i)];
+          return [renderDisplayMath(mathContent(trimmed.slice(2, -2)), i)];
         }
 
         // Inline math: $ ... $ or \( ... \)
         if (trimmed.startsWith("$") && trimmed.endsWith("$")) {
-          return [renderInlineMath(trimmed.slice(1, -1), i)];
+          return [renderInlineMath(mathContent(trimmed.slice(1, -1)), i)];
         }
         if (trimmed.startsWith("\\(") && trimmed.endsWith("\\)")) {
-          return [renderInlineMath(trimmed.slice(2, -2), i)];
+          return [renderInlineMath(mathContent(trimmed.slice(2, -2)), i)];
         }
 
         // Plain text — detect and render bare LaTeX commands (e.g. \frac, \sqrt)
-        const subParts = splitBareLatex(part);
+        const subParts = splitBareLatex(textContent(part));
         return subParts.map((sp, j) =>
           sp.type === "math"
             ? renderInlineMath(sp.content, `${i}-${j}`)

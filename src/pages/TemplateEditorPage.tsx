@@ -1,9 +1,12 @@
 import debounce from "lodash.debounce";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { TemplateMetadataBar } from "./components/TemplateMetadataBar";
 import { EditorPanel } from "./components/EditorPanel";
+import type { EditorHandle } from "./components/EditorPanel";
+import { ParameterHelper } from "./components/ParameterHelper";
+import { KnowledgeHelper } from "./components/KnowledgeHelper";
 import { ValuesPanel } from "./components/ValuesPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Layout } from "./components/Layout";
@@ -55,6 +58,7 @@ export function TemplateEditorPage() {
   const navigate = useNavigate();
   const params = useParams();
   const { id } = params;
+  const [searchParams] = useSearchParams();
   const [metadata, setMetadata] = useState<TemplateMetadata>(emptyMetadata);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -64,6 +68,11 @@ export function TemplateEditorPage() {
 
   const [previewResult, setPreviewResult] = useState<any>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
+  const [showParamHelper, setShowParamHelper] = useState(false);
+  const [showKnowledgeHelper, setShowKnowledgeHelper] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isAiUpdating, setIsAiUpdating] = useState(false);
+  const editorRef = useRef<EditorHandle>(null);
   const { getTemplate, saveTemplate } = useTemplateApi();
 
 function buildMetadataFromTemplate(
@@ -133,11 +142,11 @@ const handleToggleValidated = async () => {
 
   // Debounced function
   const debouncedPreview = useRef(
-    debounce(async (content: string) => {
+    debounce(async (content: string, templateId?: number | null) => {
       const res = await apiFetch("/api/templates/preview/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, templateId: templateId ?? null }),
       });
 
       const data = await res.json();
@@ -190,7 +199,7 @@ const handleToggleValidated = async () => {
       const res = await apiFetch("/api/templates/preview/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: tpl.content }),
+        body: JSON.stringify({ content: tpl.content, templateId: tpl.id }),
       });
 
       const data = await res.json();
@@ -198,6 +207,37 @@ const handleToggleValidated = async () => {
     }
     load();
   }, [id]);
+
+  // When arriving on /templates/editor with ?skill=&grade= (e.g. after a delete), apply filters
+  useEffect(() => {
+    if (id) return; // only applies to the bare editor route
+    const skillParam = searchParams.get("skill");
+    const gradeParam = searchParams.get("grade");
+    if (!skillParam && !gradeParam) return;
+
+    const skill = skillParam ? Number(skillParam) : null;
+    const grade = gradeParam ?? "";
+    const currentFilter = usePreferenceStore.getState().get("template.validated_filter") ?? "all";
+
+    setMetadata(prev => ({ ...prev, skill, grade, validated_filter: currentFilter }));
+
+    async function loadFiltered() {
+      const qp = new URLSearchParams({
+        skill: skillParam ?? "",
+        grade: gradeParam ?? "",
+        validated: currentFilter,
+      });
+      const listRes = await apiFetch(`/api/templates/filtered/?${qp.toString()}`);
+      const list = await listRes.json();
+      setFilteredList(list);
+      setCurrentIndex(0);
+      if (list.length > 0) {
+        navigate(`/templates/${list[0].id}`, { replace: true });
+      }
+    }
+    loadFiltered();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Load Skills, Subjects
   useEffect(() => {
@@ -247,7 +287,7 @@ const handleToggleValidated = async () => {
   // Handle Content Change
   function handleContentChange(newContent: string) {
     setContent(newContent);
-    debouncedPreview(newContent);
+    debouncedPreview(newContent, metadata.id);
   }
 
   // Handle going to skill
@@ -376,10 +416,66 @@ const handleToggleValidated = async () => {
 
 
 
+  function handleInsertParameter(yaml: string) {
+    const lines = content.split("\n");
+    const paramIdx = lines.findIndex(l => l.trim() === "parameters:");
+
+    if (paramIdx >= 0) {
+      // Find the end of the parameters block (first non-indented, non-empty line after it)
+      let insertIdx = paramIdx + 1;
+      while (insertIdx < lines.length && (lines[insertIdx].startsWith("  ") || lines[insertIdx].trim() === "")) {
+        insertIdx++;
+      }
+      const newLines = [
+        ...lines.slice(0, insertIdx),
+        yaml,
+        ...lines.slice(insertIdx),
+      ];
+      handleContentChange(newLines.join("\n"));
+    } else {
+      // No parameters block yet — prepend one
+      handleContentChange(`parameters:\n${yaml}\n\n${content}`);
+    }
+  }
+
   const handlePreview = async () => {
     setPreviewResult({
       text: "This is a preview of your template.\n\nMore features coming soon."
     });
+  };
+
+  const handleAiUpdate = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsAiUpdating(true);
+    try {
+      const res = await apiFetch("/api/templates/update_with_ai/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, instruction: aiPrompt }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "AI update failed");
+        return;
+      }
+      handleContentChange(data.content);
+      setAiPrompt("");
+    } catch (e) {
+      alert("AI update failed");
+    } finally {
+      setIsAiUpdating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!metadata.id) return;
+    const res = await apiFetch(`/api/templates/${metadata.id}/duplicate/`, { method: "POST" });
+    if (!res.ok) {
+      alert("Failed to duplicate template");
+      return;
+    }
+    const data = await res.json();
+    navigate(`/templates/${data.id}`);
   };
 
   const handleMetadataChange = async (updated: Partial<TemplateMetadata>) => {
@@ -453,6 +549,7 @@ const handleToggleValidated = async () => {
       onChange={handleMetadataChange}
       onSave={handleSave}
       onDelete={handleDelete}
+      onCopy={handleCopy}
       onValidate={handleToggleValidated}
       onPreview={handlePreview}
       onToSkill={handleToSkill}
@@ -471,18 +568,42 @@ const handleToggleValidated = async () => {
 
         {/* Panel 1: Editor (Template source) */}
         <div className="col-md-4 d-flex flex-column" style={{ height: "100%" }}>
-          <div className="card shadow-sm flex-grow-1">
-            <div className="card-header">Question Definition</div>
-            <div
-              className="card-body p-0 d-flex flex-column"
-              style={{ overflow: "hidden" }}
-            >
-              <EditorPanel
-                content={content}
-                onChange={handleContentChange}
-                validation={validationResult}
-                templateId={id ?? null}
-              />
+          <div className="card shadow-sm flex-grow-1 d-flex flex-column">
+            <div className="card-header d-flex justify-content-between align-items-center gap-1">
+              <span>Question Definition</span>
+              <div className="d-flex gap-1">
+                <button
+                  className={`btn btn-sm ${showParamHelper ? "btn-primary" : "btn-outline-secondary"}`}
+                  style={{ fontSize: 11 }}
+                  onClick={() => setShowParamHelper(v => !v)}
+                >
+                  ＋ Parameter
+                </button>
+                <button
+                  className={`btn btn-sm ${showKnowledgeHelper ? "btn-primary" : "btn-outline-secondary"}`}
+                  style={{ fontSize: 11 }}
+                  onClick={() => setShowKnowledgeHelper(v => !v)}
+                >
+                  ＋ Knowledge
+                </button>
+              </div>
+            </div>
+            <div className="p-0 d-flex flex-column flex-grow-1" style={{ overflow: "hidden" }}>
+              <div style={{ flex: 1, overflow: "hidden" }}>
+                <EditorPanel
+                  ref={editorRef}
+                  content={content}
+                  onChange={handleContentChange}
+                  validation={validationResult}
+                  templateId={id ?? null}
+                />
+              </div>
+              {showParamHelper && (
+                <ParameterHelper onInsert={handleInsertParameter} />
+              )}
+              {showKnowledgeHelper && (
+                <KnowledgeHelper templateId={metadata.id ?? null} />
+              )}
             </div>
           </div>
         </div>
@@ -525,6 +646,32 @@ const handleToggleValidated = async () => {
           </div>
         </div>
 
+      </div>
+
+      {/* AI Prompt — below Panel 1 */}
+      <div className="row mt-2">
+        <div className="col-md-4">
+          <div className="d-flex gap-2 align-items-center">
+            <label style={{ fontSize: 12, whiteSpace: "nowrap", margin: 0 }}>AI Prompt</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="e.g. Use the AlgebraTable diagram"
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleAiUpdate(); }}
+              disabled={isAiUpdating}
+            />
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={handleAiUpdate}
+              disabled={isAiUpdating || !aiPrompt.trim()}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {isAiUpdating ? "Updating…" : "Update Template"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

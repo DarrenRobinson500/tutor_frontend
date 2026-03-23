@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { TemplateMetadata } from "../../types/TemplateMetadata";
 
 interface TemplateMetadataBarProps {
@@ -5,6 +7,7 @@ interface TemplateMetadataBarProps {
   onChange: (updated: Partial<TemplateMetadata>) => void;
   onSave: () => void;
   onDelete: () => void;
+  onCopy: () => void;
   isSaving: boolean;
   saveSuccess: boolean;
   saveError: string | null;
@@ -26,6 +29,7 @@ export function TemplateMetadataBar({
   onChange,
   onSave,
   onDelete,
+  onCopy,
   onValidate,
   onPreview,
   onToSkill,
@@ -38,6 +42,14 @@ export function TemplateMetadataBar({
   subjects,
   onSubjectChange,
 }: TemplateMetadataBarProps) {
+  const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    onCopy();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   if (!metadata) {
     return <div style={{ padding: 12 }}>Loading…</div>;
@@ -120,13 +132,13 @@ export function TemplateMetadataBar({
           ))}
       </select>
 
-      <button className="btn btn-secondary" onClick={onPrev}>Previous</button>
-      <button className="btn btn-secondary" onClick={onNext}>Next</button>
+      <button className="btn btn-outline-primary" onClick={onPrev}>&lt;</button>
+      <button className="btn btn-outline-primary" onClick={onNext}>&gt;</button>
 
       {/* Save button */}
       <button
         type="button"
-        className="btn btn-primary"
+        className="btn btn-outline-primary"
         onClick={onSave}
         disabled={isSaving}
       >
@@ -135,6 +147,14 @@ export function TemplateMetadataBar({
 
       {saveSuccess && <span style={{ color: "green" }}>Saved successfully</span>}
       {saveError && <span style={{ color: "red" }}>{saveError}</span>}
+
+      <button
+        className="btn btn-outline-primary"
+        onClick={() => navigate(`/templates/${metadata.id}/metadata`)}
+        disabled={!metadata.id}
+      >
+        Metadata
+      </button>
 
       <button
         onClick={onValidate}
@@ -148,11 +168,20 @@ export function TemplateMetadataBar({
       </button>
 
       <button
-        className="btn btn-danger"
-        onClick={onDelete}
-        disabled={!metadata.id}
+        type="button"
+        className="btn btn-outline-primary"
+        onClick={handleCopy}
+        style={{ minWidth: 80 }}
       >
-        Delete
+        {copied ? "Copied!" : "Copy"}
+      </button>
+
+      <button
+        className="btn btn-outline-success"
+        onClick={() => navigate("/templates/new")}
+        title="Create template from image"
+      >
+        +
       </button>
     </div>
   );

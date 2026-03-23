@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "./components/Breadcrumbs";
 import { SkillsMatrix } from "./components/SkillsMatrix";
 import { Layout } from "./components/Layout";
@@ -9,6 +9,7 @@ import { useSkillsApi, Skill } from "../api/useSkillsApi";
 
 export default function SkillsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [skill, setSkill] = useState<any>(null);
   const [parents, setParents] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
@@ -71,13 +72,21 @@ export default function SkillsPage() {
       {message && <div className="alert alert-info">{message}</div>}
 
         <h1>Skills</h1>
-        <button
-          className="btn btn-primary mb-3"
-          onClick={handleLoad}
-          disabled={loading}
-        >
-        {loading ? "Loading?" : "Load Syllabus"}
-      </button>
+        <div className="d-flex gap-2 mb-3">
+          <button
+            className="btn btn-outline-success"
+            onClick={handleLoad}
+            disabled={loading}
+          >
+            {loading ? "Loading…" : "Load Syllabus"}
+          </button>
+          <button
+            className="btn btn-outline-success"
+            onClick={() => navigate("/templates/new")}
+          >
+            + Create New Template from Image
+          </button>
+        </div>
 
 
         <SkillsMatrix />

@@ -1,3 +1,15 @@
+export interface MultiStep {
+  steps: Array<{ svg: string; answer: string; solution: string; question?: string; tolerance?: number }>;
+}
+
+export interface KnowledgeItem {
+  id: number;
+  title: string;
+  text: string;
+  text_2: string;
+  diagram_svg: string;
+}
+
 export interface PreviewResponse {
   question: string;
   answers: any[];
@@ -7,6 +19,8 @@ export interface PreviewResponse {
   diagram_code: string;
   substituted_yaml: string;
   errors?: string[];
+  multi_step?: MultiStep | null;
+  knowledge_items?: KnowledgeItem[];
 }
 
 export interface StudentRecordResponse {

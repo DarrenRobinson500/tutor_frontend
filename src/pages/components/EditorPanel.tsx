@@ -1,8 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { apiFetch } from "../../utils/apiFetch"
 
 import Editor from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
+
+export interface EditorHandle {
+  insertText: (text: string) => void;
+}
 
 interface EditorPanelProps {
   content: string;
@@ -28,63 +32,82 @@ async function saveToBackend(templateId: string | number | null, content: string
   }
 }
 
+export const EditorPanel = forwardRef<EditorHandle, EditorPanelProps>(
+  ({ content, onChange, validation, templateId }, ref) => {
+    const editorInstanceRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const backendTimeoutRef = useRef<number | null>(null);
 
-
-export function EditorPanel({ content, onChange, validation, templateId  }: EditorPanelProps) {
-  const backendTimeoutRef = useRef<number | null>(null);
-
-  // Disable Monaco YAML code actions to prevent worker crashes
-  useEffect(() => {
-    monaco.languages.registerCodeActionProvider("yaml", {
-      provideCodeActions() {
-        return { actions: [], dispose() {} };
+    useImperativeHandle(ref, () => ({
+      insertText(text: string) {
+        const editor = editorInstanceRef.current;
+        if (!editor) return;
+        const position = editor.getPosition();
+        if (!position) return;
+        editor.executeEdits("parameter-helper", [{
+          range: new monaco.Range(
+            position.lineNumber, position.column,
+            position.lineNumber, position.column
+          ),
+          text,
+          forceMoveMarkers: true,
+        }]);
+        editor.focus();
       }
-    });
-  }, []);
+    }));
 
-  useEffect(() => {
-    if (backendTimeoutRef.current) {
-      window.clearTimeout(backendTimeoutRef.current);
-    }
-
-    backendTimeoutRef.current = window.setTimeout(() => {
-      saveToBackend(templateId, content).catch((err) => {
-        console.error("Backend autosave failed", err);
+    // Disable Monaco YAML code actions to prevent worker crashes
+    useEffect(() => {
+      monaco.languages.registerCodeActionProvider("yaml", {
+        provideCodeActions() {
+          return { actions: [], dispose() {} };
+        }
       });
-    }, 1500);
+    }, []);
 
-    return () => {
+    useEffect(() => {
       if (backendTimeoutRef.current) {
         window.clearTimeout(backendTimeoutRef.current);
       }
-    };
-  }, [content, templateId]);
 
-  return (
-    <Editor
-      height="100%"
-      defaultLanguage="yaml"
-      value={content}
-      onChange={(value) => onChange(value || "")}
-      theme="vs-dark"
-      options={{
-        fontSize: 14,
-        minimap: { enabled: false },
-        scrollBeyondLastLine: false,
-        wordWrap: "on",
-        lineNumbers: "on",
-        tabSize: 2,
-        insertSpaces: true,
-        autoIndent: "full",
+      backendTimeoutRef.current = window.setTimeout(() => {
+        saveToBackend(templateId, content).catch((err) => {
+          console.error("Backend autosave failed", err);
+        });
+      }, 1500);
 
-        // Disable worker-dependent features
-        quickSuggestions: false,
-        suggestOnTriggerCharacters: false,
-        hover: { enabled: false },
-        formatOnType: false,
-        formatOnPaste: false,
-      }}
-    />
-  );
-}
+      return () => {
+        if (backendTimeoutRef.current) {
+          window.clearTimeout(backendTimeoutRef.current);
+        }
+      };
+    }, [content, templateId]);
 
+    return (
+      <Editor
+        height="100%"
+        defaultLanguage="yaml"
+        value={content}
+        onChange={(value) => onChange(value || "")}
+        theme="vs-dark"
+        onMount={(editor) => { editorInstanceRef.current = editor; }}
+        options={{
+          fontSize: 14,
+          minimap: { enabled: false },
+          scrollBeyondLastLine: false,
+          wordWrap: "on",
+          lineNumbers: "on",
+          tabSize: 2,
+          insertSpaces: true,
+          autoIndent: "full",
+
+          // Disable worker-dependent features
+          quickSuggestions: false,
+          suggestOnTriggerCharacters: false,
+          hover: { enabled: false },
+          formatOnType: false,
+          formatOnPaste: false,
+        }}
+      />
+    );
+  }
+);
