@@ -66,6 +66,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
                 </>
@@ -78,6 +79,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/sms`}>Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/docs">Docs</Link></li>
                 </>
               )}
@@ -86,6 +88,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <>
                   <li className="nav-item"><Link className="nav-link" to={`/students/${user.id}/`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/students/${user.id}/booking`}>Bookings</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to={`/students/${user.id}/past-tests`}>Past Tests</Link></li>
                 </>
               )}
 

@@ -19,6 +19,7 @@ import { StudentListPage } from "./pages/StudentListPage";
 import { StudentEditPage } from "./pages/StudentEditPage";
 import { StudentQuestionPage } from "./pages/StudentQuestionPage";
 import { StudentHomePage } from "./pages/StudentHomePage";
+import { TestPage } from "./pages/TestPage";
 import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
@@ -28,6 +29,8 @@ import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
 import { DocsPage } from "./pages/DocsPage";
 import { KnowledgeEditorPage } from "./pages/KnowledgeEditorPage";
+import { KnowledgeListPage } from "./pages/KnowledgeListPage";
+import { PastTestsPage } from "./pages/PastTestsPage";
 import AuthPage from "./pages/AuthPage/AuthPage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
@@ -132,10 +135,13 @@ function App() {
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
 
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />
+        <Route path="/students/:studentId/test" element={<ProtectedRoute><TestPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
         <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
+        <Route path="/students/:studentId/past-tests" element={<ProtectedRoute><PastTestsPage /></ProtectedRoute>} />
         <Route path="/students/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
 
+        <Route path="/knowledge" element={<ProtectedRoute><KnowledgeListPage /></ProtectedRoute>} />
         <Route path="/knowledge/new" element={<ProtectedRoute><KnowledgeEditorPage /></ProtectedRoute>} />
         <Route path="/knowledge/:id" element={<ProtectedRoute><KnowledgeEditorPage /></ProtectedRoute>} />
 

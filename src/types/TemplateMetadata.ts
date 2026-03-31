@@ -2,10 +2,12 @@ export interface TemplateSummary {
   id: number;
   grade: string;
   skill: string;
-  difficulty: string
-  subject: string
+  difficulty: string;
+  subject: string;
   status: string;
   updated_at: string;
+  note_count: number;
+  notes: string[];
 }
 
 

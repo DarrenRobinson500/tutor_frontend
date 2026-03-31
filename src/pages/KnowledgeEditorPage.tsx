@@ -132,8 +132,8 @@ export function KnowledgeEditorPage() {
 
   useEffect(() => {
     if (!showImageSection) return;
-    const handlePaste = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
+    const handlePaste = (e: Event) => {
+      const items = (e as ClipboardEvent).clipboardData?.items;
       if (!items) return;
       for (const it of Array.from(items)) {
         if (it.type.startsWith("image/")) {

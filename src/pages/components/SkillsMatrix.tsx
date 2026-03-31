@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../../utils/apiFetch";
-import { useTemplateApi } from "../../api/useTemplateApi";
 import { useNavigate } from "react-router-dom";
 import { usePreferenceStore } from "../../utils/pref";
 
@@ -13,6 +12,11 @@ interface CellData {
 }
 
 
+interface DetailCoverage {
+  covered: number;
+  total: number;
+}
+
 interface SkillRow {
   id: number;
   code: string;
@@ -22,6 +26,7 @@ interface SkillRow {
   children_count: number;
   detail?: string;
   cells: Record<string, CellData>;
+  detail_coverage?: Record<string, DetailCoverage> | null;
 }
 
 interface MatrixResponse {
@@ -31,9 +36,7 @@ interface MatrixResponse {
 
 export function SkillsMatrix() {
   const [data, setData] = useState<MatrixResponse | null>(null);
-  const { generateTemplate } = useTemplateApi();
   const navigate = useNavigate();
-  const [loadingCell, setLoadingCell] = useState<{ skillId: number; grade: string | number } | null>(null);
   const savedGrade = usePreferenceStore(s => s.get("skills.selected_grade"));
   const [selectedGrade, setSelectedGrade] = useState<string | number | null>(savedGrade ?? null);
 
@@ -43,14 +46,6 @@ export function SkillsMatrix() {
       .then(res => res.json())
       .then(data => setData(data));
   }, [selectedGrade]);
-
-  function handleCreateTemplate(skillId: number, grade: string | number) {
-    setLoadingCell({ skillId, grade });
-    generateTemplate(skillId, grade)
-      .then((template) => { navigate(`/templates/${template.id}`); })
-      .catch((err) => { console.error("Template generation failed:", err); })
-      .finally(() => { setLoadingCell(null); });
-  }
 
   async function handleViewTemplate(skillId: number, grade: string | number) {
     try {
@@ -185,83 +180,90 @@ export function SkillsMatrix() {
           </table>
         </div>
       ) : (
-        /* ── SINGLE GRADE VIEW: existing layout ── */
-        <table className="skills-matrix">
-          <thead>
-            <tr>
-              <th className="skill-header">Skill</th>
-              <th className="skill-header">Templates</th>
-              <th className="skill-header">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.skills.map(skill => {
-              const gradeStr = String(selectedGrade);
-              const cell = skill.cells[gradeStr];
-              const isParent = skill.children_count > 0;
-              const isLoading =
-                loadingCell &&
-                loadingCell.skillId === skill.id &&
-                loadingCell.grade === selectedGrade;
+        /* ── SINGLE GRADE VIEW ── */
+        (() => {
+          const gradeStr = String(selectedGrade);
 
-              return (
-                <tr key={skill.id} className={isParent ? "parent-row" : ""}>
-                  <td style={{ paddingLeft: `${skill.depth * 20 + 10}px` }} title={skill.detail || undefined}>
-                    {skill.description}
-                  </td>
+          // Aggregate detail_coverage from leaves up to every ancestor
+          const parentOf: Record<number, number | null> = {};
+          for (const s of data.skills) parentOf[s.id] = s.parent_id;
 
-                  <td className="matrix-cell">
-                    {cell ? (
-                      <>
-                        {cell.unvalidated > 0 && (
-                          <span className="badge bg-warning text-dark me-1">{cell.unvalidated}</span>
-                        )}
-                        {cell.validated > 0 && (
-                          <span className="badge bg-success me-1">{cell.validated}</span>
-                        )}
-                      </>
-                    ) : "-"}
-                  </td>
+          const agg: Record<number, Record<string, { covered: number; total: number }>> = {};
+          const gradeTotal: Record<string, { covered: number; total: number }> = {};
 
-                  <td className="d-flex gap-2 align-items-center">
-                    {skill.children_count === 0 && (
-                      <div className="d-flex gap-2 mt-1">
-                        {isLoading ? (
-                          <div className="spinner-border spinner-border-sm text-success" role="status" />
-                        ) : (
-                          cell?.colour === "covered" && (
-                            <button
-                              className="btn btn-outline-primary btn-sm"
-                              onClick={() => handleCreateTemplate(skill.id, selectedGrade!)}
-                            >
-                              Create Templates
-                            </button>
-                          )
-                        )}
-                        {!isLoading && (cell?.count ?? 0) > 0 && (
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => handleViewTemplate(skill.id, selectedGrade!)}
-                          >
-                            View Templates
-                          </button>
-                        )}
-                        {!isLoading && (cell?.count ?? 0) > 0 && (
-                          <button
-                            className="btn btn-outline-secondary btn-sm"
-                            onClick={() => navigate(`/skills/${skill.id}/overview/${gradeStr}`)}
-                          >
-                            Overview
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
+          for (const s of data.skills) {
+            if (s.children_count > 0) continue;
+            for (const diff of ["easy", "medium", "hard"]) {
+              const dc = s.detail_coverage?.[diff];
+              if (!dc || dc.total === 0) continue;
+              let id: number | null = s.id;
+              while (id !== null) {
+                if (!agg[id]) agg[id] = {};
+                if (!agg[id][diff]) agg[id][diff] = { covered: 0, total: 0 };
+                agg[id][diff].covered += dc.covered;
+                agg[id][diff].total   += dc.total;
+                id = parentOf[id] ?? null;
+              }
+              if (!gradeTotal[diff]) gradeTotal[diff] = { covered: 0, total: 0 };
+              gradeTotal[diff].covered += dc.covered;
+              gradeTotal[diff].total   += dc.total;
+            }
+          }
+
+          function mkCell(dc: { covered: number; total: number } | undefined, bold: boolean) {
+            if (!dc || dc.total === 0) return <td style={{ textAlign: "center", color: "#adb5bd" }}>—</td>;
+            const { covered, total } = dc;
+            const color = covered === total ? "#198754" : covered > 0 ? "#fd7e14" : "#adb5bd";
+            return (
+              <td style={{ textAlign: "center", fontWeight: bold ? 700 : 600, color, fontSize: 13 }}>
+                {covered}/{total}
+              </td>
+            );
+          }
+
+          return (
+            <table className="skills-matrix">
+              <thead>
+                <tr>
+                  <th className="skill-header">Skill</th>
+                  <th className="skill-header" style={{ width: 80, textAlign: "center" }}>Easy</th>
+                  <th className="skill-header" style={{ width: 80, textAlign: "center" }}>Medium</th>
+                  <th className="skill-header" style={{ width: 80, textAlign: "center" }}>Hard</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {data.skills.map(skill => {
+                  const isParent = skill.children_count > 0;
+                  const getDc = (diff: string) =>
+                    isParent ? agg[skill.id]?.[diff] : skill.detail_coverage?.[diff];
+                  return (
+                    <tr
+                      key={skill.id}
+                      className={isParent ? "parent-row" : ""}
+                      style={{ cursor: isParent ? undefined : "pointer" }}
+                      onClick={() => {
+                        if (!isParent) navigate(`/skills/${skill.id}/overview/${gradeStr}`);
+                      }}
+                    >
+                      <td style={{ paddingLeft: `${skill.depth * 20 + 10}px` }} title={skill.detail || undefined}>
+                        {skill.description}
+                      </td>
+                      {mkCell(getDc("easy"),   false)}
+                      {mkCell(getDc("medium"), false)}
+                      {mkCell(getDc("hard"),   false)}
+                    </tr>
+                  );
+                })}
+                <tr style={{ borderTop: "2px solid #dee2e6", background: "#f8f9fa" }}>
+                  <td style={{ paddingLeft: 10, fontWeight: 700, fontSize: 13 }}>Total</td>
+                  {mkCell(gradeTotal["easy"],   true)}
+                  {mkCell(gradeTotal["medium"], true)}
+                  {mkCell(gradeTotal["hard"],   true)}
+                </tr>
+              </tbody>
+            </table>
+          );
+        })()
       )}
     </div>
   );

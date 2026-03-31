@@ -19,6 +19,18 @@ const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 const PROMPT_PRESETS: { id: string; label: string; prompt: string }[] = [
   {
+    id: "diagram",
+    label: "Add a diagram to the question",
+    prompt: `Include a 'diagram:' field in the template using one of the supported diagram types. ` +
+      `Available types: Triangle, Rect, Circle, Line, Prism, Net, AlgebraTable, Cartesian, NumberLine, Angle, ParallelLines. ` +
+      `Template parameters are substituted directly with {{ var }} syntax inside the diagram string (no extra braces needed). ` +
+      `Example: diagram: 'Triangle(a: {{ a }}, b: {{ b }}, C: {{ angle }}, label_v: true)' ` +
+      `or diagram: 'Rect(width: {{ w }}, height: {{ h }}, labels: true)'. ` +
+      `For Triangle, specify any valid combination of sides (a, b, c) and angles (A, B, C in degrees) — ` +
+      `valid cases are SSS, SAS, ASA, AAS, AA. Do NOT use SSA (two sides and a non-included angle). ` +
+      `The diagram string must be on a single line. Do not split {{ }} expressions across lines.`,
+  },
+  {
     id: "input_answer",
     label: "Make this an Input Answer (not multi-choice)",
     prompt: "Use a single input answer (the 'input' key) instead of multiple-choice answers.",

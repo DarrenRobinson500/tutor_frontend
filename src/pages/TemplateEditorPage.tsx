@@ -1,12 +1,13 @@
 import debounce from "lodash.debounce";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { TemplateMetadataBar } from "./components/TemplateMetadataBar";
 import { EditorPanel } from "./components/EditorPanel";
 import type { EditorHandle } from "./components/EditorPanel";
 import { ParameterHelper } from "./components/ParameterHelper";
 import { KnowledgeHelper } from "./components/KnowledgeHelper";
+import { DiagramHelper } from "./components/DiagramHelper";
 import { ValuesPanel } from "./components/ValuesPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Layout } from "./components/Layout";
@@ -56,6 +57,7 @@ export function TemplateEditorPage() {
 
 
   const navigate = useNavigate();
+  const location = useLocation();
   const params = useParams();
   const { id } = params;
   const [searchParams] = useSearchParams();
@@ -70,8 +72,12 @@ export function TemplateEditorPage() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [showParamHelper, setShowParamHelper] = useState(false);
   const [showKnowledgeHelper, setShowKnowledgeHelper] = useState(false);
+  const [showDiagramHelper, setShowDiagramHelper] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isAiUpdating, setIsAiUpdating] = useState(false);
+  const [noteText, setNoteText] = useState("");
+  const [notes, setNotes] = useState<any[]>([]);
+  const [isAddingNote, setIsAddingNote] = useState(false);
   const editorRef = useRef<EditorHandle>(null);
   const { getTemplate, saveTemplate } = useTemplateApi();
 
@@ -206,7 +212,7 @@ const handleToggleValidated = async () => {
       setPreview(data.preview);
     }
     load();
-  }, [id]);
+  }, [id, location.key]);
 
   // When arriving on /templates/editor with ?skill=&grade= (e.g. after a delete), apply filters
   useEffect(() => {
@@ -416,6 +422,40 @@ const handleToggleValidated = async () => {
 
 
 
+  function handleAddPart() {
+    const lines = content.split("\n");
+    const partsIdx = lines.findIndex(l => /^ {2}parts:/.test(l));
+    const newPartLines = [
+      `    - text: ""`,
+      `      answer: ""`,
+      `      solution: ""`,
+    ];
+
+    if (partsIdx === -1) {
+      // No parts yet — insert before answers:/solution: root key, or append
+      const insertBefore = lines.findIndex(l => /^(answers|solution):/.test(l));
+      const partsBlock = [`  parts:`, ...newPartLines];
+      if (insertBefore >= 0) {
+        const newLines = [...lines.slice(0, insertBefore), ...partsBlock, ``, ...lines.slice(insertBefore)];
+        handleContentChange(newLines.join("\n"));
+      } else {
+        handleContentChange(content.trimEnd() + "\n" + partsBlock.join("\n") + "\n");
+      }
+    } else {
+      // Find last line belonging to the parts block (4+ space indent)
+      let lastPartLine = partsIdx;
+      for (let i = partsIdx + 1; i < lines.length; i++) {
+        if (lines[i].startsWith("    ")) {
+          lastPartLine = i;
+        } else if (lines[i].trim() !== "") {
+          break;
+        }
+      }
+      const newLines = [...lines.slice(0, lastPartLine + 1), ...newPartLines, ...lines.slice(lastPartLine + 1)];
+      handleContentChange(newLines.join("\n"));
+    }
+  }
+
   function handleInsertParameter(yaml: string) {
     const lines = content.split("\n");
     const paramIdx = lines.findIndex(l => l.trim() === "parameters:");
@@ -438,20 +478,78 @@ const handleToggleValidated = async () => {
     }
   }
 
+  function handleInsertKnowledge(snippet: string) {
+    const lines = content.split("\n");
+
+    // Find existing post_answer: line
+    const paIdx = lines.findIndex(l => /^post_answer:/.test(l));
+
+    if (paIdx >= 0) {
+      const line = lines[paIdx];
+
+      if (/^post_answer:\s*\|/.test(line)) {
+        // Already a block scalar — find end and append
+        let endIdx = paIdx + 1;
+        while (endIdx < lines.length) {
+          const el = lines[endIdx];
+          if (el.trim() === "" || el.startsWith("  ")) { endIdx++; continue; }
+          break;
+        }
+        while (endIdx > paIdx + 1 && lines[endIdx - 1].trim() === "") endIdx--;
+        const newLines = [...lines];
+        newLines.splice(endIdx, 0, `  ${snippet}`);
+        handleContentChange(newLines.join("\n"));
+      } else {
+        // Inline value — extract existing content and convert to block scalar
+        const existingVal = line.replace(/^post_answer:\s*/, "").replace(/^["']|["']$/g, "").trim();
+        const newLines = [...lines];
+        const replacement = existingVal
+          ? [`post_answer: |`, `  ${existingVal}`, `  ${snippet}`]
+          : [`post_answer: |`, `  ${snippet}`];
+        newLines.splice(paIdx, 1, ...replacement);
+        handleContentChange(newLines.join("\n"));
+      }
+      return;
+    }
+
+    // No post_answer yet — append after the last top-level line
+    handleContentChange(content.trimEnd() + `\npost_answer: '${snippet}'\n`);
+  }
+
+  function handleInsertDiagram(yaml: string) {
+    const lines = content.split("\n");
+    // Replace existing diagram: line if present
+    const existingIdx = lines.findIndex(l => l.trimStart().startsWith("diagram:"));
+    if (existingIdx >= 0) {
+      const newLines = [...lines];
+      newLines[existingIdx] = yaml;
+      handleContentChange(newLines.join("\n"));
+      return;
+    }
+    // Insert before answers: or solution: or at end of file
+    const insertBefore = lines.findIndex(l => /^(answers|solution):/.test(l.trim()));
+    if (insertBefore >= 0) {
+      const newLines = [...lines.slice(0, insertBefore), yaml, "", ...lines.slice(insertBefore)];
+      handleContentChange(newLines.join("\n"));
+    } else {
+      handleContentChange(content + "\n" + yaml);
+    }
+  }
+
   const handlePreview = async () => {
     setPreviewResult({
       text: "This is a preview of your template.\n\nMore features coming soon."
     });
   };
 
-  const handleAiUpdate = async () => {
+  const handleAiUpdate = async (pro = false) => {
     if (!aiPrompt.trim()) return;
     setIsAiUpdating(true);
     try {
       const res = await apiFetch("/api/templates/update_with_ai/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, instruction: aiPrompt }),
+        body: JSON.stringify({ content, instruction: aiPrompt, pro }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -478,6 +576,22 @@ const handleToggleValidated = async () => {
     navigate(`/templates/${data.id}`);
   };
 
+  const handleCopyHarder = async () => {
+    if (!metadata.id) return;
+    const NEXT: Record<string, string> = { easy: "medium", medium: "hard" };
+    if (!NEXT[metadata.difficulty]) {
+      alert("This template is already at Hard difficulty.");
+      return;
+    }
+    const res = await apiFetch(`/api/templates/${metadata.id}/duplicate_harder/`, { method: "POST" });
+    if (!res.ok) {
+      alert("Failed to create harder version");
+      return;
+    }
+    const data = await res.json();
+    navigate(`/templates/${data.id}`);
+  };
+
   const handleMetadataChange = async (updated: Partial<TemplateMetadata>) => {
     const newMeta = { ...metadata, ...updated };
     setMetadata(newMeta);
@@ -490,13 +604,13 @@ const handleToggleValidated = async () => {
     }
 
     // If any of the filters change, reload the list
-    if (updated.skill || updated.grade || updated.difficulty || updated.validated_filter) {
-      const params = new URLSearchParams({
-        skill: String(newMeta.skill ?? ""),
-        grade: String(newMeta.grade ?? ""),
-        difficulty: String(newMeta.difficulty ?? ""),
-        validated: newMeta.validated_filter ?? "all",
-      });
+    const isFilterChange = "skill" in updated || "grade" in updated || "difficulty" in updated || "validated_filter" in updated;
+    if (isFilterChange) {
+      const params = new URLSearchParams();
+      if (newMeta.skill) params.set("skill", String(newMeta.skill));
+      if (newMeta.grade) params.set("grade", String(newMeta.grade));
+      if (newMeta.difficulty) params.set("difficulty", String(newMeta.difficulty));
+      params.set("validated", newMeta.validated_filter ?? "all");
 
       if (updated.grade) {
         const res = await apiFetch(`/api/skills/leaf/?grade=${updated.grade}`);
@@ -511,7 +625,12 @@ const handleToggleValidated = async () => {
       setCurrentIndex(0);
 
       if (list.length > 0) {
-        navigate(`/templates/${list[0].id}`);
+        const currentSubject = newMeta.subject;
+        const subjectMatch = currentSubject
+          ? list.find((t: any) => t.subject === currentSubject)
+          : null;
+        const target = subjectMatch ?? list[0];
+        navigate(`/templates/${target.id}`);
       }
     }
   };
@@ -536,6 +655,38 @@ const handleToggleValidated = async () => {
     console.log("FULL PREVIEW OBJECT:", preview);
   }, [preview]);
 
+  useEffect(() => {
+    if (!metadata.id) { setNotes([]); return; }
+    apiFetch(`/api/notes/?template=${metadata.id}`)
+      .then(r => r.json())
+      .then(data => setNotes(Array.isArray(data) ? data : (data.results ?? [])))
+      .catch(() => {});
+  }, [metadata.id]);
+
+  const handleDeleteNote = async (noteId: number) => {
+    await apiFetch(`/api/notes/${noteId}/`, { method: "DELETE" });
+    setNotes(prev => prev.filter(n => n.id !== noteId));
+  };
+
+  const handleAddNote = async () => {
+    if (!noteText.trim() || !metadata.id) return;
+    setIsAddingNote(true);
+    try {
+      const res = await apiFetch("/api/notes/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template: metadata.id, text: noteText.trim() }),
+      });
+      if (res.ok) {
+        const note = await res.json();
+        setNotes(prev => [note, ...prev]);
+        setNoteText("");
+      }
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
+
 
 
 
@@ -550,6 +701,7 @@ const handleToggleValidated = async () => {
       onSave={handleSave}
       onDelete={handleDelete}
       onCopy={handleCopy}
+      onCopyHarder={handleCopyHarder}
       onValidate={handleToggleValidated}
       onPreview={handlePreview}
       onToSkill={handleToSkill}
@@ -564,14 +716,21 @@ const handleToggleValidated = async () => {
     />
 
     <div className="container-fluid">
-      <div className="row" style={{ height: "70vh" }}>
+      <div className="row" style={{ minHeight: "70vh" }}>
 
         {/* Panel 1: Editor (Template source) */}
-        <div className="col-md-4 d-flex flex-column" style={{ height: "100%" }}>
+        <div className="col-md-4 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1 d-flex flex-column">
-            <div className="card-header d-flex justify-content-between align-items-center gap-1">
-              <span>Question Definition</span>
-              <div className="d-flex gap-1">
+            <div className="card-header d-flex justify-content-between align-items-start gap-1 flex-wrap">
+              <span>Question</span>
+              <div className="d-flex gap-1 flex-wrap justify-content-end">
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  style={{ fontSize: 11 }}
+                  onClick={handleAddPart}
+                >
+                  ＋ Part
+                </button>
                 <button
                   className={`btn btn-sm ${showParamHelper ? "btn-primary" : "btn-outline-secondary"}`}
                   style={{ fontSize: 11 }}
@@ -586,30 +745,90 @@ const handleToggleValidated = async () => {
                 >
                   ＋ Knowledge
                 </button>
+                <button
+                  className={`btn btn-sm ${showDiagramHelper ? "btn-primary" : "btn-outline-secondary"}`}
+                  style={{ fontSize: 11 }}
+                  onClick={() => setShowDiagramHelper(v => !v)}
+                >
+                  ＋ Diagram
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  style={{ fontSize: 11 }}
+                  title="Remove title, years, difficulty, skill_id keys from content"
+                  onClick={() => {
+                    const metadataKeys = new Set(["title", "years", "difficulty", "skill_id", "introduction", "worked_example"]);
+                    const lines = content.split("\n");
+                    const result: string[] = [];
+                    let skipping = false;
+                    for (const line of lines) {
+                      const isBlank = line.trim() === "";
+                      const isIndented = line.startsWith(" ") || line.startsWith("\t");
+                      const keyMatch = !isIndented && line.match(/^([a-zA-Z_]\w*)\s*:/);
+                      if (keyMatch) {
+                        if (metadataKeys.has(keyMatch[1])) {
+                          skipping = true; // remove this line and any indented continuations
+                        } else {
+                          skipping = false;
+                          result.push(line);
+                        }
+                      } else if (skipping && (isIndented || isBlank)) {
+                        // continuation of a metadata value — skip
+                      } else {
+                        skipping = false;
+                        result.push(line);
+                      }
+                    }
+                    let stripped = result.join("\n").replace(/\n{3,}/g, "\n\n").trimStart();
+                    // Convert solution/question from JSON object form to inline string:
+                    //   solution:\n  {\n  "text": "..."\n  }  →  solution: "..."
+                    stripped = stripped.replace(
+                      /^(solution|question):[ \t]*\n[ \t]*\{[ \t]*\n[ \t]*"text":[ \t]*"((?:[^"\\]|\\.)*)"[ \t]*\n[ \t]*\}/gm,
+                      '$1: "$2"'
+                    );
+                    setContent(stripped);
+                    debouncedPreview(stripped, metadata.id);
+                  }}
+                >
+                  Strip Metadata
+                </button>
               </div>
             </div>
-            <div className="p-0 d-flex flex-column flex-grow-1" style={{ overflow: "hidden" }}>
-              <div style={{ flex: 1, overflow: "hidden" }}>
-                <EditorPanel
-                  ref={editorRef}
-                  content={content}
-                  onChange={handleContentChange}
-                  validation={validationResult}
-                  templateId={id ?? null}
-                />
-              </div>
-              {showParamHelper && (
-                <ParameterHelper onInsert={handleInsertParameter} />
-              )}
-              {showKnowledgeHelper && (
-                <KnowledgeHelper templateId={metadata.id ?? null} />
-              )}
+            <div style={{ height: 570, overflow: "hidden", flexShrink: 0 }}>
+              <EditorPanel
+                ref={editorRef}
+                content={content}
+                onChange={handleContentChange}
+                validation={validationResult}
+                templateId={id ?? null}
+              />
             </div>
+            {showParamHelper && (
+              <ParameterHelper onInsert={handleInsertParameter} />
+            )}
+            {showDiagramHelper && (
+              <DiagramHelper onInsert={handleInsertDiagram} />
+            )}
+            {showKnowledgeHelper && (
+              <KnowledgeHelper
+                templateId={metadata.id ?? null}
+                onInsert={handleInsertKnowledge}
+                onKnowledgeChange={async () => {
+                  const res = await apiFetch("/api/templates/preview/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content, templateId: metadata.id }),
+                  });
+                  const data = await res.json();
+                  if (data.preview) setPreview(data.preview);
+                }}
+              />
+            )}
           </div>
         </div>
 
         {/* Panel 2: Values (Substituted YAML) */}
-        <div className="col-md-4 d-flex flex-column" style={{ height: "100%" }}>
+        <div className="col-md-4 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1">
             <div className="card-header">Question Definition (Values Populated)</div>
             <div className="card-body overflow-auto">
@@ -624,7 +843,7 @@ const handleToggleValidated = async () => {
         </div>
 
         {/* Panel 3: Preview (Student view + Diagram) */}
-        <div className="col-md-4 d-flex flex-column" style={{ height: "100%" }}>
+        <div className="col-md-4 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1">
             <div className="card-header">Student Preview</div>
             <div
@@ -664,15 +883,65 @@ const handleToggleValidated = async () => {
             />
             <button
               className="btn btn-sm btn-primary"
-              onClick={handleAiUpdate}
+              onClick={() => handleAiUpdate(false)}
               disabled={isAiUpdating || !aiPrompt.trim()}
               style={{ whiteSpace: "nowrap" }}
             >
-              {isAiUpdating ? "Updating…" : "Update Template"}
+              {isAiUpdating ? "Updating…" : "Update"}
+            </button>
+            <button
+              className="btn btn-sm btn-success"
+              onClick={() => handleAiUpdate(true)}
+              disabled={isAiUpdating || !aiPrompt.trim()}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {isAiUpdating ? "Updating…" : "Update+"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Notes — below AI Prompt */}
+      {metadata.id && (
+        <div className="row mt-2">
+          <div className="col-md-4">
+            <div className="d-flex gap-2 align-items-center">
+              <label style={{ fontSize: 12, whiteSpace: "nowrap", margin: 0 }}>Note</label>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="Add a note about this template…"
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") handleAddNote(); }}
+                disabled={isAddingNote}
+              />
+              <button
+                className="btn btn-sm btn-outline-secondary"
+                onClick={handleAddNote}
+                disabled={isAddingNote || !noteText.trim()}
+                style={{ whiteSpace: "nowrap" }}
+              >
+                Add Note
+              </button>
+            </div>
+            {notes.length > 0 && (
+              <div className="mt-1">
+                {notes.map(n => (
+                  <div key={n.id} className="text-muted border-bottom py-1 d-flex justify-content-between align-items-start" style={{ fontSize: 11 }}>
+                    <span>{n.text}</span>
+                    <button
+                      onClick={() => handleDeleteNote(n.id)}
+                      style={{ background: "none", border: "none", padding: "0 0 0 6px", cursor: "pointer", color: "#999", fontSize: 13, lineHeight: 1, flexShrink: 0 }}
+                      title="Delete note"
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
 
   </div>

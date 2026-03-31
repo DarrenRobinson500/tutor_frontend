@@ -65,6 +65,18 @@ function splitBareLatex(text: string): Array<{ type: "text" | "math"; content: s
   return result;
 }
 
+// Renders a text segment (possibly containing bare LaTeX) with optional bold wrapping.
+function renderTextSegment(text: string, bold: boolean, key: string | number): React.ReactElement {
+  const subParts = splitBareLatex(text);
+  const nodes = subParts.map((sp, j) =>
+    sp.type === "math"
+      ? renderInlineMath(sp.content, `${key}-${j}`)
+      : <span key={`${key}-${j}`} style={{ whiteSpace: "pre-wrap" }}>{sp.content}</span>
+  );
+  if (bold) return <strong key={key}>{nodes}</strong>;
+  return <React.Fragment key={key}>{nodes}</React.Fragment>;
+}
+
 // Private-use Unicode character used as a placeholder for \$ (escaped dollar sign).
 // Replaced before splitting so \$ never acts as a math delimiter.
 const DOLLAR_PLACEHOLDER = "\uE000";
@@ -102,13 +114,14 @@ export function Latex({ children }: LatexProps) {
           return [renderInlineMath(mathContent(trimmed.slice(2, -2)), i)];
         }
 
-        // Plain text — detect and render bare LaTeX commands (e.g. \frac, \sqrt)
-        const subParts = splitBareLatex(textContent(part));
-        return subParts.map((sp, j) =>
-          sp.type === "math"
-            ? renderInlineMath(sp.content, `${i}-${j}`)
-            : <span key={`${i}-${j}`} style={{ whiteSpace: "pre-wrap" }}>{sp.content}</span>
-        );
+        // Plain text — split on **bold** first, then render each segment through LaTeX pipeline
+        const tc = textContent(part);
+        const boldParts = tc.split(/(\*\*[^*]*\*\*)/g);
+        return boldParts.flatMap((bp, j) => {
+          const isBold = bp.startsWith("**") && bp.endsWith("**");
+          const inner = isBold ? bp.slice(2, -2) : bp;
+          return [renderTextSegment(inner, isBold, `${i}-${j}`)];
+        });
       })}
     </>
   );

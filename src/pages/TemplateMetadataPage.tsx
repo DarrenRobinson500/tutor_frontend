@@ -223,12 +223,25 @@ export function TemplateMetadataPage() {
           </div>
           <div className="col-sm-4">
             <label className="form-label fw-semibold">Subject</label>
-            <input
-              className="form-control"
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              placeholder="e.g. Fractions"
-            />
+            {selectedSkillDetail ? (
+              <select
+                className="form-select"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+              >
+                <option value="">— select —</option>
+                {selectedSkillDetail.split("\n").filter(Boolean).map((line, i) => (
+                  <option key={i} value={line}>{line}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="form-control"
+                value={subject}
+                onChange={e => setSubject(e.target.value)}
+                placeholder="e.g. Fractions"
+              />
+            )}
           </div>
         </div>
 

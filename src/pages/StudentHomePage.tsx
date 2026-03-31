@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 // import { WeeklyCalendar } from "./components/WeeklyCalendar";
 import { Layout } from "./components/Layout";
@@ -76,6 +76,17 @@ export function StudentHomePage() {
         >
           Edit My Details
         </button>
+        <div className="d-flex flex-wrap gap-2 mt-2">
+          <Link to={`/students/${id}/test?type=easy`} className="btn btn-outline-success">
+            Start Skills Test — Easy
+          </Link>
+          <Link to={`/students/${id}/test?type=medium`} className="btn btn-outline-primary">
+            Start Skills Test — Moderate
+          </Link>
+          <Link to={`/students/${id}/test?type=hard`} className="btn btn-outline-danger">
+            Start Skills Test — Hard
+          </Link>
+        </div>
 
 
 

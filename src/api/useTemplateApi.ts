@@ -6,12 +6,16 @@ export function useTemplateApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function listTemplates(): Promise<TemplateSummary[]> {
+  async function listTemplates(hasNotesOnly = false, noSubjectOnly = false): Promise<TemplateSummary[]> {
     setLoading(true);
     setError(null);
 
     try {
-      const res = await apiFetch("/api/templates/");
+      const params = new URLSearchParams();
+      if (hasNotesOnly) params.set("has_notes", "true");
+      if (noSubjectOnly) params.set("no_subject", "true");
+      const url = params.toString() ? `/api/templates/?${params}` : "/api/templates/";
+      const res = await apiFetch(url);
       if (!res.ok) throw new Error("Failed to load templates");
       return await res.json();
     } catch (err: any) {

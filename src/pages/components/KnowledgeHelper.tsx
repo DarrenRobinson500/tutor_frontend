@@ -8,9 +8,11 @@ interface KnowledgeSummary {
 
 interface Props {
   templateId: number | null;
+  onKnowledgeChange?: () => void;
+  onInsert?: (snippet: string) => void;
 }
 
-export function KnowledgeHelper({ templateId }: Props) {
+export function KnowledgeHelper({ templateId, onKnowledgeChange, onInsert }: Props) {
   const [linked, setLinked] = useState<KnowledgeSummary[]>([]);
   const [all, setAll] = useState<KnowledgeSummary[]>([]);
   const [search, setSearch] = useState("");
@@ -48,13 +50,16 @@ export function KnowledgeHelper({ templateId }: Props) {
     const newLinked = [...linked, item];
     setLinked(newLinked);
     setSearch("");
+    onInsert?.(`{{ Knowledge("${item.title}") }}`);
     await patch(newLinked.map(k => k.id));
+    onKnowledgeChange?.();
   }
 
   async function remove(id: number) {
     const newLinked = linked.filter(k => k.id !== id);
     setLinked(newLinked);
     await patch(newLinked.map(k => k.id));
+    onKnowledgeChange?.();
   }
 
   const linkedIds = new Set(linked.map(k => k.id));
@@ -74,6 +79,15 @@ export function KnowledgeHelper({ templateId }: Props) {
               key={k.id}
               style={{ background: "#2d2d2d", border: "1px solid #555", borderRadius: 3, padding: "2px 6px", display: "flex", alignItems: "center", gap: 4 }}
             >
+              {onInsert && (
+                <button
+                  onClick={() => onInsert(`{{ Knowledge("${k.title}") }}`)}
+                  title="Insert into solution"
+                  style={{ background: "none", border: "none", color: "#7ec8e3", cursor: "pointer", padding: 0, fontSize: 11, lineHeight: 1 }}
+                >
+                  ↩
+                </button>
+              )}
               {k.title}
               <button
                 onClick={() => remove(k.id)}

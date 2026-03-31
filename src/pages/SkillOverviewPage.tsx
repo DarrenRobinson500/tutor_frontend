@@ -12,6 +12,8 @@ interface KnowledgeSummary {
 interface TemplateSummary {
   id: number;
   name: string;
+  description: string;
+  subject: string | null;
   difficulty: string;
   validated: boolean;
   grade: string;
@@ -48,6 +50,11 @@ export function SkillOverviewPage() {
   const [showLinkModal, setShowLinkModal] = useState(false);
   const [allKnowledge, setAllKnowledge] = useState<KnowledgeSummary[]>([]);
   const [linking, setLinking] = useState(false);
+  const [aligning, setAligning] = useState(false);
+  const [alignResult, setAlignResult] = useState<{ updated: number; total: number; errors: string[] } | null>(null);
+  const [creatingSlot, setCreatingSlot] = useState<string | null>(null); // "grade:diff:subject"
+  const [creatingEmptySlot, setCreatingEmptySlot] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!skillId) return;
@@ -104,6 +111,86 @@ export function SkillOverviewPage() {
     fetchKnowledge();
   };
 
+  const invalidateAll = async () => {
+    if (!window.confirm(`Set all templates for "${skillName}" to unvalidated?`)) return;
+    await apiFetch("/api/templates/invalidate_all/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skill_id: skillId }),
+    });
+    const tRes = await apiFetch(`/api/templates/filtered/?skill=${skillId}`);
+    setTemplates(await tRes.json());
+  };
+
+  const alignSubjects = async () => {
+    setAligning(true);
+    setAlignResult(null);
+    try {
+      const res = await apiFetch("/api/templates/align_subjects/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_id: skillId }),
+      });
+      const data = await res.json();
+      setAlignResult(data);
+      // Refetch templates so subjects are up to date
+      const tRes = await apiFetch(`/api/templates/filtered/?skill=${skillId}`);
+      const tData: TemplateSummary[] = await tRes.json();
+      setTemplates(tData);
+    } catch (err) {
+      setAlignResult({ updated: 0, total: 0, errors: [String(err)] });
+    } finally {
+      setAligning(false);
+    }
+  };
+
+  const createForSubject = async (g: string, diff: string, subject: string) => {
+    const key = `${g}:${diff}:${subject}`;
+    setCreatingSlot(key);
+    try {
+      const res = await apiFetch("/api/templates/generate_for_subject/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_id: skillId, grade: g, difficulty: diff, subject }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        navigate(`/templates/${data.id}`);
+      }
+    } catch (err) {
+      console.error("Failed to create template:", err);
+    } finally {
+      setCreatingSlot(null);
+    }
+  };
+
+  const createEmptyForSubject = async (g: string, diff: string, subject: string) => {
+    const key = `${g}:${diff}:${subject}`;
+    setCreatingEmptySlot(key);
+    try {
+      const res = await apiFetch("/api/templates/create_empty_for_subject/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skill_id: skillId, grade: g, difficulty: diff, subject }),
+      });
+      const data = await res.json();
+      if (data.id) navigate(`/templates/${data.id}`);
+    } catch (err) {
+      console.error("Failed to create empty template:", err);
+    } finally {
+      setCreatingEmptySlot(null);
+    }
+  };
+
+  const deleteTemplate = async (t: TemplateSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${t.subject || t.name}"? This cannot be undone.`)) return;
+    setDeletingId(t.id);
+    await apiFetch(`/api/templates/${t.id}/`, { method: "DELETE" });
+    setTemplates(prev => prev.filter(x => x.id !== t.id));
+    setDeletingId(null);
+  };
+
   const unlinkKnowledge = async (k: KnowledgeSummary) => {
     const updatedSkillIds = k.skill_ids.filter(id => id !== parseInt(skillId!));
     await apiFetch(`/api/knowledge/${k.id}/`, {
@@ -112,6 +199,23 @@ export function SkillOverviewPage() {
     });
     fetchKnowledge();
   };
+
+  // Build ordered detail lines for sorting
+  const detailLines = skillDetail.split("\n").map(s => s.trim()).filter(Boolean);
+
+  function sortBySubject(group: TemplateSummary[]): TemplateSummary[] {
+    return [...group].sort((a, b) => {
+      const ai = detailLines.indexOf(a.subject ?? "");
+      const bi = detailLines.indexOf(b.subject ?? "");
+      const aInDetail = ai !== -1;
+      const bInDetail = bi !== -1;
+      if (aInDetail && bInDetail) return ai - bi;
+      if (aInDetail) return -1;
+      if (bInDetail) return 1;
+      // Both unaligned — sort alphabetically by subject
+      return (a.subject ?? "").localeCompare(b.subject ?? "");
+    });
+  }
 
   // Grades from the syllabus
   const syllabus = new Set(skillGrades.map(String));
@@ -147,7 +251,21 @@ export function SkillOverviewPage() {
           >
             Link Knowledge
           </button>
+          <button
+            className="btn btn-outline-primary btn-sm"
+            onClick={alignSubjects}
+            disabled={aligning}
+          >
+            {aligning ? "Aligning…" : "Align Subjects with Skill Detail"}
+          </button>
+          <button
+            className="btn btn-outline-danger btn-sm"
+            onClick={invalidateAll}
+          >
+            Invalidate All
+          </button>
         </div>
+
 
         {skillDetail && (
           <div className="mb-4 p-3 bg-light rounded" style={{ fontSize: 14 }}>
@@ -180,9 +298,11 @@ export function SkillOverviewPage() {
                   </div>
                   <div className="row g-3">
                     {DIFFICULTIES.map(diff => {
-                      const group = gradeTemplates.filter(t => t.difficulty === diff);
+                      const group = sortBySubject(gradeTemplates.filter(t => t.difficulty === diff));
                       const colour = validationColour(group);
                       const validatedCount = group.filter(t => t.validated).length;
+                      const coveredSubjects = new Set(group.map(t => t.subject).filter(Boolean));
+                      const missingDetails = detailLines.filter(d => !coveredSubjects.has(d));
                       return (
                         <div key={diff} className="col-md-4">
                           <div className="card h-100">
@@ -193,18 +313,22 @@ export function SkillOverviewPage() {
                               </span>
                             </div>
                             <div className="card-body p-2">
-                              {group.length === 0 ? (
-                                <p className="text-muted small mb-0 p-2">No templates yet</p>
-                              ) : (
-                                <div className="d-flex flex-column gap-1">
-                                  {group.map(t => (
-                                    <button
-                                      key={t.id}
-                                      className={`btn btn-sm text-start w-100 ${t.validated ? "btn-outline-success" : "btn-outline-secondary"}`}
+                              <div className="d-flex flex-column gap-1">
+                                {group.map(t => (
+                                  <div
+                                    key={t.id}
+                                    className={`btn btn-sm text-start w-100 d-flex align-items-start gap-1 p-0 ${t.validated ? "btn-outline-success" : "btn-outline-secondary"}`}
+                                  >
+                                    <div
+                                      className="flex-grow-1 p-2"
+                                      style={{ cursor: "pointer" }}
                                       onClick={() => navigate(`/templates/${t.id}`)}
                                     >
                                       <div className="d-flex justify-content-between align-items-start">
-                                        <strong className="small">{t.name || t.question_text || "(untitled)"}</strong>
+                                        {t.subject
+                                          ? <strong className="small">{t.subject}</strong>
+                                          : <strong className="small text-danger fst-italic">No subject</strong>
+                                        }
                                         {t.validated && (
                                           <span className="badge bg-success ms-2 flex-shrink-0">✓</span>
                                         )}
@@ -214,10 +338,51 @@ export function SkillOverviewPage() {
                                           {t.question_text}
                                         </div>
                                       )}
+                                    </div>
+                                    <button
+                                      className="btn btn-sm btn-link text-danger p-1 flex-shrink-0"
+                                      style={{ fontSize: 14, lineHeight: 1 }}
+                                      disabled={deletingId === t.id}
+                                      onClick={(e) => deleteTemplate(t, e)}
+                                      title="Delete template"
+                                    >
+                                      {deletingId === t.id ? "…" : "✕"}
                                     </button>
-                                  ))}
-                                </div>
-                              )}
+                                  </div>
+                                ))}
+                                {missingDetails.map(subject => {
+                                  const key = `${g}:${diff}:${subject}`;
+                                  const isCreating = creatingSlot === key;
+                                  return (
+                                    <div
+                                      key={subject}
+                                      className="rounded p-2"
+                                      style={{ border: "1px solid #f5c6cb", background: "#fff5f5" }}
+                                    >
+                                      <div className="small text-danger mb-1" style={{ lineHeight: 1.3 }}>{subject}</div>
+                                      <div className="d-flex gap-1 flex-wrap">
+                                        <button
+                                          className="btn btn-sm btn-outline-danger"
+                                          disabled={isCreating}
+                                          onClick={() => createForSubject(String(g), diff, subject)}
+                                        >
+                                          {isCreating ? "Creating…" : "Create Template"}
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-outline-danger"
+                                          disabled={creatingEmptySlot === key}
+                                          onClick={() => createEmptyForSubject(String(g), diff, subject)}
+                                        >
+                                          {creatingEmptySlot === key ? "Creating…" : "Create Empty"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {group.length === 0 && missingDetails.length === 0 && (
+                                  <p className="text-muted small mb-0 p-2">No templates yet</p>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -296,6 +461,35 @@ export function SkillOverviewPage() {
         )}
 
       </div>
+
+      {alignResult && (
+        <div
+          style={{
+            position: "fixed", bottom: 24, right: 24, zIndex: 9999,
+            minWidth: 280, maxWidth: 420,
+            background: alignResult.errors.length > 0 ? "#fff3cd" : "#d1e7dd",
+            border: `1px solid ${alignResult.errors.length > 0 ? "#ffc107" : "#a3cfbb"}`,
+            borderRadius: 8, padding: "12px 16px", boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            fontSize: 13,
+          }}
+        >
+          <div className="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <strong>Subjects aligned:</strong> {alignResult.updated} / {alignResult.total} updated.
+              {alignResult.errors.length > 0 && (
+                <ul className="mb-0 mt-1 ps-3">
+                  {alignResult.errors.map((e, i) => <li key={i}>{e}</li>)}
+                </ul>
+              )}
+            </div>
+            <button
+              className="btn-close btn-sm flex-shrink-0"
+              onClick={() => setAlignResult(null)}
+              style={{ fontSize: 10 }}
+            />
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }

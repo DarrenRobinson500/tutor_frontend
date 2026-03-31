@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Breadcrumbs } from "./components/Breadcrumbs";
 import { SkillsMatrix } from "./components/SkillsMatrix";
@@ -16,6 +16,8 @@ export default function SkillsPage() {
   const { listSkills, loadSyllabus, loading, error } = useSkillsApi();
   const [message, setMessage] = useState("");
   const [skills, setSkills] = useState<Skill[]>([]);
+  const [importing, setImporting] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
 
   // Load skill + parents
   useEffect(() => {
@@ -52,6 +54,40 @@ export default function SkillsPage() {
     return <Layout><div className="container mt-4">Loading...</div></Layout>;
   }
 
+  const handleDownload = () => {
+    apiFetch("/api/templates/export_all/")
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "templates.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => setMessage("Download failed"));
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    const form = new FormData();
+    form.append("file", file);
+    apiFetch("/api/templates/import_bulk/", { method: "POST", body: form })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setMessage(`Upload failed: ${data.error}`);
+        } else {
+          setMessage(`Import complete — created: ${data.created}, skipped (duplicates): ${data.skipped}, errors: ${data.errors}`);
+        }
+      })
+      .catch(() => setMessage("Upload failed"))
+      .finally(() => setImporting(false));
+  };
+
   const handleLoad = () => {
     loadSyllabus()
       .then(() => {
@@ -86,6 +122,26 @@ export default function SkillsPage() {
           >
             + Create New Template from Image
           </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={handleDownload}
+          >
+            Download all templates
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => uploadRef.current?.click()}
+            disabled={importing}
+          >
+            {importing ? "Uploading…" : "Upload all templates"}
+          </button>
+          <input
+            ref={uploadRef}
+            type="file"
+            accept=".json"
+            className="d-none"
+            onChange={handleUpload}
+          />
         </div>
 
 

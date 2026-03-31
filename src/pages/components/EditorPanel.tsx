@@ -32,9 +32,42 @@ async function saveToBackend(templateId: string | number | null, content: string
   }
 }
 
+// Inject CSS for {{ }} highlight
+{
+  let style = document.getElementById("template-expr-style") as HTMLStyleElement | null;
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "template-expr-style";
+    document.head.appendChild(style);
+  }
+  style.textContent = ".template-expression { color: #4fc3f7 !important;  }";
+}
+
+function applyExpressionDecorations(
+  editor: monaco.editor.IStandaloneCodeEditor,
+  collection: monaco.editor.IEditorDecorationsCollection
+) {
+  const model = editor.getModel();
+  if (!model) return;
+  const text = model.getValue();
+  const decorations: monaco.editor.IModelDeltaDecoration[] = [];
+  const regex = /\{\{.*?\}\}/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const start = model.getPositionAt(match.index);
+    const end = model.getPositionAt(match.index + match[0].length);
+    decorations.push({
+      range: new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column),
+      options: { inlineClassName: "template-expression" },
+    });
+  }
+  collection.set(decorations);
+}
+
 export const EditorPanel = forwardRef<EditorHandle, EditorPanelProps>(
   ({ content, onChange, validation, templateId }, ref) => {
     const editorInstanceRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const decorationsRef = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
     const backendTimeoutRef = useRef<number | null>(null);
 
     useImperativeHandle(ref, () => ({
@@ -64,6 +97,15 @@ export const EditorPanel = forwardRef<EditorHandle, EditorPanelProps>(
       });
     }, []);
 
+    // Update decorations whenever content changes
+    useEffect(() => {
+      const editor = editorInstanceRef.current;
+      const collection = decorationsRef.current;
+      if (editor && collection) {
+        applyExpressionDecorations(editor, collection);
+      }
+    }, [content]);
+
     useEffect(() => {
       if (backendTimeoutRef.current) {
         window.clearTimeout(backendTimeoutRef.current);
@@ -89,7 +131,11 @@ export const EditorPanel = forwardRef<EditorHandle, EditorPanelProps>(
         value={content}
         onChange={(value) => onChange(value || "")}
         theme="vs-dark"
-        onMount={(editor) => { editorInstanceRef.current = editor; }}
+        onMount={(editor) => {
+          editorInstanceRef.current = editor;
+          decorationsRef.current = editor.createDecorationsCollection([]);
+          applyExpressionDecorations(editor, decorationsRef.current);
+        }}
         options={{
           fontSize: 14,
           minimap: { enabled: false },

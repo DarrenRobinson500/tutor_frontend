@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Latex } from "./Latex";
 import "katex/dist/katex.min.css";
 import { apiFetch } from "../../utils/apiFetch";
-import type { PreviewResponse, StudentRecordResponse, KnowledgeItem } from "../../types/PreviewResponse";
+import type { PreviewResponse, StudentRecordResponse, KnowledgeItem, InlineKnowledge } from "../../types/PreviewResponse";
+import { PowerInput } from "./PowerInput";
 
 
 interface PreviewPanelBase {
@@ -49,6 +51,36 @@ export type PreviewPanelProps =
   | PreviewPanelEditorProps
   | PreviewPanelStudentProps;
 
+function KnowledgeCallout({ k }: { k: InlineKnowledge }) {
+  return (
+    <div
+      className="p-3 mb-2 rounded"
+      style={{ background: "#fffde7", border: "1px solid #ffe082", fontSize: 15 }}
+    >
+      {k.title && (
+        <div className="fw-semibold mb-1" style={{ fontSize: 14 }}>
+          <Latex>{k.title}</Latex>
+        </div>
+      )}
+      {k.text && (
+        <div className="mb-1" style={{ lineHeight: 1.6 }}>
+          <Latex>{k.text}</Latex>
+        </div>
+      )}
+      {k.diagram_svg && (
+        <div style={{ display: "flex", justifyContent: "center", width: "100%", margin: "8px 0" }}>
+          <div dangerouslySetInnerHTML={{ __html: k.diagram_svg }} />
+        </div>
+      )}
+      {k.text_2 && (
+        <div style={{ lineHeight: 1.6 }}>
+          <Latex>{k.text_2}</Latex>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PreviewPanel({
   preview,
   mode,
@@ -67,10 +99,15 @@ export function PreviewPanel({
   const [backendResult, setBackendResult] = useState<any>(null);
   const [localTemplateId, setLocalTemplateId] = useState<number | null>(null);
   const [textInput, setTextInput] = useState("");
+  const navigate = useNavigate();
   const [formatError, setFormatError] = useState<string | null>(null);
+  const [noteText, setNoteText] = useState("");
+  const [notes, setNotes] = useState<any[]>([]);
+  const [isAddingNote, setIsAddingNote] = useState(false);
   const textInputRef = useRef<HTMLInputElement>(null);
   const [focusKey, setFocusKey] = useState(0);
   const [multiStepIndex, setMultiStepIndex] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Array<{ question: string; answer: string; correct: boolean }>>([]);
 
   useEffect(() => {
     if (mode === "student" && templateId !== undefined) {
@@ -79,7 +116,8 @@ export function PreviewPanel({
     }
   }, [templateId, mode]);
 
-  // Reset state on any preview change (including YAML edits) — but do NOT focus here.
+  // Reset state on any preview change (including YAML edits).
+  // Focus the input in student mode so the student can type immediately.
   useEffect(() => {
     setStartTime(Date.now());
     setSelected(null);
@@ -91,6 +129,10 @@ export function PreviewPanel({
     setTextInput("");
     setFormatError(null);
     setMultiStepIndex(0);
+    setCompletedSteps([]);
+    if (mode === "student") {
+      setTimeout(() => textInputRef.current?.focus(), 50);
+    }
   }, [preview]);
 
   // Focus the input only when explicitly triggered by answering and advancing.
@@ -98,6 +140,35 @@ export function PreviewPanel({
     if (focusKey === 0) return;
     setTimeout(() => textInputRef.current?.focus(), 50);
   }, [focusKey]);
+
+  const effectiveTemplateId = templateId ?? localTemplateId;
+
+  useEffect(() => {
+    if (mode !== "student" || !effectiveTemplateId) { setNotes([]); return; }
+    apiFetch(`/api/notes/?template=${effectiveTemplateId}`)
+      .then(r => r.json())
+      .then(data => setNotes(Array.isArray(data) ? data : (data.results ?? [])))
+      .catch(() => {});
+  }, [effectiveTemplateId, mode]);
+
+  async function handleAddNote() {
+    if (!noteText.trim() || !effectiveTemplateId) return;
+    setIsAddingNote(true);
+    try {
+      const res = await apiFetch("/api/notes/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ template: effectiveTemplateId, text: noteText.trim() }),
+      });
+      if (res.ok) {
+        const note = await res.json();
+        setNotes(prev => [note, ...prev]);
+        setNoteText("");
+      }
+    } finally {
+      setIsAddingNote(false);
+    }
+  }
 
   const safeLatex = (value: any): string => {
     if (value === null || value === undefined) return "";
@@ -132,6 +203,38 @@ export function PreviewPanel({
     return res.json();
   }
 
+  function advanceMultiStep(stepQuestion: string, studentAnswer: string, correct: boolean) {
+    setCompletedSteps(prev => [...prev, { question: stepQuestion, answer: studentAnswer, correct }]);
+    setMultiStepIndex(i => i + 1);
+    setIsCorrect(null);
+    setSelected(null);
+    setTextInput("");
+    setFocusKey(k => k + 1);
+  }
+
+  async function handleMultiStepChoiceClick(choiceIndex: number, choice: { text: string; correct: boolean }) {
+    const multiStep = preview?.multi_step;
+    if (!multiStep || !activeStep) return;
+    setSelected(choiceIndex);
+    const correct = choice.correct;
+    setIsCorrect(correct);
+    const isLastStep = multiStepIndex === multiStep.steps.length - 1;
+    if (correct) {
+      if (!isLastStep) {
+        setTimeout(() => { advanceMultiStep(activeStep.question ?? "", choice.text, true); }, 800);
+      } else {
+        if (mode === "student") {
+          const result = await recordAttempt({ text: choice.text }, true);
+          setTimeout(() => { onStudentNext?.(result); }, 1000);
+        }
+        if (mode === "editor") {
+          setTimeout(() => { loadNextEditorPreview(); }, 1000);
+        }
+      }
+    }
+    // Incorrect: just show "Incorrect — try again"; student clicks again to retry
+  }
+
   async function handleIDontKnowMultiStep() {
     if (!multiStep || !activeStep) return;
     setFlagged(true);
@@ -149,11 +252,7 @@ export function PreviewPanel({
       }
     } else {
       setTimeout(() => {
-        setMultiStepIndex(i => i + 1);
-        setIsCorrect(null);
-        setSelected(null);
-        setTextInput("");
-        setFocusKey(k => k + 1);
+        advanceMultiStep(activeStep.question ?? "", activeStep.answer ?? "", false);
       }, 1500);
     }
   }
@@ -186,6 +285,21 @@ export function PreviewPanel({
     }
   }
 
+  async function handleIDontKnow() {
+    setFlagged(true);
+    setSelected(0);
+    setIsCorrect(false);
+
+    if (mode === "student") {
+      const result = await recordAttempt(null, false, true);
+      setShowIncorrectFeedback(true);
+      setBackendResult(result);
+    }
+    if (mode === "editor") {
+      setTimeout(() => { loadNextEditorPreview(); }, 1500);
+    }
+  }
+
   async function handleIDontGetIt() {
     setFlagged(true);
 
@@ -197,10 +311,34 @@ export function PreviewPanel({
   }
 
   function answersMatch(input: string, correct: any, tolerance = 1e-9): boolean {
+    // Parse mixed numbers from raw strings BEFORE normalization strips spaces.
+    // "10 11/15" → 10 + 11/15. Must run first.
+    const parseMixed = (s: string): number | null => {
+      const m = s.trim().match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
+      if (!m) return null;
+      const whole = parseInt(m[1]), num = parseInt(m[2]), den = parseInt(m[3]);
+      if (den === 0) return null;
+      return whole + (whole < 0 ? -num / den : num / den);
+    };
+    const mixedA = parseMixed(String(input));
+    const mixedB = parseMixed(String(correct));
+    if (mixedA !== null || mixedB !== null) {
+      const toNum = (s: string, mixed: number | null): number | null => {
+        if (mixed !== null) return mixed;
+        if (s.includes("/")) { const [n, d] = s.split("/").map(Number); return isNaN(n) || isNaN(d) || d === 0 ? null : n / d; }
+        const n = parseFloat(s); return isNaN(n) ? null : n;
+      };
+      const na = toNum(String(input), mixedA), nb = toNum(String(correct), mixedB);
+      if (na !== null && nb !== null) return Math.abs(na - nb) <= tolerance;
+    }
+
     const normalize = (s: any) => String(s).trim().toLowerCase().replace(/\s+/g, "");
     const a = normalize(input);
     const b = normalize(correct);
     if (a === b) return true;
+
+    // Require format match: a percentage answer must be entered as a percentage
+    if (b.endsWith("%") && !a.endsWith("%")) return false;
 
     // If the student entered a fraction, it must be fully simplified
     if (a.includes("/") && !a.includes("x") && !a.includes("×")) {
@@ -232,13 +370,17 @@ export function PreviewPanel({
     // Parse a single number, fraction like "3/4", or percentage like "50%"
     const parseFraction = (s: string): number | null => {
       if (s.endsWith("%")) {
-        const n = parseFloat(s);
+        const digits = s.slice(0, -1);
+        if (!/^-?\d+(\.\d+)?$/.test(digits)) return null;
+        const n = parseFloat(digits);
         return isNaN(n) ? null : n / 100;
       }
       if (s.includes("/")) {
         const [num, den] = s.split("/").map(Number);
         return isNaN(num) || isNaN(den) || den === 0 ? null : num / den;
       }
+      // Use strict check — parseFloat("3x+2") would return 3, which is wrong
+      if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
       const n = parseFloat(s);
       return isNaN(n) ? null : n;
     };
@@ -277,7 +419,30 @@ export function PreviewPanel({
       }
     }
 
-    const na = parseFraction(a), nb = parseFraction(b);
+    // Parse plain-text mixed number like "2 1/3"
+    const parseMixedNumber = (s: string): number | null => {
+      const parts = s.trim().split(/\s+/);
+      if (parts.length !== 2) return null;
+      const whole = parseFloat(parts[0]);
+      if (isNaN(whole)) return null;
+      const slashParts = parts[1].split("/");
+      if (slashParts.length !== 2) return null;
+      const num = parseInt(slashParts[0]), den = parseInt(slashParts[1]);
+      if (isNaN(num) || isNaN(den) || den === 0) return null;
+      return whole + num / den;
+    };
+
+    // Parse power expression like "5^2" → 25
+    const parsePower = (s: string): number | null => {
+      const m = s.match(/^(\d+)\^(\d+)$/);
+      if (!m) return null;
+      return Math.pow(parseInt(m[1]), parseInt(m[2]));
+    };
+    const pa2 = parsePower(a), pb2 = parsePower(b) ?? parseFraction(b);
+    if (pa2 !== null && pb2 !== null) return Math.abs(pa2 - pb2) <= tolerance;
+
+    const na = parseFraction(a) ?? parseMixedNumber(a);
+    const nb = parseFraction(b) ?? parseMixedNumber(b);
     if (na !== null && nb !== null) return Math.abs(na - nb) <= tolerance;
     return false;
   }
@@ -289,10 +454,16 @@ export function PreviewPanel({
       return "Please enter your answer as a fraction, e.g. 3/5";
     if (format === "integer" && !/^-?\d+$/.test(s))
       return "Please enter a whole number, e.g. 42";
-    if (format === "decimal" && !/^-?\d+(\.\d+)?$/.test(s))
+    if (format === "decimal" && !/^-?\d*\.?\d+$/.test(s))
       return "Please enter a decimal, e.g. 0.75";
     if (format === "ratio" && !/^\d+(\s*:\s*\d+)+$/.test(s))
       return "Please enter your answer as a ratio, e.g. 1:2";
+    if ((format === "percent" || format === "percentage") && !/^-?\d+(\.\d+)?%$/.test(s))
+      return "Please enter your answer as a percentage, e.g. 25%";
+    if (format === "proper_fraction" && !/^\d+(\s+\d+\/\d+)?$/.test(s))
+      return "Please enter as a mixed number, e.g. 2 1/3";
+    if (format === "equation" && !/^\d+(\^\d+)?$/.test(s))
+      return "Please enter a number or power, e.g. 5^2";
     return null;
   }
 
@@ -312,11 +483,7 @@ export function PreviewPanel({
         const isLastStep = multiStepIndex === multiStep.steps.length - 1;
         if (!isLastStep) {
           setTimeout(() => {
-            setMultiStepIndex(i => i + 1);
-            setIsCorrect(null);
-            setSelected(null);
-            setTextInput("");
-            setFocusKey(k => k + 1);
+            advanceMultiStep(step.question ?? "", textInput, true);
           }, 800);
         } else {
           if (mode === "student") {
@@ -421,7 +588,18 @@ export function PreviewPanel({
 
   const solution = safeLatex(preview.solution);
   const knowledgeItems: KnowledgeItem[] = preview.knowledge_items ?? [];
+  const inlineKnowledgeAll: InlineKnowledge[] = preview.inline_knowledge ?? [];
+  const questionKnowledge = inlineKnowledgeAll.filter(k => k.show === "question" || k.show === "both");
+  const solutionKnowledge = inlineKnowledgeAll.filter(k => k.show === "solution" || k.show === "both" || k.show === "");
+  const postAnswerKnowledge = inlineKnowledgeAll.filter(k => k.show === "post_answer");
+  const postAnswer = preview.post_answer ?? "";
   const answers = Array.isArray(preview.answers) ? preview.answers : [];
+  const sortedAnswers = [...answers.filter(Boolean)].sort((a: any, b: any) => {
+    const na = parseFloat(a?.text);
+    const nb = parseFloat(b?.text);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return 0;
+  });
   const multiStep = preview.multi_step;
   const isMultiStep = Boolean(multiStep?.steps?.length);
   const activeStep = isMultiStep ? multiStep!.steps[multiStepIndex] : null;
@@ -431,11 +609,22 @@ export function PreviewPanel({
   const stepQuestion = (isMultiStep && activeStep?.question)
     ? safeLatex(activeStep.question)
     : null;
-  const isInputMode = isMultiStep || answers.some((a: any) => a?.input_type === "text");
+  const isStepMC = isMultiStep && Boolean(activeStep?.choices?.length);
+  const isInputMode = (isMultiStep && !isStepMC) || answers.some((a: any) => a?.input_type === "text");
   const correctInputAnswer = answers.find((a: any) => a?.correct);
   const inputAnswerMeta = answers.find((a: any) => a?.input_type === "text");
-  const formatInstruction = inputAnswerMeta?.format_instruction ?? null;
   const answerFormat = inputAnswerMeta?.answer_format ?? null;
+  const DEFAULT_FORMAT_INSTRUCTIONS: Record<string, string> = {
+    fraction: "Enter as a fraction, e.g. 3/5",
+    integer:  "Enter a whole number, e.g. 42",
+    decimal:  "Enter as a decimal, e.g. 0.75",
+    ratio:    "Enter as a ratio, e.g. 3:2",
+    percent:  "Enter as a percentage, e.g. 35%",
+    equation: "Enter a base and power, e.g. 5^2 (press ^ or the xⁿ button to enter the power)",
+  };
+  const formatInstruction = activeStep?.format_instruction
+    ?? inputAnswerMeta?.format_instruction
+    ?? (answerFormat ? DEFAULT_FORMAT_INSTRUCTIONS[answerFormat] ?? null : null);
   const answerTolerance = inputAnswerMeta?.tolerance ?? 1e-9;
 
   return (
@@ -443,6 +632,20 @@ export function PreviewPanel({
       <div style={{ marginBottom: stepQuestion ? 6 : 12 }}>
         <Latex>{mainQuestion}</Latex>
       </div>
+      {questionKnowledge.map((k, i) => <KnowledgeCallout key={i} k={k} />)}
+      {completedSteps.map((cs, i) => (
+        <div key={i} style={{ marginBottom: 10, paddingLeft: 8, borderLeft: "3px solid #ccc" }}>
+          {cs.question && (
+            <div style={{ fontWeight: "bold" }}>
+              <Latex>{safeLatex(cs.question)}</Latex>
+            </div>
+          )}
+          <div style={{ color: cs.correct ? "#2e7d32" : "#c62828", marginTop: 2 }}>
+            <Latex>{safeLatex(cs.answer)}</Latex>
+          </div>
+        </div>
+      ))}
+
       {stepQuestion && (
         <div style={{ marginBottom: 12, fontWeight: "bold" }}>
           <Latex>{stepQuestion}</Latex>
@@ -456,9 +659,57 @@ export function PreviewPanel({
       )}
 
       {(isMultiStep || answers.length > 0) && (
-        isInputMode ? (
+        isStepMC ? (
+          <>
+          <div className="d-flex flex-row flex-wrap gap-2 mt-2">
+            {activeStep!.choices!.map((c: any, i: number) => {
+              const isSelected = selected === i;
+              const btnClass = `btn btn-sm w-auto ${
+                isSelected
+                  ? isCorrect ? "btn-success" : "btn-danger"
+                  : "btn-outline-primary"
+              }`;
+              return (
+                <button
+                  key={i}
+                  className={btnClass}
+                  style={{ minWidth: "90px" }}
+                  disabled={isCorrect === true}
+                  onClick={() => handleMultiStepChoiceClick(i, c)}
+                >
+                  <Latex>{safeLatex(c.text)}</Latex>
+                </button>
+              );
+            })}
+          </div>
+          {selected === null && (
+            <button
+              className="btn btn-outline-secondary btn-sm mt-2"
+              onClick={handleIDontKnowMultiStep}
+            >
+              I don't know
+            </button>
+          )}
+          </>
+        ) : isInputMode ? (
           <div>
             <div className="d-flex gap-2 align-items-center mt-2">
+              {answerFormat === "equation" ? (
+                <PowerInput
+                  value={textInput}
+                  onChange={v => {
+                    setTextInput(v);
+                    setFormatError(null);
+                    if (isCorrect === false) {
+                      setSelected(null);
+                      setIsCorrect(null);
+                    }
+                  }}
+                  onSubmit={handleTextSubmit}
+                  disabled={isCorrect === true}
+                  autoFocus={mode === "student"}
+                />
+              ) : (
               <input
                 type="text"
                 className="form-control"
@@ -476,6 +727,7 @@ export function PreviewPanel({
                 disabled={isCorrect === true}
                 ref={textInputRef}
               />
+              )}
               <button
                 className="btn btn-primary btn-sm"
                 onClick={handleTextSubmit}
@@ -483,7 +735,7 @@ export function PreviewPanel({
               >
                 Submit
               </button>
-              {isMultiStep && (
+              {isMultiStep ? (
                 <button
                   className="btn btn-outline-secondary btn-sm"
                   onClick={handleIDontKnowMultiStep}
@@ -491,10 +743,18 @@ export function PreviewPanel({
                 >
                   I don't know
                 </button>
+              ) : (
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={handleIDontKnow}
+                  disabled={isCorrect === true}
+                >
+                  I don't know
+                </button>
               )}
             </div>
             {formatError && (
-              <div className="text-danger mt-1" style={{ fontSize: 13 }}>{formatError}</div>
+              <div className="text-danger mt-1" style={{ fontSize: 18 }}>{formatError}</div>
             )}
             {formatInstruction && (
               <div className="text-muted mt-1" style={{ fontSize: 13 }}>
@@ -503,8 +763,9 @@ export function PreviewPanel({
             )}
           </div>
         ) : (
+          <>
           <div className="d-flex flex-row flex-wrap gap-2">
-            {answers.filter(Boolean).map((a: any, i: number) => {
+            {sortedAnswers.map((a: any, i: number) => {
               const isSelected = selected === i;
               const btnClass = `btn btn-sm w-auto ${
                 isSelected
@@ -538,19 +799,28 @@ export function PreviewPanel({
               );
             })}
           </div>
+          {selected === null && (
+            <button
+              className="btn btn-outline-secondary btn-sm mt-2"
+              onClick={handleIDontKnow}
+            >
+              I don't know
+            </button>
+          )}
+          </>
         )
       )}
 
       {selected !== null && (
         <div className="mt-3" style={{ fontWeight: "bold", fontSize: 18 }}>
-          {isCorrect ? "Correct!" : "Incorrect — try again"}
+          {isCorrect ? "Correct!" : "Try again"}
         </div>
       )}
 
       {selected !== null && !isCorrect && isMultiStep && activeStep && (
         <div
           className="mt-2 p-2"
-          style={{ background: "#f8f9fa", borderLeft: "4px solid #dc3545", fontSize: 15 }}
+          style={{ background: "#f8f9fa", borderLeft: "4px solid #dc3545", fontSize: 18 }}
         >
           {activeStep.solution
             ? <Latex>{activeStep.solution}</Latex>
@@ -566,7 +836,7 @@ export function PreviewPanel({
             style={{
               background: "#f8f9fa",
               borderLeft: "4px solid #dc3545",
-              fontSize: 15,
+              fontSize: 18,
               whiteSpace: "pre-wrap",
             }}
           >
@@ -575,6 +845,8 @@ export function PreviewPanel({
               : <span>The correct answer is <strong>{correctInputAnswer?.text}</strong></span>
             }
           </div>
+
+          {solutionKnowledge.map((k, i) => <KnowledgeCallout key={i} k={k} />)}
 
           {knowledgeItems.length > 0 && (
             <div className="mt-3">
@@ -595,10 +867,9 @@ export function PreviewPanel({
                     </div>
                   )}
                   {k.diagram_svg && (
-                    <div
-                      className="text-center my-2"
-                      dangerouslySetInnerHTML={{ __html: k.diagram_svg }}
-                    />
+                    <div style={{ display: "flex", justifyContent: "center", width: "100%", margin: "8px 0" }}>
+                      <div dangerouslySetInnerHTML={{ __html: k.diagram_svg }} />
+                    </div>
                   )}
                   {k.text_2 && (
                     <div style={{ lineHeight: 1.6 }}>
@@ -624,14 +895,67 @@ export function PreviewPanel({
                   >
                     I don't get it
                   </button>
+                  {(templateId ?? localTemplateId) && (
+                    <button
+                      className="btn btn-sm btn-secondary mt-2 ms-2"
+                      onClick={() => navigate(`/templates/${templateId ?? localTemplateId}`)}
+                    >
+                      Edit template
+                    </button>
+                  )}
                 </>
               )}
         </>
       )}
 
+      {(postAnswerKnowledge.length > 0 || postAnswer) && (
+        <div className="mt-3">
+          {postAnswerKnowledge.map((k, i) => <KnowledgeCallout key={i} k={k} />)}
+          {postAnswer && (
+            <div style={{ fontSize: 16, lineHeight: 1.6 }}>
+              <Latex>{postAnswer}</Latex>
+            </div>
+          )}
+        </div>
+      )}
+
       {flagged && (
         <div className="alert alert-info mt-2 p-2">
           Added to tutor review list
+        </div>
+      )}
+
+      {mode === "student" && effectiveTemplateId && (
+        <div className="mt-3">
+          <div className="d-flex gap-2 align-items-center">
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              style={{ maxWidth: 320 }}
+              placeholder="Add a note about this question…"
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleAddNote(); }}
+              disabled={isAddingNote}
+            />
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              onClick={handleAddNote}
+              disabled={isAddingNote || !noteText.trim()}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              Add Note
+            </button>
+          </div>
+          {notes.length > 0 && (
+            <div className="mt-1">
+              {notes.map(n => (
+                <div key={n.id} className="text-muted border-bottom py-1" style={{ fontSize: 13 }}>
+                  {n.text}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

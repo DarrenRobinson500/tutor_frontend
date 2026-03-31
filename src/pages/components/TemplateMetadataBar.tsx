@@ -8,6 +8,7 @@ interface TemplateMetadataBarProps {
   onSave: () => void;
   onDelete: () => void;
   onCopy: () => void;
+  onCopyHarder: () => void;
   isSaving: boolean;
   saveSuccess: boolean;
   saveError: string | null;
@@ -30,6 +31,7 @@ export function TemplateMetadataBar({
   onSave,
   onDelete,
   onCopy,
+  onCopyHarder,
   onValidate,
   onPreview,
   onToSkill,
@@ -56,133 +58,137 @@ export function TemplateMetadataBar({
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", padding: "8px 12px", gap: 6 }}>
 
-      {/* Grade */}
-      Grade:
-      <select
-        className="form-select"
-        style={{ width: "90px" }}
-        value={metadata.grade ?? ""}
-        onChange={(e) => onChange({ grade: e.target.value })}
-      >
-        <option value="">Select grade</option>
-        {["K","1","2","3","4","5","6","7","8","9","10"].map(g => (
-          <option key={g} value={g}>{g}</option>
-        ))}
-      </select>
+      {/* Row 1: Filter dropdowns */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, overflow: "hidden" }}>
+        <span style={{ whiteSpace: "nowrap", fontSize: 13 }}>Grade:</span>
+        <select
+          className="form-select form-select-sm"
+          style={{ width: "80px", flexShrink: 0 }}
+          value={metadata.grade ?? ""}
+          onChange={(e) => onChange({ grade: e.target.value })}
+        >
+          <option value="">—</option>
+          {["K","1","2","3","4","5","6","7","8","9","10"].map(g => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
 
-      {/* Skill dropdown */}
-      <select
-        className="form-select"
-        value={metadata.skill ?? ""}
-        onChange={(e) => onChange({ skill: Number(e.target.value) })}
-      >
-        <option value="">Select skill</option>
-        {skills.map((s) => (
-          <option key={s.id} value={s.id}>
-            {s.description}
-          </option>
-        ))}
-      </select>
+        <select
+          className="form-select form-select-sm"
+          style={{ minWidth: 0, flex: 1 }}
+          value={metadata.skill ?? ""}
+          onChange={(e) => onChange({ skill: Number(e.target.value) })}
+        >
+          <option value="">Select skill</option>
+          {skills.map((s) => (
+            <option key={s.id} value={s.id}>{s.description}</option>
+          ))}
+        </select>
 
-      {/* Validated filter */}
-      <select
-        className="form-select"
-        style={{ width: "150px" }}
-        value={metadata.validated_filter ?? "all"}
-        onChange={(e) =>
-          onChange({
-            validated_filter: e.target.value as "all" | "validated" | "unvalidated"
-          })
-        }
-      >
-        <option value="all">All</option>
-        <option value="validated">Validated only</option>
-        <option value="unvalidated">Unvalidated only</option>
-      </select>
+        <select
+          className="form-select form-select-sm"
+          style={{ width: "140px", flexShrink: 0 }}
+          value={metadata.validated_filter ?? "all"}
+          onChange={(e) =>
+            onChange({ validated_filter: e.target.value as "all" | "validated" | "unvalidated" })
+          }
+        >
+          <option value="all">All</option>
+          <option value="validated">Validated</option>
+          <option value="unvalidated">Unvalidated</option>
+        </select>
 
+        <select
+          className="form-select form-select-sm"
+          style={{ width: "110px", flexShrink: 0 }}
+          value={metadata.difficulty ?? ""}
+          onChange={(e) => onChange({ difficulty: e.target.value })}
+        >
+          <option value="">Difficulty</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
 
-
-
-
-      {/* Difficulty */}
-      <select
-        className="form-select"
-        style={{ width: "120px" }}
-        value={metadata.difficulty ?? ""}
-        onChange={(e) => onChange({ difficulty: e.target.value })}
-      >
-        <option value="">Difficulty</option>
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
-
-      {/* Subject dropdown */}
-      <select
-        className="form-select"
-        style={{ width: "400px" }}   // adjust as needed
-        value={metadata.subject ?? ""}
-        onChange={(e) => onSubjectChange(e.target.value)}
-      >
-        <option value="">All subjects</option>
+        <select
+          className="form-select form-select-sm"
+          style={{ minWidth: 0, flex: 2 }}
+          value={metadata.subject ?? ""}
+          onChange={(e) => onSubjectChange(e.target.value)}
+        >
+          <option value="">All subjects</option>
           {(subjects ?? []).map((subj) => (
             <option key={subj} value={subj}>{subj}</option>
           ))}
-      </select>
+        </select>
+      </div>
 
-      <button className="btn btn-outline-primary" onClick={onPrev}>&lt;</button>
-      <button className="btn btn-outline-primary" onClick={onNext}>&gt;</button>
+      {/* Row 2: Action buttons */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <button className="btn btn-sm btn-outline-primary" onClick={onPrev}>Previous</button>
+        <button className="btn btn-sm btn-outline-primary" onClick={onNext}>Next</button>
 
-      {/* Save button */}
-      <button
-        type="button"
-        className="btn btn-outline-primary"
-        onClick={onSave}
-        disabled={isSaving}
-      >
-        {isSaving ? "Saving..." : "Save"}
-      </button>
+        {saveSuccess && <span style={{ color: "green", fontSize: 13 }}>Saved</span>}
+        {saveError && <span style={{ color: "red", fontSize: 13 }}>{saveError}</span>}
 
-      {saveSuccess && <span style={{ color: "green" }}>Saved successfully</span>}
-      {saveError && <span style={{ color: "red" }}>{saveError}</span>}
+        <div style={{ width: 16 }} />
 
-      <button
-        className="btn btn-outline-primary"
-        onClick={() => navigate(`/templates/${metadata.id}/metadata`)}
-        disabled={!metadata.id}
-      >
-        Metadata
-      </button>
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => navigate(`/templates/${metadata.id}/metadata`)}
+          disabled={!metadata.id}
+        >
+          Metadata
+        </button>
 
-      <button
-        onClick={onValidate}
-        className={
-          metadata.validated
-            ? "btn btn-primary"
-            : "btn btn-outline-primary"
-        }
-      >
-        {metadata.validated ? "Validated" : "Validate"}
-      </button>
+        <button
+          onClick={onValidate}
+          className={metadata.validated ? "btn btn-sm btn-primary" : "btn btn-sm btn-outline-primary"}
+        >
+          {metadata.validated ? "Validated" : "Validate"}
+        </button>
 
-      <button
-        type="button"
-        className="btn btn-outline-primary"
-        onClick={handleCopy}
-        style={{ minWidth: 80 }}
-      >
-        {copied ? "Copied!" : "Copy"}
-      </button>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-primary"
+          onClick={handleCopy}
+          style={{ minWidth: 70 }}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
 
-      <button
-        className="btn btn-outline-success"
-        onClick={() => navigate("/templates/new")}
-        title="Create template from image"
-      >
-        +
-      </button>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={onCopyHarder}
+          title="Duplicate this template and increment difficulty (easy→medium→hard)"
+          disabled={metadata.difficulty === "hard"}
+        >
+          Create harder version
+        </button>
+
+        <div style={{ width: 16 }} />
+
+        {metadata.skill && metadata.grade && (
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => navigate(`/skills/${metadata.skill}/overview/${metadata.grade}`)}
+            title="Go to skill overview"
+          >
+            Skill Overview
+          </button>
+        )}
+
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => navigate("/templates/new")}
+          title="Create template from image"
+        >
+          New Template
+        </button>
+      </div>
     </div>
   );
 }
