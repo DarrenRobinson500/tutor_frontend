@@ -51,7 +51,7 @@ export function SkillsListPage({ parentId, onSelect }: SkillsListProps) {
             <th>Code</th>
             <th>Description</th>
             <th>Children</th>
-            <th>Templates</th>
+            <th>Coverage</th>
           </tr>
         </thead>
         <tbody>
@@ -64,7 +64,7 @@ export function SkillsListPage({ parentId, onSelect }: SkillsListProps) {
               <td>{skill.code}</td>
               <td>{skill.description}</td>
               <td>{skill.children_count}</td>
-              <td>{skill.template_count}</td>
+              <td>{skill.detail_total > 0 ? `${skill.detail_covered} / ${skill.detail_total}` : "—"}</td>
             </tr>
           ))}
         </tbody>

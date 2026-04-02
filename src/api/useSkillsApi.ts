@@ -11,7 +11,8 @@ export interface Skill {
   order_index: number;
   children_count?: number;
   template_count: number;
-
+  detail_covered: number;
+  detail_total: number;
 }
 
 export function useSkillsApi() {

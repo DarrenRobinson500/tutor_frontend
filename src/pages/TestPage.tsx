@@ -31,9 +31,10 @@ interface Skill {
 }
 
 const TEST_LABEL: Record<string, string> = {
-  easy:   "Easy Skills Test",
-  medium: "Moderate Skills Test",
-  hard:   "Hard Skills Test",
+  easy:    "Easy Skills Test",
+  medium:  "Moderate Skills Test",
+  hard:    "Hard Skills Test",
+  dynamic: "Skills Test",
 };
 
 const DIFFICULTY_BADGE: Record<string, string> = {
@@ -51,11 +52,11 @@ const RESULT_COLOR: Record<string, string> = {
 };
 
 const RESULT_LABEL: Record<string, string> = {
-  mastered: "Mastered",
-  hard: "Proficient",
-  medium: "Developing",
-  easy: "Basic",
-  none: "Not attempted",
+  mastered: "Advanced",
+  hard:     "Advanced",
+  medium:   "Proficient",
+  easy:     "Developing",
+  none:     "Not attempted",
 };
 
 const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
@@ -448,6 +449,13 @@ export function TestPage() {
   return (
     <Layout>
       <div className="container py-3" style={{ maxWidth: 700 }}>
+        <button
+          className="btn btn-sm btn-outline-secondary mb-3"
+          onClick={() => navigate(`/students/${studentId}`)}
+        >
+          ← Back
+        </button>
+
         {/* Test label */}
         {testType && TEST_LABEL[testType] && (
           <h5 className="mb-2 text-muted fw-normal" style={{ fontSize: 14 }}>

@@ -161,7 +161,7 @@ export function TemplateMetadataBar({
 
         <button
           type="button"
-          className="btn btn-sm btn-outline-secondary"
+          className="btn btn-sm btn-outline-primary"
           onClick={onCopyHarder}
           title="Duplicate this template and increment difficulty (easy→medium→hard)"
           disabled={metadata.difficulty === "hard"}

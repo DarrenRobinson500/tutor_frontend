@@ -300,8 +300,10 @@ export function SkillOverviewPage() {
                     {DIFFICULTIES.map(diff => {
                       const group = sortBySubject(gradeTemplates.filter(t => t.difficulty === diff));
                       const colour = validationColour(group);
-                      const validatedCount = group.filter(t => t.validated).length;
                       const coveredSubjects = new Set(group.map(t => t.subject).filter(Boolean));
+                      const validatedSubjects = new Set(group.filter(t => t.validated).map(t => t.subject).filter(Boolean));
+                      const detailTotal = detailLines.length;
+                      const detailCovered = detailLines.filter(d => validatedSubjects.has(d)).length;
                       const missingDetails = detailLines.filter(d => !coveredSubjects.has(d));
                       return (
                         <div key={diff} className="col-md-4">
@@ -309,7 +311,7 @@ export function SkillOverviewPage() {
                             <div className={`card-header bg-${colour} bg-opacity-25 d-flex justify-content-between align-items-center`}>
                               <strong>{DIFFICULTY_LABEL[diff]}</strong>
                               <span className={`badge bg-${colour} ${colour === "warning" ? "text-dark" : "text-white"}`}>
-                                {validatedCount} / {group.length}
+                                {detailTotal > 0 ? `${detailCovered} / ${detailTotal}` : `${group.filter(t => t.validated).length} / ${group.length}`}
                               </span>
                             </div>
                             <div className="card-body p-2">
@@ -361,6 +363,14 @@ export function SkillOverviewPage() {
                                     >
                                       <div className="small text-danger mb-1" style={{ lineHeight: 1.3 }}>{subject}</div>
                                       <div className="d-flex gap-1 flex-wrap">
+                                        <button
+                                          className="btn btn-sm btn-outline-danger"
+                                          onClick={() => navigate(
+                                            `/templates/new?skill_id=${skillId}&grade=${encodeURIComponent(String(g))}&difficulty=${encodeURIComponent(diff)}&subject=${encodeURIComponent(subject)}`
+                                          )}
+                                        >
+                                          Create Template - Image
+                                        </button>
                                         <button
                                           className="btn btn-sm btn-outline-danger"
                                           disabled={isCreating}

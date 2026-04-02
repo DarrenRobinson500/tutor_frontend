@@ -32,50 +32,25 @@ import { KnowledgeEditorPage } from "./pages/KnowledgeEditorPage";
 import { KnowledgeListPage } from "./pages/KnowledgeListPage";
 import { PastTestsPage } from "./pages/PastTestsPage";
 import AuthPage from "./pages/AuthPage/AuthPage";
+import LandingPage from "./pages/public/LandingPage";
+import LoginPage from "./pages/public/LoginPage";
+import ParentRegisterPage from "./pages/public/ParentRegisterPage";
+import TutorRegisterPage from "./pages/public/TutorRegisterPage";
+import AssessmentLaunchPage from "./pages/public/AssessmentLaunchPage";
+import ParentHomePage from "./pages/ParentHomePage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
 
 import "bootstrap/dist/css/bootstrap.min.css";
 
 // ------------------------------------------------------------
-// FETCH CURRENT USER (session-based auth)
-// ------------------------------------------------------------
-function useCurrentUser() {
-  const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch("/api/auth/me/")
-      .then((res) => {
-        if (res.status === 401) {
-          setUser(null);
-          setLoading(false);
-          return null;
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (data) setUser(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
-  }, []);
-
-  return { user, loading };
-}
-
-
-// ------------------------------------------------------------
 // PROTECTED ROUTE WRAPPER
 // ------------------------------------------------------------
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useCurrentUser();
+  const access = localStorage.getItem("access");
+  const storedUser = localStorage.getItem("user");
 
-  if (loading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!access || !storedUser) return <Navigate to="/login" replace />;
 
   return <>{children}</>;
 }
@@ -105,10 +80,18 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* PUBLIC */}
+        {/* PUBLIC — marketing & auth */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register/parent" element={<ParentRegisterPage />} />
+        <Route path="/register/tutor" element={<TutorRegisterPage />} />
+        <Route path="/assessment-launch" element={<AssessmentLaunchPage />} />
         <Route path="/auth" element={<AuthPage />} />
 
-        {/* PROTECTED */}
+        {/* PROTECTED — parent */}
+        <Route path="/parents/:id" element={<ProtectedRoute><ParentHomePage /></ProtectedRoute>} />
+
+        {/* PROTECTED — other */}
         <Route path="/templates" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
         <Route path="/templates/new" element={<ProtectedRoute><NewTemplatePage /></ProtectedRoute>} />
         <Route path="/templates/editor" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
@@ -150,7 +133,7 @@ function App() {
         <Route path="/docs" element={<ProtectedRoute><DocsPage /></ProtectedRoute>} />
 
         {/* DEFAULT */}
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
     </BrowserRouter>

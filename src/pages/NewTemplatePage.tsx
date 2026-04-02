@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
 
@@ -54,9 +54,16 @@ const PROMPT_PRESETS: { id: string; label: string; prompt: string }[] = [
 
 export function NewTemplatePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Pre-filled from SkillOverviewPage when launched via "Create Template - Image"
+  const pinSkillId   = searchParams.get("skill_id")   ?? undefined;
+  const pinSubject   = searchParams.get("subject")    ?? undefined;
+  const pinDifficulty = searchParams.get("difficulty") ?? undefined;
+
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [grade, setGrade] = useState("");
+  const [grade, setGrade] = useState(searchParams.get("grade") ?? "");
   const [additionalPrompt, setAdditionalPrompt] = useState("");
   const [checkedPresets, setCheckedPresets] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -86,23 +93,29 @@ export function NewTemplatePage() {
   }
 
   async function handleGenerate() {
-    if (!imageFile || !grade) return;
+    if (!grade) return;
     setLoading(true);
     setError(null);
     try {
-      const b64 = await toBase64(imageFile);
+      const payload: Record<string, string> = {
+        grade,
+        additional_prompt: [
+          additionalPrompt,
+          ...PROMPT_PRESETS.filter(p => checkedPresets.has(p.id)).map(p => p.prompt),
+        ].filter(Boolean).join(" "),
+      };
+      if (imageFile) {
+        payload.image = await toBase64(imageFile);
+        payload.mime_type = imageFile.type;
+      }
+      if (pinSkillId)    payload.skill_id   = pinSkillId;
+      if (pinSubject)    payload.subject    = pinSubject;
+      if (pinDifficulty) payload.difficulty = pinDifficulty;
+
       const res = await apiFetch("/api/templates/generate_from_image/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image: b64,
-          mime_type: imageFile.type,
-          grade,
-          additional_prompt: [
-            additionalPrompt,
-            ...PROMPT_PRESETS.filter(p => checkedPresets.has(p.id)).map(p => p.prompt),
-          ].filter(Boolean).join(" "),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -129,6 +142,15 @@ export function NewTemplatePage() {
           </button>
           <h4 className="mb-0">New Template from Screenshot</h4>
         </div>
+
+        {/* Pinned context banner */}
+        {(pinSubject || pinDifficulty) && (
+          <div className="alert alert-info py-2 mb-3" style={{ fontSize: 13 }}>
+            Skill: <strong>"{pinSubject}"</strong>
+            {pinDifficulty && <>, difficulty {pinDifficulty}</>}
+            {grade         && <>, Year {grade}</>}
+          </div>
+        )}
 
         {/* Drop zone */}
         <div

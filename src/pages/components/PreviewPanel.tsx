@@ -380,7 +380,8 @@ export function PreviewPanel({
         return isNaN(num) || isNaN(den) || den === 0 ? null : num / den;
       }
       // Use strict check — parseFloat("3x+2") would return 3, which is wrong
-      if (!/^-?\d+(\.\d+)?$/.test(s)) return null;
+      // Also accept leading-dot decimals like ".5" (treat as "0.5")
+      if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(s)) return null;
       const n = parseFloat(s);
       return isNaN(n) ? null : n;
     };
@@ -617,7 +618,7 @@ export function PreviewPanel({
   const DEFAULT_FORMAT_INSTRUCTIONS: Record<string, string> = {
     fraction: "Enter as a fraction, e.g. 3/5",
     integer:  "Enter a whole number, e.g. 42",
-    decimal:  "Enter as a decimal, e.g. 0.75",
+    decimal:  "Enter as a decimal to one decimal place, e.g. 5.0",
     ratio:    "Enter as a ratio, e.g. 3:2",
     percent:  "Enter as a percentage, e.g. 35%",
     equation: "Enter a base and power, e.g. 5^2 (press ^ or the xⁿ button to enter the power)",
@@ -926,7 +927,7 @@ export function PreviewPanel({
       )}
 
       {mode === "student" && effectiveTemplateId && (
-        <div className="mt-3">
+        <div style={{ marginTop: "2rem" }}>
           <div className="d-flex gap-2 align-items-center">
             <input
               type="text"

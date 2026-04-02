@@ -38,8 +38,9 @@ export default function LoginForm() {
 
     const role = data.user.role;
     if (role === "tutor") navigate(`/tutors/${data.user.id}`);
-    if (role === "student") navigate(`/students/${data.user.id}`);
-    if (role === "parent") navigate(`/parents/${data.user.id}`);
+    else if (role === "student") navigate(`/students/${data.user.id}`);
+    else if (role === "parent") navigate(`/parents/${data.user.id}`);
+    else if (role === "admin") navigate("/admin/tutors");
   }
 
   return (

@@ -65,7 +65,7 @@ export function StudentHomePage() {
   return (
     <Layout>
       <div className="container mt-4">
-        <h1>Welcome back {student.name}</h1>
+        <h1>Welcome back {student.name?.split(" ")[0]}</h1>
         <p><strong>Email:</strong> {student.email}<br/>
         <strong>Year Level:</strong> {student.year_level || "Not set"}<br/>
         <strong>Area of Study:</strong> {student.area_of_study || "Not set"}
@@ -77,14 +77,8 @@ export function StudentHomePage() {
           Edit My Details
         </button>
         <div className="d-flex flex-wrap gap-2 mt-2">
-          <Link to={`/students/${id}/test?type=easy`} className="btn btn-outline-success">
-            Start Skills Test — Easy
-          </Link>
-          <Link to={`/students/${id}/test?type=medium`} className="btn btn-outline-primary">
-            Start Skills Test — Moderate
-          </Link>
-          <Link to={`/students/${id}/test?type=hard`} className="btn btn-outline-danger">
-            Start Skills Test — Hard
+          <Link to={`/students/${id}/test?type=dynamic`} className="btn btn-outline-success">
+            Start Skills Test
           </Link>
         </div>
 

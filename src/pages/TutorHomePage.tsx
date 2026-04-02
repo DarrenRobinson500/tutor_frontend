@@ -23,16 +23,26 @@ export function TutorHomePage() {
   const [tutor, setTutor] = useState<any>(null);
   const [week, setWeek] = useState<WeekData | null>(null);
   const [weekStart, setWeekStart] = useState<string | null>(null);
+  const [lookingForStudents, setLookingForStudents] = useState<boolean>(false);
 
   useEffect(() => {
     apiFetch(`/api/tutors/${id}/home/`)
       .then(res => res.json())
-      .then(data => setTutor(data))
+      .then(data => {
+        setTutor(data);
+        setLookingForStudents(data.looking_for_students ?? false);
+      })
       .catch(err => {
         console.error("Failed to load tutor home:", err);
         setTutor(null);
       });
   }, [id]);
+
+  async function toggleLooking() {
+    const res = await apiFetch(`/api/tutors/${id}/toggle_looking/`, { method: "POST" });
+    const data = await res.json();
+    setLookingForStudents(data.looking_for_students);
+  }
 
 
   if (!tutor) return <div className="container mt-4">Loading…</div>;
@@ -47,14 +57,22 @@ export function TutorHomePage() {
         Address: {tutor.address || "Not set"}
       </p>
 
-      <button
-        className="btn btn-outline-primary mb-3"
-        onClick={() =>
-          window.location.href = `/tutors/${id}/edit?returnTo=/tutors/${id}`
-        }
-      >
-        Edit My Details
-      </button>
+      <div className="d-flex gap-2 mb-3">
+        <button
+          className="btn btn-outline-primary"
+          onClick={() =>
+            window.location.href = `/tutors/${id}/edit?returnTo=/tutors/${id}`
+          }
+        >
+          Edit My Details
+        </button>
+        <button
+          className={`btn ${lookingForStudents ? "btn-success" : "btn-outline-secondary"}`}
+          onClick={toggleLooking}
+        >
+          {lookingForStudents ? "Looking for students" : "Not looking for students"}
+        </button>
+      </div>
       <hr />
 
 
