@@ -231,6 +231,7 @@ const createAdhoc = () => {
               handleBookingAction={handleBookingAction}
               editing={editing}
               setEditing={setEditing}
+              tutorId={id}
             />
           </>
         )}
@@ -242,6 +243,7 @@ const createAdhoc = () => {
               handleBookingAction={handleBookingAction}
               editing={editing}
               setEditing={setEditing}
+              tutorId={id}
             />
           </>
         )}

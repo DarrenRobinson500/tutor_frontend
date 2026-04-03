@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Booking {
   id?: number;
@@ -26,13 +27,16 @@ interface ExistingBookingsWeekProps {
   ) => void;
   editing: { date: string; booking: any; index: number } | null;
   setEditing: (value: any) => void;
+  tutorId?: number | string;
 }
 
 export function ExistingBookingsWeek({
   week,
   handleBookingAction,
-  editing, setEditing
+  editing, setEditing,
+  tutorId,
 }: ExistingBookingsWeekProps) {
+  const navigate = useNavigate();
 
   // Single editor state (safe)
   const [editWeekday, setEditWeekday] = useState<number>(0);
@@ -173,6 +177,17 @@ export function ExistingBookingsWeek({
                       {b.confirmed ? "Confirmed" : "Not confirmed"}
                     </div>
                   </button>
+
+                  {/* Join button — today only, when tutorId and student_id are known */}
+                  {day.day_status === "today" && tutorId && b.student_id && (
+                    <button
+                      className="btn btn-success btn-sm w-100 mt-1"
+                      style={{ fontSize: "0.75rem" }}
+                      onClick={() => navigate(`/session/t${tutorId}-s${b.student_id}`)}
+                    >
+                      Join Session
+                    </button>
+                  )}
 
                   {/* Expanded editor */}
                   {isOpen && (

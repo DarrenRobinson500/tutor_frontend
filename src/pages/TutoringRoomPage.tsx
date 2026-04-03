@@ -1,0 +1,138 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { LiveKitRoom } from "@livekit/components-react";
+import "@livekit/components-styles";
+import { VideoPanel } from "./components/VideoPanel";
+import { WhiteboardPanel } from "./components/WhiteboardPanel";
+import { QuestionPanel } from "./components/QuestionPanel";
+import { apiFetch } from "../utils/apiFetch";
+
+// Cast to any to handle React 19 / @livekit/components-react type incompatibility
+const LKRoom = LiveKitRoom as React.ComponentType<any>;
+
+export function TutoringRoomPage() {
+  const { roomName } = useParams<{ roomName: string }>();
+  const navigate = useNavigate();
+  const [token, setToken] = useState<string | null>(null);
+  const [livekitUrl, setLivekitUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const [showVideo, setShowVideo] = useState(true);
+  const [showWhiteboard, setShowWhiteboard] = useState(true);
+  const [showQuestion, setShowQuestion] = useState(true);
+
+  // Parse isTutor from room name and stored user
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const isTutor = user?.role === "tutor" || user?.role === "admin";
+
+  useEffect(() => {
+    if (!roomName) return;
+    apiFetch(`/api/sessions/token/`, {
+      method: "POST",
+      body: JSON.stringify({ room_name: roomName }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setToken(data.token);
+          setLivekitUrl(data.livekit_url);
+        }
+      })
+      .catch(() => setError("Failed to connect to session."));
+  }, [roomName]);
+
+  if (error) {
+    return (
+      <div className="container mt-5">
+        <div className="alert alert-danger">{error}</div>
+        <button className="btn btn-secondary" onClick={() => navigate(-1)}>Go back</button>
+      </div>
+    );
+  }
+
+  if (!token || !livekitUrl) {
+    return (
+      <div className="container mt-5 text-center">
+        <div className="spinner-border text-primary" role="status" />
+        <div className="mt-2">Connecting to session…</div>
+      </div>
+    );
+  }
+
+  const activePanels = [showVideo, showWhiteboard, showQuestion].filter(Boolean).length;
+  const colClass = activePanels === 1 ? "col-12" : activePanels === 2 ? "col-6" : "col-4";
+
+  return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#1a1a1a" }}>
+      {/* Toolbar */}
+      <div
+        className="d-flex align-items-center gap-2 px-3"
+        style={{ flexShrink: 0, height: 48, background: "#111", color: "#fff" }}
+      >
+        <span style={{ fontWeight: 600, marginRight: 8 }}>
+          {roomName}
+        </span>
+        <button
+          className={`btn btn-sm ${showVideo ? "btn-light" : "btn-outline-secondary"}`}
+          onClick={() => setShowVideo((v) => !v)}
+        >
+          Video
+        </button>
+        <button
+          className={`btn btn-sm ${showWhiteboard ? "btn-light" : "btn-outline-secondary"}`}
+          onClick={() => setShowWhiteboard((v) => !v)}
+        >
+          Whiteboard
+        </button>
+        <button
+          className={`btn btn-sm ${showQuestion ? "btn-light" : "btn-outline-secondary"}`}
+          onClick={() => setShowQuestion((v) => !v)}
+        >
+          Question
+        </button>
+        <button
+          className="btn btn-sm btn-danger ms-auto"
+          onClick={() => navigate(-1)}
+        >
+          Leave
+        </button>
+      </div>
+
+      {/* Panels */}
+      <LKRoom
+        token={token}
+        serverUrl={livekitUrl}
+        connect={true}
+        audio={true}
+        video={true}
+        style={{ flex: 1, overflow: "hidden" }}
+      >
+        <div className="row g-0" style={{ height: "100%" }}>
+          {showVideo && (
+            <div className={colClass} style={{ height: "100%", borderRight: "1px solid #333" }}>
+              <VideoPanel />
+            </div>
+          )}
+          {showWhiteboard && (
+            <div className={colClass} style={{ height: "100%", borderRight: "1px solid #333" }}>
+              <WhiteboardPanel />
+            </div>
+          )}
+          {showQuestion && (
+            <div className={colClass} style={{ height: "100%", overflow: "hidden" }}>
+              <QuestionPanel isTutor={isTutor} roomName={roomName!} />
+            </div>
+          )}
+          {activePanels === 0 && (
+            <div className="col-12 d-flex align-items-center justify-content-center text-white">
+              All panels hidden. Use the toolbar to show panels.
+            </div>
+          )}
+        </div>
+      </LKRoom>
+    </div>
+  );
+}

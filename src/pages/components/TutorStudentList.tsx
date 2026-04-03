@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/apiFetch";
 
 export interface Student {
@@ -16,6 +16,7 @@ export interface Student {
 
 export function TutorStudentList({ tutorId }: { tutorId: string }) {
   const [students, setStudents] = useState<Student[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     apiFetch(`/api/tutors/${tutorId}/students/`)
@@ -74,7 +75,7 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
               <div className="col-2 d-flex flex-row gap-2">
                 <Link
                   className={`btn btn-sm ${
-                    s.active ? "btn-outline-primary" : "btn-outline-secondary disabled"
+                    s.active ? "btn-outline-primary" : "btn-outline-primary disabled"
                   }`}
                   to={`/students/${s.user_id}`}
                   style={{
@@ -87,7 +88,7 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                 </Link>
 
                 <Link
-                  className="btn btn-sm btn-outline-secondary"
+                  className="btn btn-sm btn-outline-primary"
                   to={`/students/${s.user_id}/edit?returnTo=/tutors/${tutorId}` }
                   style={{
                     minWidth: "40px",
@@ -97,6 +98,15 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                 >
                   Edit
                 </Link>
+
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  style={{ minWidth: "50px", whiteSpace: "nowrap" }}
+                  onClick={() => navigate(`/session/t${tutorId}-s${s.user_id}`)}
+                  title={`Start online session with ${s.first_name}`}
+                >
+                  Call
+                </button>
 
               </div>
             </div>

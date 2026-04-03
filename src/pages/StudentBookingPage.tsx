@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
@@ -6,6 +6,7 @@ import { WeeklyBookingCalendar } from "./components/WeeklyBookingCalendar";
 
 export function StudentBookingPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [student, setStudent] = useState<any>(null);
 
   const [weeklySlots, setWeeklySlots] = useState<any>(null);
@@ -200,6 +201,17 @@ export function StudentBookingPage() {
             </button>
           )}
         </div>
+
+        {booking.start_iso && new Date(booking.start_iso).toDateString() === new Date().toDateString() && student.tutor_id && (
+          <div className="mt-3">
+            <button
+              className="btn btn-success"
+              onClick={() => navigate(`/session/t${student.tutor_id}-s${id}`)}
+            >
+              Join Online Session
+            </button>
+          </div>
+        )}
 
         <div className="mt-3 text-muted" style={{ fontSize: "1rem" }}>
           If you have any questions about your appointment, call or text {student.tutor_name} on {student.tutor_mobile}.

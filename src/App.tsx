@@ -39,6 +39,7 @@ import ParentRegisterPage from "./pages/public/ParentRegisterPage";
 import TutorRegisterPage from "./pages/public/TutorRegisterPage";
 import AssessmentLaunchPage from "./pages/public/AssessmentLaunchPage";
 import ParentHomePage from "./pages/ParentHomePage";
+import { TutoringRoomPage } from "./pages/TutoringRoomPage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
 
@@ -133,6 +134,9 @@ function App() {
         <Route path="/principles" element={<ProtectedRoute><PrinciplesPage /></ProtectedRoute>} />
         <Route path="/feedback" element={<ProtectedRoute><FeedbackPage /></ProtectedRoute>} />
         <Route path="/docs" element={<ProtectedRoute><DocsPage /></ProtectedRoute>} />
+
+        {/* ONLINE SESSION */}
+        <Route path="/session/:roomName" element={<ProtectedRoute><TutoringRoomPage /></ProtectedRoute>} />
 
         {/* DEFAULT */}
         <Route path="*" element={<Navigate to="/" replace />} />
