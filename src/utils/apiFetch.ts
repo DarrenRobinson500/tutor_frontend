@@ -7,9 +7,11 @@ export async function apiFetch(url: string, options: any = {}) {
 
   const access = localStorage.getItem("access");
 
-  // Merge headers safely
+  // Don't set Content-Type for FormData — the browser must set it with the
+  // multipart boundary. For everything else default to application/json.
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers || {}),
     ...(access ? { Authorization: `Bearer ${access}` } : {}),
   };

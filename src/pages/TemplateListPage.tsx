@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
 import { useTemplateApi } from "../api/useTemplateApi";
+import { apiFetch } from "../utils/apiFetch";
 import type { TemplateSummary } from "../types/TemplateMetadata";
 
 
@@ -10,9 +11,53 @@ export function TemplateListPage() {
   const navigate = useNavigate();
   const { listTemplates, deleteTemplate, loading, error } = useTemplateApi();
 
+  const storedUser = localStorage.getItem("user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+  const canEditSyllabus = user?.role === "admin" || user?.edit_syllabus === true;
+
   const [templates, setTemplates] = useState<TemplateSummary[]>([]);
   const [hasNotesOnly, setHasNotesOnly] = useState(() => localStorage.getItem("templateList_hasNotesOnly") === "true");
   const [noSubjectOnly, setNoSubjectOnly] = useState(() => localStorage.getItem("templateList_noSubjectOnly") === "true");
+  const [importing, setImporting] = useState(false);
+  const [transferMessage, setTransferMessage] = useState("");
+  const uploadRef = useRef<HTMLInputElement>(null);
+
+  const handleDownload = () => {
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+    apiFetch("/api/templates/export_all/")
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `templates_${date}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => setTransferMessage("Download failed"));
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImporting(true);
+    const form = new FormData();
+    form.append("file", file);
+    apiFetch("/api/templates/import_bulk/", { method: "POST", body: form })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setTransferMessage(`Upload failed: ${data.error}`);
+        } else {
+          let msg = `Import complete — created: ${data.created}, skipped (duplicates): ${data.skipped}, errors: ${data.errors}`;
+          if (data.first_error) msg += ` — first error: ${data.first_error}`;
+          setTransferMessage(msg);
+        }
+      })
+      .catch(() => setTransferMessage("Upload failed"))
+      .finally(() => setImporting(false));
+  };
 
   useEffect(() => {
     async function load() {
@@ -40,7 +85,7 @@ export function TemplateListPage() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h1 className="h3">Templates</h1>
 
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 flex-wrap">
             <button
               className={`btn ${hasNotesOnly ? "btn-primary" : "btn-outline-primary"}`}
               onClick={() => setHasNotesOnly(v => { const next = !v; localStorage.setItem("templateList_hasNotesOnly", String(next)); return next; })}
@@ -59,8 +104,23 @@ export function TemplateListPage() {
             >
               Create New Template
             </button>
+            {canEditSyllabus && <>
+              <button className="btn btn-outline-secondary" onClick={handleDownload}>
+                Download All Templates
+              </button>
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => uploadRef.current?.click()}
+                disabled={importing}
+              >
+                {importing ? "Uploading…" : "Upload All Templates"}
+              </button>
+              <input ref={uploadRef} type="file" accept=".json" className="d-none" onChange={handleUpload} />
+            </>}
           </div>
         </div>
+
+        {transferMessage && <div className="alert alert-info py-2 mt-2">{transferMessage}</div>}
 
         {loading && <p>Loading templates…</p>}
         {error && <p className="text-danger">{error}</p>}
