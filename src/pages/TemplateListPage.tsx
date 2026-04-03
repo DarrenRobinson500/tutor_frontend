@@ -46,13 +46,15 @@ export function TemplateListPage() {
     form.append("file", file);
     apiFetch("/api/templates/import_bulk/", { method: "POST", body: form })
       .then(res => res.json())
-      .then(data => {
+      .then(async data => {
         if (data.error) {
           setTransferMessage(`Upload failed: ${data.error}`);
         } else {
           let msg = `Import complete — created: ${data.created}, skipped (duplicates): ${data.skipped}, errors: ${data.errors}`;
           if (data.first_error) msg += ` — first error: ${data.first_error}`;
           setTransferMessage(msg);
+          const refreshed = await listTemplates(hasNotesOnly, noSubjectOnly);
+          setTemplates(refreshed);
         }
       })
       .catch(() => setTransferMessage("Upload failed"))

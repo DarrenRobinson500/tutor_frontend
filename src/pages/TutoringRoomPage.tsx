@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { LiveKitRoom } from "@livekit/components-react";
+import { LiveKitRoom, RoomAudioRenderer } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { VideoPanel } from "./components/VideoPanel";
 import { WhiteboardPanel } from "./components/WhiteboardPanel";
@@ -110,6 +110,7 @@ export function TutoringRoomPage() {
         video={true}
         style={{ flex: 1, overflow: "hidden" }}
       >
+        <RoomAudioRenderer />
         <div className="row g-0" style={{ height: "100%" }}>
           {showVideo && (
             <div className={colClass} style={{ height: "100%", borderRight: "1px solid #333" }}>
