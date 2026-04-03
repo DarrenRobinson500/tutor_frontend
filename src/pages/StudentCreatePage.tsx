@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
-import { apiFetch } from "../utils/apiFetch"
+import { apiFetch } from "../utils/apiFetch";
+import { useYears } from "../utils/useYears";
 
 export function StudentCreatePage() {
   const [searchParams] = useSearchParams();
   const tutorId = searchParams.get("tutor");
   const navigate = useNavigate();
+  const years = useYears();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [yearLevel, setYearLevel] = useState("");
   const [result, setResult] = useState<any>(null);
 
   async function handleSubmit(e: any) {
@@ -23,6 +26,7 @@ export function StudentCreatePage() {
         name,
         email,
         password,
+        year_level: yearLevel,
         tutor_id: tutorId,
       }),
     });
@@ -63,6 +67,20 @@ export function StudentCreatePage() {
                    value={password}
                    onChange={e => setPassword(e.target.value)}
                    placeholder="Leave blank for auto-generated" />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label">Year Level</label>
+            <select
+              className="form-select"
+              value={yearLevel}
+              onChange={e => setYearLevel(e.target.value)}
+            >
+              <option value="">— select —</option>
+              {years.map(y => (
+                <option key={y.code} value={y.code}>{y.label}</option>
+              ))}
+            </select>
           </div>
 
           <button className="btn btn-primary">Create Student</button>

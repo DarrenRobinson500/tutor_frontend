@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 
 import { Layout } from "./components/Layout";
 import { TutorStudentList } from "./components/TutorStudentList";
+import { TutorJobsPanel } from "./components/TutorJobsPanel";
 // import { TutorTemplateList } from "./components/TutorTemplateList";
 import { WeeklyCalendar } from "./components/WeeklyCalendar";
 import { WeekData } from "../types/weekly";
@@ -75,6 +76,7 @@ export function TutorHomePage() {
       </div>
       <hr />
 
+      <TutorJobsPanel tutorId={id!} />
 
       <h4 className="mt-4">Students</h4>
       <div className="d-flex justify-content-between align-items-center mb-3">

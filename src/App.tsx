@@ -22,6 +22,7 @@ import { StudentHomePage } from "./pages/StudentHomePage";
 import { TestPage } from "./pages/TestPage";
 import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
+import { StudentFocusPage } from "./pages/StudentFocusPage";
 import SkillsPage from "./pages/SkillsPage";
 import { SkillOverviewPage } from "./pages/SkillOverviewPage";
 import { SkillDetailEditPage } from "./pages/SkillDetailEditPage";
@@ -121,6 +122,7 @@ function App() {
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
 
         <Route path="/students/:studentId/edit" element={<ProtectedRoute><StudentEditPage /></ProtectedRoute>} />
+        <Route path="/students/:studentId/focus-areas" element={<ProtectedRoute><StudentFocusPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test" element={<ProtectedRoute><TestPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
         <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />

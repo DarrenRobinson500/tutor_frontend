@@ -108,6 +108,14 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
                   Call
                 </button>
 
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  style={{ whiteSpace: "nowrap" }}
+                  onClick={() => navigate(`/students/${s.user_id}/focus-areas?returnTo=/tutors/${tutorId}`)}
+                >
+                  Set focus areas
+                </button>
+
               </div>
             </div>
           </li>
