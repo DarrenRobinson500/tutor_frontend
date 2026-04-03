@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-import { apiFetch } from "../../utils/apiFetch"
+import { apiFetch } from "../../utils/apiFetch";
+import { IncomingCallBanner } from "./IncomingCallBanner";
 
 const NAV_STYLES = `
   .sm-layout-nav {
@@ -199,6 +200,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </nav>
+
+      {/* Incoming call notification for students */}
+      {user?.role === "student" && <IncomingCallBanner />}
 
       {/* Page content */}
       <div className="container-fluid">{children}</div>
