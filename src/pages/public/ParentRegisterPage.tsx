@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./RegisterPage.css";
-
-const YEAR_LEVELS = ["Year 7", "Year 8", "Year 9", "Year 10"];
+import { useYears } from "../../utils/useYears";
 
 export default function ParentRegisterPage() {
   const navigate = useNavigate();
+  const years = useYears();
 
   // Parent fields
   const [parentFirst, setParentFirst] = useState("");
@@ -219,8 +219,8 @@ export default function ParentRegisterPage() {
                   required
                 >
                   <option value="">Select year level…</option>
-                  {YEAR_LEVELS.map((y) => (
-                    <option key={y} value={y}>{y}</option>
+                  {years.map((y) => (
+                    <option key={y.code} value={y.code}>{y.label}</option>
                   ))}
                 </select>
               </div>

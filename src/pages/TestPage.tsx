@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { apiFetch } from "../utils/apiFetch";
+import { useYears } from "../utils/useYears";
 import type { PreviewResponse, StudentRecordResponse } from "../types/PreviewResponse";
 
 interface TestQuestion {
@@ -59,8 +60,6 @@ const RESULT_LABEL: Record<string, string> = {
   none:     "Not attempted",
 };
 
-const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-
 // ── Inline metadata editor ────────────────────────────────────────────────────
 
 interface MetadataEditorProps {
@@ -69,6 +68,7 @@ interface MetadataEditorProps {
 }
 
 function MetadataEditor({ templateId, onClose }: MetadataEditorProps) {
+  const years = useYears();
   const [grade, setGrade] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [subject, setSubject] = useState("");
@@ -181,7 +181,7 @@ function MetadataEditor({ templateId, onClose }: MetadataEditorProps) {
           <label className="form-label mb-1">Year / Grade</label>
           <select className="form-select form-select-sm" value={grade} onChange={e => setGrade(e.target.value)}>
             <option value="">— select —</option>
-            {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+            {years.map(y => <option key={y.code} value={y.code}>{y.label}</option>)}
           </select>
         </div>
         <div className="col-sm-3">

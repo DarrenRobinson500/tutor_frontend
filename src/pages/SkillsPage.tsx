@@ -33,7 +33,8 @@ export default function SkillsPage() {
   }
 
   const handleSkillsDownload = () => {
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+    const d = new Date();
+    const date = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,"0")}_${String(d.getDate()).padStart(2,"0")}`;
     apiFetch("/api/skills/export_all/")
       .then(res => res.blob())
       .then(blob => {

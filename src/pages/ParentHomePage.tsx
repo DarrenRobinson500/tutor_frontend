@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
 import "./ParentHomePage.css";
-
-const YEAR_LEVELS = ["Year 7", "Year 8", "Year 9", "Year 10"];
+import { useYears } from "../utils/useYears";
 
 interface Child {
   id: number;
@@ -237,6 +236,7 @@ function AddChildForm({
   onAdded: (child: Child) => void;
   onCancel: () => void;
 }) {
+  const years = useYears();
   const [firstName, setFirstName] = useState("");
   const [lastName,  setLastName]  = useState("");
   const [yearLevel, setYearLevel] = useState("");
@@ -310,8 +310,8 @@ function AddChildForm({
             <select className="sm-input" value={yearLevel}
               onChange={(e) => setYearLevel(e.target.value)} required>
               <option value="">Select…</option>
-              {YEAR_LEVELS.map((y) => (
-                <option key={y} value={y}>{y}</option>
+              {years.map((y) => (
+                <option key={y.code} value={y.code}>{y.label}</option>
               ))}
             </select>
           </div>

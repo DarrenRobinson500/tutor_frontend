@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "./RegisterPage.css";
-
-const YEAR_OPTIONS = ["Year 7", "Year 8", "Year 9", "Year 10"];
+import { useYears } from "../../utils/useYears";
 const BIO_MAX = 300;
 
 export default function TutorRegisterPage() {
+  const years = useYears();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
@@ -207,14 +207,14 @@ export default function TutorRegisterPage() {
               <div className="sm-form-group">
                 <label>Year levels you can tutor</label>
                 <div className="reg-checkboxes">
-                  {YEAR_OPTIONS.map((y) => (
-                    <label key={y} className="reg-checkbox-item">
+                  {years.map((y) => (
+                    <label key={y.code} className="reg-checkbox-item">
                       <input
                         type="checkbox"
-                        checked={yearLevels.includes(y)}
-                        onChange={() => toggleYear(y)}
+                        checked={yearLevels.includes(y.code)}
+                        onChange={() => toggleYear(y.code)}
                       />
-                      {y}
+                      {y.label}
                     </label>
                   ))}
                 </div>

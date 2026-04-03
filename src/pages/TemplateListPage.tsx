@@ -23,7 +23,8 @@ export function TemplateListPage() {
   const uploadRef = useRef<HTMLInputElement>(null);
 
   const handleDownload = () => {
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "_");
+    const d = new Date();
+    const date = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,"0")}_${String(d.getDate()).padStart(2,"0")}`;
     apiFetch("/api/templates/export_all/")
       .then(res => res.blob())
       .then(blob => {
@@ -118,7 +119,7 @@ export function TemplateListPage() {
                 {importing ? "Uploading…" : "Upload All Templates"}
               </button>
               <input ref={uploadRef} type="file" accept=".json" className="d-none" onChange={handleUpload} />
-              <button
+              {process.env.REACT_APP_SHOW_DELETE_ALL === "true" && <button
                 className="btn btn-outline-danger"
                 onClick={async () => {
                   if (!window.confirm(`Delete all ${templates.length} templates? This cannot be undone.`)) return;
@@ -133,7 +134,7 @@ export function TemplateListPage() {
                 }}
               >
                 Delete All Templates
-              </button>
+              </button>}
             </>}
           </div>
         </div>

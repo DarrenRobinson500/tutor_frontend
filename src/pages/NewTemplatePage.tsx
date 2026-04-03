@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useYears } from "../utils/useYears";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
@@ -14,8 +15,6 @@ function toBase64(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
-const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
 
 const PROMPT_PRESETS: { id: string; label: string; prompt: string }[] = [
   {
@@ -54,6 +53,7 @@ const PROMPT_PRESETS: { id: string; label: string; prompt: string }[] = [
 
 export function NewTemplatePage() {
   const navigate = useNavigate();
+  const years = useYears();
   const [searchParams] = useSearchParams();
 
   // Pre-filled from SkillOverviewPage when launched via "Create Template - Image"
@@ -233,7 +233,7 @@ export function NewTemplatePage() {
             onChange={e => setGrade(e.target.value)}
           >
             <option value="">— select year —</option>
-            {GRADES.map(g => <option key={g} value={g}>Year {g}</option>)}
+            {years.map(y => <option key={y.code} value={y.code}>{y.label}</option>)}
           </select>
         </div>
 

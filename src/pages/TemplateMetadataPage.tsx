@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
+import { useYears } from "../utils/useYears";
 
 interface Skill {
   id: number;
@@ -31,9 +32,8 @@ function extractQuestion(content: string): string {
   return "";
 }
 
-const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-
 export function TemplateMetadataPage() {
+  const years = useYears();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -199,7 +199,7 @@ export function TemplateMetadataPage() {
               onChange={e => setGrade(e.target.value)}
             >
               <option value="">— select —</option>
-              {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+              {years.map(y => <option key={y.code} value={y.code}>{y.label}</option>)}
             </select>
           </div>
           <div className="col-sm-6">

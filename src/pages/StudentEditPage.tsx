@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
+import { useYears } from "../utils/useYears";
 
 export function StudentEditPage() {
   const { studentId } = useParams();
+  const years = useYears();
   const navigate = useNavigate();
 
   // Read returnTo from query string
@@ -69,12 +71,16 @@ useEffect(() => {
 
       <div className="mb-3">
         <label className="form-label">Year Level</label>
-        <input
-          type="text"
-          className="form-control"
+        <select
+          className="form-select"
           value={yearLevel}
           onChange={(e) => setYearLevel(e.target.value)}
-        />
+        >
+          <option value="">— select —</option>
+          {years.map((y) => (
+            <option key={y.code} value={y.code}>{y.label}</option>
+          ))}
+        </select>
       </div>
 
       <div className="mb-3">
