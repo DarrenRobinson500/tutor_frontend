@@ -17,7 +17,9 @@ export default function SkillsPage() {
   const [message, setMessage] = useState("");
   const [skills, setSkills] = useState<Skill[]>([]);
   const [importing, setImporting] = useState(false);
+  const [importingSkills, setImportingSkills] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const skillsUploadRef = useRef<HTMLInputElement>(null);
 
   // Load skill + parents
   useEffect(() => {
@@ -88,6 +90,40 @@ export default function SkillsPage() {
       .finally(() => setImporting(false));
   };
 
+  const handleSkillsDownload = () => {
+    apiFetch("/api/skills/export_all/")
+      .then(res => res.blob())
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "skills.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      })
+      .catch(() => setMessage("Skills download failed"));
+  };
+
+  const handleSkillsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImportingSkills(true);
+    const form = new FormData();
+    form.append("file", file);
+    apiFetch("/api/skills/import_bulk/", { method: "POST", body: form })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          setMessage(`Skills upload failed: ${data.error}`);
+        } else {
+          setMessage(`Skills import complete — ${data.status} (${data.seen} nodes processed)`);
+        }
+      })
+      .catch(() => setMessage("Skills upload failed"))
+      .finally(() => setImportingSkills(false));
+  };
+
   const handleLoad = () => {
     loadSyllabus()
       .then(() => {
@@ -141,6 +177,26 @@ export default function SkillsPage() {
             accept=".json"
             className="d-none"
             onChange={handleUpload}
+          />
+          <button
+            className="btn btn-outline-secondary"
+            onClick={handleSkillsDownload}
+          >
+            Download Skills
+          </button>
+          <button
+            className="btn btn-outline-secondary"
+            onClick={() => skillsUploadRef.current?.click()}
+            disabled={importingSkills}
+          >
+            {importingSkills ? "Uploading…" : "Upload Skills"}
+          </button>
+          <input
+            ref={skillsUploadRef}
+            type="file"
+            accept=".json"
+            className="d-none"
+            onChange={handleSkillsUpload}
           />
         </div>
 

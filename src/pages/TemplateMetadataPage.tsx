@@ -8,25 +8,24 @@ interface Skill {
   code: string;
   description: string;
   children_count: number;
-  detail?: string;
+  is_detail?: boolean;
 }
 
 interface TemplateData {
   id: number;
   name: string;
-  subject: string;
+  skill_detail: number | null;
+  skill_id: number | null;
+  skill_detail_description: string | null;
   grade: string;
   difficulty: string;
-  skill: number | null;
   content: string;
 }
 
 function extractQuestion(content: string): string {
   if (!content) return "";
-  // Try: question: "some text" or question: some text (same line)
   const inline = content.match(/^question:\s*["']?(.+?)["']?\s*$/m);
   if (inline) return inline[1];
-  // Try: question:\n  text: "some text"
   const textKey = content.match(/^question:\s*\n\s+text:\s*["']?(.+?)["']?\s*$/m);
   if (textKey) return textKey[1];
   return "";
@@ -41,13 +40,11 @@ export function TemplateMetadataPage() {
   const [template, setTemplate] = useState<TemplateData | null>(null);
   const [grade, setGrade] = useState("");
   const [difficulty, setDifficulty] = useState("");
-  const [subject, setSubject] = useState("");
-  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+  const [selectedSkillDetailId, setSelectedSkillDetailId] = useState<number | null>(null);
   const [selectedSkillDesc, setSelectedSkillDesc] = useState<string>("");
-  const [selectedSkillDetail, setSelectedSkillDetail] = useState<string | null>(null);
 
   // Skill browser state
-  const [breadcrumb, setBreadcrumb] = useState<Skill[]>([]); // ancestors navigated into
+  const [breadcrumb, setBreadcrumb] = useState<Skill[]>([]);
   const [children, setChildren] = useState<Skill[]>([]);
   const [loadingSkills, setLoadingSkills] = useState(false);
 
@@ -64,32 +61,28 @@ export function TemplateMetadataPage() {
         setTemplate(data);
         setGrade(data.grade ?? "");
         setDifficulty(data.difficulty ?? "");
-        setSubject(data.subject ?? "");
-        setSelectedSkillId(data.skill ?? null);
+        setSelectedSkillDetailId(data.skill_detail ?? null);
+        setSelectedSkillDesc(data.skill_detail_description ?? "");
       });
   }, [id]);
 
-  // Once template is loaded: if it has a skill, load ancestors + that level's children.
-  // Otherwise load root children. Single effect avoids the race condition where
-  // a concurrent loadChildren(null) could overwrite the correct children list.
+  // Once template is loaded: navigate the tree to the right position
   useEffect(() => {
     if (!template) return;
-    if (!template.skill) {
+    if (!template.skill_detail) {
       loadChildren(null);
       return;
     }
-    Promise.all([
-      apiFetch(`/api/skills/${template.skill}/`).then(r => r.json()),
-      apiFetch(`/api/skills/${template.skill}/parents/`).then(r => r.json()),
-    ]).then(([skillData, parents]: [Skill, Skill[]]) => {
-      setSelectedSkillDesc(skillData.description);
-      setSelectedSkillDetail(skillData.detail ?? null);
-      setBreadcrumb(parents);
-      const parentId = parents.length > 0 ? parents[parents.length - 1].id : null;
-      loadChildren(parentId);
-    });
+    // Load the detail node's ancestors to build breadcrumb, then show siblings
+    apiFetch(`/api/skills/${template.skill_detail}/parents/`)
+      .then(r => r.json())
+      .then((parents: Skill[]) => {
+        setBreadcrumb(parents);
+        const parentId = parents.length > 0 ? parents[parents.length - 1].id : null;
+        loadChildren(parentId);
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [template?.skill]);
+  }, [template?.skill_detail]);
 
   function loadChildren(parentId: number | null) {
     setLoadingSkills(true);
@@ -99,7 +92,11 @@ export function TemplateMetadataPage() {
     apiFetch(url)
       .then(r => r.json())
       .then((data: Skill[]) => {
-        setChildren(data);
+        setChildren(Array.isArray(data) ? data : []);
+        setLoadingSkills(false);
+      })
+      .catch(() => {
+        setChildren([]);
         setLoadingSkills(false);
       });
   }
@@ -109,15 +106,13 @@ export function TemplateMetadataPage() {
       setBreadcrumb(prev => [...prev, skill]);
       loadChildren(skill.id);
     } else {
-      // Leaf node — select it
-      setSelectedSkillId(skill.id);
+      // Leaf node — select as skill_detail
+      setSelectedSkillDetailId(skill.id);
       setSelectedSkillDesc(skill.description);
-      setSelectedSkillDetail(skill.detail ?? null);
     }
   }
 
   function navigateBreadcrumb(index: number) {
-    // index = -1 means root
     if (index === -1) {
       setBreadcrumb([]);
       loadChildren(null);
@@ -139,8 +134,7 @@ export function TemplateMetadataPage() {
         body: JSON.stringify({
           grade,
           difficulty,
-          subject,
-          skill: selectedSkillId,
+          skill_detail: selectedSkillDetailId,
         }),
       });
       if (!res.ok) {
@@ -184,7 +178,7 @@ export function TemplateMetadataPage() {
         {/* Question preview */}
         {(() => {
           const q = extractQuestion(template.content ?? "");
-          const title = template.name || template.subject || "";
+          const title = template.name || template.skill_detail_description || "";
           return (q || title) ? (
             <div className="card mb-4 border-0 bg-light">
               <div className="card-body py-3">
@@ -197,7 +191,7 @@ export function TemplateMetadataPage() {
 
         {/* Grade + Difficulty */}
         <div className="row g-3 mb-4">
-          <div className="col-sm-4">
+          <div className="col-sm-6">
             <label className="form-label fw-semibold">Year / Grade</label>
             <select
               className="form-select"
@@ -208,7 +202,7 @@ export function TemplateMetadataPage() {
               {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
-          <div className="col-sm-4">
+          <div className="col-sm-6">
             <label className="form-label fw-semibold">Difficulty</label>
             <select
               className="form-select"
@@ -221,54 +215,22 @@ export function TemplateMetadataPage() {
               <option value="hard">Hard</option>
             </select>
           </div>
-          <div className="col-sm-4">
-            <label className="form-label fw-semibold">Subject</label>
-            {selectedSkillDetail ? (
-              <select
-                className="form-select"
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-              >
-                <option value="">— select —</option>
-                {selectedSkillDetail.split("\n").filter(Boolean).map((line, i) => (
-                  <option key={i} value={line}>{line}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                className="form-control"
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                placeholder="e.g. Fractions"
-              />
-            )}
-          </div>
         </div>
 
-        {/* Skill browser */}
+        {/* Skill Detail browser */}
         <div className="mb-4">
-          <label className="form-label fw-semibold">Skill</label>
+          <label className="form-label fw-semibold">Skill Detail</label>
 
           {/* Current selection */}
-          {selectedSkillId && (
+          {selectedSkillDetailId && (
             <div className="alert alert-success py-2 d-flex justify-content-between align-items-center mb-2">
               <span><strong>Selected:</strong> {selectedSkillDesc}</span>
               <button
                 className="btn btn-sm btn-outline-secondary"
-                onClick={() => { setSelectedSkillId(null); setSelectedSkillDesc(""); setSelectedSkillDetail(null); }}
+                onClick={() => { setSelectedSkillDetailId(null); setSelectedSkillDesc(""); }}
               >
                 Clear
               </button>
-            </div>
-          )}
-
-          {selectedSkillId && selectedSkillDetail && (
-            <div className="mt-2 p-2 bg-light rounded" style={{ fontSize: 13 }}>
-              <ul className="mb-0 ps-3">
-                {selectedSkillDetail.split("\n").filter(Boolean).map((line, i) => (
-                  <li key={i}>{line}</li>
-                ))}
-              </ul>
             </div>
           )}
 
@@ -312,11 +274,11 @@ export function TemplateMetadataPage() {
                     className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
                     onClick={() => drillDown(skill)}
                   >
-                    <span>{skill.description}</span>
+                    <span style={{ fontSize: skill.is_detail ? 13 : undefined }}>{skill.description}</span>
                     {skill.children_count > 0 ? (
                       <span className="text-muted small">▶</span>
                     ) : (
-                      selectedSkillId === skill.id
+                      selectedSkillDetailId === skill.id
                         ? <span className="badge bg-success">Selected</span>
                         : <span className="badge bg-outline text-muted border">Select</span>
                     )}
@@ -347,10 +309,7 @@ export function TemplateMetadataPage() {
               setDeleting(true);
               const res = await apiFetch(`/api/templates/${id}/`, { method: "DELETE" });
               if (!res.ok) { alert("Failed to delete template"); setDeleting(false); return; }
-              const qs = new URLSearchParams();
-              if (selectedSkillId) qs.set("skill", String(selectedSkillId));
-              if (grade) qs.set("grade", grade);
-              navigate(`/templates/editor?${qs.toString()}`);
+              navigate(`/templates/editor`);
             }}
             disabled={deleting}
           >

@@ -42,6 +42,7 @@ export function TemplateEditorPage() {
     name: "",
     description: "",
     subject: "",
+    skill_detail_id: null,
     topic: "",
     subtopic: "",
     difficulty: "",
@@ -89,7 +90,8 @@ function buildMetadataFromTemplate(
     id: tpl.id ?? null,
     name: tpl.name ?? "",
     description: tpl.description ?? "",
-    subject: tpl.subject ?? "",
+    subject: tpl.skill_detail_description ?? "",
+    skill_detail_id: tpl.skill_detail ?? null,
     topic: tpl.topic ?? "",
     subtopic: tpl.subtopic ?? "",
     difficulty: tpl.difficulty ?? "",
@@ -98,7 +100,7 @@ function buildMetadataFromTemplate(
     curriculum: tpl.curriculum ?? [],
     status: tpl.status ?? "draft",
     version: tpl.version ?? 1,
-    skill: tpl.skill ?? null,
+    skill: tpl.skill_id ?? null,
     validated: tpl.validated ?? false,
 
     // ⭐ Always preserve the user's validated filter preference
@@ -191,7 +193,7 @@ const handleToggleValidated = async () => {
 
       // Load the filtered list so subjects/navigation work without needing a filter change
       const queryParams = new URLSearchParams({
-        skill: String(tpl.skill ?? ""),
+        skill: String(tpl.skill_id ?? ""),
         grade: String(tpl.grade ?? ""),
         difficulty: String(tpl.difficulty ?? ""),
         validated: currentFilter,
@@ -283,7 +285,7 @@ const handleToggleValidated = async () => {
     }
 
   // Filter templates by subject
-  const subjectFiltered = filteredList.filter(t => t.subject === subject);
+  const subjectFiltered = filteredList.filter(t => t.skill_detail === subject);
     if (subjectFiltered.length > 0) {
       setCurrentIndex(0);
       navigate(`/templates/${subjectFiltered[0].id}`);
@@ -311,14 +313,13 @@ const handleToggleValidated = async () => {
   const payload = {
     name: metadata.name || "",
     description: metadata.description || "",
-    subject: metadata.subject || "",
     topic: metadata.topic || "",
     subtopic: metadata.subtopic || "",
     difficulty: metadata.difficulty || "",
     grade: metadata.grade || null,
     tags: metadata.tags || [],
     curriculum: metadata.curriculum || [],
-    skill: metadata.skill || null,
+    skill_detail: metadata.skill_detail_id || null,
     content
   };
 
@@ -627,7 +628,7 @@ const handleToggleValidated = async () => {
       if (list.length > 0) {
         const currentSubject = newMeta.subject;
         const subjectMatch = currentSubject
-          ? list.find((t: any) => t.subject === currentSubject)
+          ? list.find((t: any) => t.skill_detail === currentSubject)
           : null;
         const target = subjectMatch ?? list[0];
         navigate(`/templates/${target.id}`);

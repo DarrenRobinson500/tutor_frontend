@@ -24,6 +24,7 @@ import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
 import SkillsPage from "./pages/SkillsPage";
 import { SkillOverviewPage } from "./pages/SkillOverviewPage";
+import { SkillDetailEditPage } from "./pages/SkillDetailEditPage";
 import { TemplateMetadataPage } from "./pages/TemplateMetadataPage";
 import PrinciplesPage from "./pages/PrinciplesPage";
 import FeedbackPage from "./pages/FeedbackPage";
@@ -104,6 +105,7 @@ function App() {
         <Route path="/skills/:parentId/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
         <Route path="/skills/:skillId/overview/:grade" element={<ProtectedRoute><SkillOverviewPage /></ProtectedRoute>} />
         <Route path="/skills/:skillId/overview" element={<ProtectedRoute><SkillOverviewPage /></ProtectedRoute>} />
+        <Route path="/skills/:skillId/edit-details" element={<ProtectedRoute><SkillDetailEditPage /></ProtectedRoute>} />
 
         <Route path="/admin/tutors" element={<ProtectedRoute><TutorListPage /></ProtectedRoute>} />
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />

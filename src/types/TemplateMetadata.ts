@@ -15,7 +15,8 @@ export type TemplateMetadata = {
   id: number | null;
   name: string;
   description: string;
-  subject: string;
+  subject: string;          // skill_detail description — used for the subjects dropdown
+  skill_detail_id: number | null;  // FK to Skill Detail node — used when saving
   topic: string;
   subtopic: string;
   difficulty: string;
@@ -24,10 +25,9 @@ export type TemplateMetadata = {
   curriculum: any[];
   status: string;
   version: number;
-  skill: number | null;
+  skill: number | null;     // parent Skill-level node ID — used for filtering only
   validated: boolean;
   validated_filter?: "all" | "validated" | "unvalidated";
-
 }
 
 export const emptyMetadata: TemplateMetadata = {
@@ -35,6 +35,7 @@ export const emptyMetadata: TemplateMetadata = {
   name: "",
   description: "",
   subject: "",
+  skill_detail_id: null,
   topic: "",
   subtopic: "",
   difficulty: "",
@@ -45,6 +46,5 @@ export const emptyMetadata: TemplateMetadata = {
   version: 1,
   skill: null,
   validated: false,
-
 };
 

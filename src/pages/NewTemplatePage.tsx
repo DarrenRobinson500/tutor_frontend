@@ -57,9 +57,9 @@ export function NewTemplatePage() {
   const [searchParams] = useSearchParams();
 
   // Pre-filled from SkillOverviewPage when launched via "Create Template - Image"
-  const pinSkillId   = searchParams.get("skill_id")   ?? undefined;
-  const pinSubject   = searchParams.get("subject")    ?? undefined;
-  const pinDifficulty = searchParams.get("difficulty") ?? undefined;
+  const pinSkillId        = searchParams.get("skill_id")        ?? undefined;
+  const pinSkillDetailId  = searchParams.get("skill_detail_id") ?? undefined;
+  const pinDifficulty     = searchParams.get("difficulty")      ?? undefined;
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -108,9 +108,9 @@ export function NewTemplatePage() {
         payload.image = await toBase64(imageFile);
         payload.mime_type = imageFile.type;
       }
-      if (pinSkillId)    payload.skill_id   = pinSkillId;
-      if (pinSubject)    payload.subject    = pinSubject;
-      if (pinDifficulty) payload.difficulty = pinDifficulty;
+      if (pinSkillId)       payload.skill_id        = pinSkillId;
+      if (pinSkillDetailId) payload.skill_detail_id = pinSkillDetailId;
+      if (pinDifficulty)    payload.difficulty      = pinDifficulty;
 
       const res = await apiFetch("/api/templates/generate_from_image/", {
         method: "POST",
@@ -144,9 +144,9 @@ export function NewTemplatePage() {
         </div>
 
         {/* Pinned context banner */}
-        {(pinSubject || pinDifficulty) && (
+        {(pinSkillDetailId || pinDifficulty) && (
           <div className="alert alert-info py-2 mb-3" style={{ fontSize: 13 }}>
-            Skill: <strong>"{pinSubject}"</strong>
+            {pinSkillDetailId && <>Skill Detail ID: <strong>{pinSkillDetailId}</strong></>}
             {pinDifficulty && <>, difficulty {pinDifficulty}</>}
             {grade         && <>, Year {grade}</>}
           </div>
