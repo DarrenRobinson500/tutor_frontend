@@ -116,6 +116,22 @@ export function TemplateListPage() {
                 {importing ? "Uploading…" : "Upload All Templates"}
               </button>
               <input ref={uploadRef} type="file" accept=".json" className="d-none" onChange={handleUpload} />
+              <button
+                className="btn btn-outline-danger"
+                onClick={async () => {
+                  if (!window.confirm(`Delete all ${templates.length} templates? This cannot be undone.`)) return;
+                  const res = await apiFetch("/api/templates/delete_all/", { method: "POST" });
+                  const data = await res.json();
+                  if (data.error) {
+                    setTransferMessage(`Delete failed: ${data.error}`);
+                  } else {
+                    setTemplates([]);
+                    setTransferMessage(`Deleted ${data.deleted} templates.`);
+                  }
+                }}
+              >
+                Delete All Templates
+              </button>
             </>}
           </div>
         </div>
