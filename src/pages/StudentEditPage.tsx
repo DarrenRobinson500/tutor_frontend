@@ -13,7 +13,6 @@ export function StudentEditPage() {
   const returnTo = params.get("returnTo") || `/student/${studentId}`;
 
   const [yearLevel, setYearLevel] = useState("");
-  const [areaOfStudy, setAreaOfStudy] = useState("");
   const [active, setActive] = useState(true);
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
@@ -33,7 +32,6 @@ useEffect(() => {
       console.log("Parsed JSON from", url, data);
 
       setYearLevel(data.year_level || "");
-      setAreaOfStudy(data.area_of_study || "");
       setMobile(data.mobile || "");
       setAddress(data.address || "");
       setActive(data.active);
@@ -52,7 +50,6 @@ useEffect(() => {
       body: JSON.stringify({
         fields: {
           year_level: yearLevel,
-          area_of_study: areaOfStudy,
           mobile: mobile,
           address: address,
           active: active,
@@ -83,14 +80,6 @@ useEffect(() => {
         </select>
       </div>
 
-      <div className="mb-3">
-        <label className="form-label">Area of Study</label>
-        <textarea
-          className="form-control"
-          value={areaOfStudy}
-          onChange={(e) => setAreaOfStudy(e.target.value)}
-        />
-      </div>
       <div className="mb-3">
         <label className="form-label">Mobile</label>
         <input

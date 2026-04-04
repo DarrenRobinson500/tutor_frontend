@@ -40,8 +40,7 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
           <div className="col-2">Mobile</div>
           <div className="col-1">Year</div>
           <div className="col-1">Area</div>
-          <div className="col-3">Email</div>
-          <div className="col-2">Actions</div>
+          <div className="col-6">Actions</div>
         </div>
       </li>
 
@@ -70,52 +69,45 @@ export function TutorStudentList({ tutorId }: { tutorId: string }) {
 
               <div className="col-1">{s.year_level || ""}</div>
               <div className="col-1">{s.area_of_study || ""}</div>
-              <div className="col-3">{s.email}</div>
 
-              <div className="col-2 d-flex flex-row gap-2">
+              <div className="col-6 d-flex flex-wrap gap-2">
                 <Link
-                  className={`btn btn-sm ${
-                    s.active ? "btn-outline-primary" : "btn-outline-primary disabled"
-                  }`}
+                  className={`btn btn-sm ${s.active ? "btn-outline-primary" : "btn-outline-primary disabled"}`}
                   to={`/students/${s.user_id}`}
-                  style={{
-                    minWidth: "160px",
-                    whiteSpace: "nowrap",
-                    textAlign: "center",
-                  }}
                 >
                   {s.first_name}'s Home Page
                 </Link>
 
                 <Link
                   className="btn btn-sm btn-outline-primary"
-                  to={`/students/${s.user_id}/edit?returnTo=/tutors/${tutorId}` }
-                  style={{
-                    minWidth: "40px",
-                    whiteSpace: "nowrap",
-                    textAlign: "center",
-                  }}
+                  to={`/students/${s.user_id}/edit?returnTo=/tutors/${tutorId}`}
                 >
                   Edit
                 </Link>
 
                 <button
                   className="btn btn-sm btn-outline-primary"
-                  style={{ minWidth: "50px", whiteSpace: "nowrap" }}
                   onClick={() => navigate(`/session/t${tutorId}-s${s.user_id}`)}
                   title={`Start online session with ${s.first_name}`}
                 >
                   Call
                 </button>
 
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  style={{ whiteSpace: "nowrap" }}
-                  onClick={() => navigate(`/students/${s.user_id}/focus-areas?returnTo=/tutors/${tutorId}`)}
-                >
-                  Set focus areas
-                </button>
-
+                {s.year_level ? (
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => navigate(`/students/${s.user_id}/focus-areas?returnTo=/tutors/${tutorId}`)}
+                  >
+                    Set focus areas
+                  </button>
+                ) : (
+                  <Link
+                    className="btn btn-sm btn-outline-primary"
+                    to={`/students/${s.user_id}/edit?returnTo=/tutors/${tutorId}`}
+                  >
+                    Set grade
+                  </Link>
+                )}
               </div>
             </div>
           </li>

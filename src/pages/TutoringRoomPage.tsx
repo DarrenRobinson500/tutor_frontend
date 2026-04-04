@@ -95,7 +95,15 @@ export function TutoringRoomPage() {
         </button>
         <button
           className="btn btn-sm btn-danger ms-auto"
-          onClick={() => navigate(-1)}
+          onClick={async () => {
+            if (isTutor && roomName) {
+              await apiFetch("/api/sessions/end_session/", {
+                method: "POST",
+                body: JSON.stringify({ room_name: roomName }),
+              }).catch(() => {});
+            }
+            navigate(-1);
+          }}
         >
           Leave
         </button>

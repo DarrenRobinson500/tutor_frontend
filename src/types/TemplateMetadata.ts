@@ -2,6 +2,7 @@ export interface TemplateSummary {
   id: number;
   grade: string;
   skill: string;
+  skill_detail: string;
   difficulty: string;
   subject: string;
   status: string;

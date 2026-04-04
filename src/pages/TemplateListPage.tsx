@@ -154,8 +154,8 @@ export function TemplateListPage() {
               <tr>
                 <th>Grade</th>
                 <th>Skill</th>
+                <th>Skill Detail</th>
                 <th>Difficulty</th>
-                <th>Subject</th>
                 <th>Status</th>
                 <th>Updated</th>
                 <th>Notes</th>
@@ -172,8 +172,8 @@ export function TemplateListPage() {
                 >
                   <td>{tpl.grade}</td>
                   <td>{tpl.skill}</td>
-                  <td>{tpl.difficulty}</td>
-                  <td>{tpl.subject}</td>
+                  <td>{tpl.skill_detail}</td>
+                  <td>{tpl.difficulty ? tpl.difficulty.charAt(0).toUpperCase() + tpl.difficulty.slice(1) : ""}</td>
                   <td>{tpl.status}</td>
                   <td>{new Date(tpl.updated_at).toLocaleString()}</td>
                   <td style={{ maxWidth: 260 }}>
