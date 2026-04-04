@@ -335,12 +335,10 @@ export function PreviewPanel({
     const normalize = (s: any) => String(s).trim().toLowerCase().replace(/\s+/g, "");
     const a = normalize(input);
     const b = normalize(correct);
-    if (a === b) return true;
 
-    // Require format match: a percentage answer must be entered as a percentage
-    if (b.endsWith("%") && !a.endsWith("%")) return false;
-
-    // If the student entered a fraction, it must be fully simplified
+    // If the student entered a fraction, it must be fully simplified.
+    // Check BEFORE exact-string match so that entering "12/60" when the
+    // template answer is also "12/60" is still rejected.
     if (a.includes("/") && !a.includes("x") && !a.includes("×")) {
       const fracParts = a.split("/");
       if (fracParts.length === 2) {
@@ -352,6 +350,11 @@ export function PreviewPanel({
         }
       }
     }
+
+    if (a === b) return true;
+
+    // Require format match: a percentage answer must be entered as a percentage
+    if (b.endsWith("%") && !a.endsWith("%")) return false;
 
     // Parse a ratio like "1:2" → [1, 2] simplified
     const parseRatio = (s: string): number[] | null => {

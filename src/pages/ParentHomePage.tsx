@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ProgressChart } from "./components/ProgressChart";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
 import "./ParentHomePage.css";
@@ -203,6 +204,11 @@ function ChildCard({
           {statusText}
         </div>
       )}
+
+      <div className="mt-3">
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Progress</div>
+        <ProgressChart studentId={child.id} />
+      </div>
 
       <div className="ph-child-actions">
         <button

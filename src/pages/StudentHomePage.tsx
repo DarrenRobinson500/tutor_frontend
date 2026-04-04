@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 // import { WeekData } from "../types/weekly";
 import { apiFetch } from "../utils/apiFetch";
+import { ProgressChart } from "./components/ProgressChart";
 
 interface CellData {
   colour: string;
@@ -83,6 +84,10 @@ export function StudentHomePage() {
         </div>
 
 
+
+        <hr />
+        <h3 className="mt-4">Your Progress</h3>
+        <ProgressChart studentId={id!} />
 
         <hr />
         <h3 className="mt-4">Your Syllabus</h3>

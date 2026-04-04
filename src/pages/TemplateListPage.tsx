@@ -89,12 +89,20 @@ export function TemplateListPage() {
           <h1 className="h3">Templates</h1>
 
           <div className="d-flex gap-2 flex-wrap">
-            <button
-              className={`btn ${hasNotesOnly ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={() => setHasNotesOnly(v => { const next = !v; localStorage.setItem("templateList_hasNotesOnly", String(next)); return next; })}
-            >
-              {hasNotesOnly ? "Showing: Has Notes" : "Has Notes"}
-            </button>
+            <div className="btn-group" role="group">
+              <button
+                className={`btn ${!hasNotesOnly ? "btn-primary" : "btn-outline-primary"}`}
+                onClick={() => { setHasNotesOnly(false); localStorage.setItem("templateList_hasNotesOnly", "false"); }}
+              >
+                All Questions
+              </button>
+              <button
+                className={`btn ${hasNotesOnly ? "btn-primary" : "btn-outline-primary"}`}
+                onClick={() => { setHasNotesOnly(true); localStorage.setItem("templateList_hasNotesOnly", "true"); }}
+              >
+                Questions with Notes
+              </button>
+            </div>
             <button
               className={`btn ${noSubjectOnly ? "btn-primary" : "btn-outline-primary"}`}
               onClick={() => setNoSubjectOnly(v => { const next = !v; localStorage.setItem("templateList_noSubjectOnly", String(next)); return next; })}
