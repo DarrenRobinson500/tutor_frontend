@@ -37,6 +37,7 @@ import AuthPage from "./pages/AuthPage/AuthPage";
 import LandingPage from "./pages/public/LandingPage";
 import DistributorPage from "./pages/public/DistributorPage";
 import TutorPage from "./pages/public/TutorPage";
+import CompetitionPage from "./pages/public/CompetitionPage";
 import DistributorRegisterPage from "./pages/public/DistributorRegisterPage";
 import ReferralLandingPage from "./pages/public/ReferralLandingPage";
 import DistributorHomePage from "./pages/DistributorHomePage";
@@ -50,6 +51,14 @@ import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
 
 import "bootstrap/dist/css/bootstrap.min.css";
+
+// ------------------------------------------------------------
+// HTML FILE REDIRECT (outside React Router SPA routing)
+// ------------------------------------------------------------
+function HtmlRedirect({ to }: { to: string }) {
+  window.location.replace(to);
+  return null;
+}
 
 // ------------------------------------------------------------
 // PROTECTED ROUTE WRAPPER
@@ -95,6 +104,11 @@ function App() {
         <Route path="/register/tutor" element={<TutorRegisterPage />} />
         <Route path="/distributors" element={<DistributorPage />} />
         <Route path="/tutors" element={<TutorPage />} />
+        <Route path="/competitions" element={<CompetitionPage />} />
+        {/* Short aliases */}
+        <Route path="/dist" element={<Navigate to="/distributors" replace />} />
+        <Route path="/tut" element={<Navigate to="/tutors" replace />} />
+        <Route path="/comp" element={<HtmlRedirect to="/market-makers.html" />} />
         <Route path="/register/distributor" element={<DistributorRegisterPage />} />
         <Route path="/ref/:code" element={<ReferralLandingPage />} />
         <Route path="/assessment-launch" element={<AssessmentLaunchPage />} />
