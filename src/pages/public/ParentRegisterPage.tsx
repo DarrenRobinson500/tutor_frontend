@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import "./RegisterPage.css";
 import { useYears } from "../../utils/useYears";
 
 export default function ParentRegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const refCode = searchParams.get("ref") ?? "";
   const years = useYears();
 
   // Parent fields
@@ -65,6 +67,7 @@ export default function ParentRegisterPage() {
           child_year_level: childYear,
           child_school_name: childSchool.trim(),
           child_mobile: childMobile.trim(),
+          ...(refCode ? { referral_code: refCode } : {}),
         }),
       });
       const data = await res.json();

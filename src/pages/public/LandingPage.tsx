@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import "./LandingPage.css";
 
-export default function LandingPage() {
+export default function LandingPage({ refCode }: { refCode?: string } = {}) {
+  const registerHref = refCode ? `/register/parent?ref=${refCode}` : "/register/parent";
   return (
     <div className="lp-root">
 
@@ -13,7 +14,7 @@ export default function LandingPage() {
           </Link>
           <div className="lp-nav-links">
             <Link to="/login" className="lp-nav-link">Login</Link>
-            <Link to="/register/parent" className="lp-nav-cta">Get Started</Link>
+            <Link to={registerHref} className="lp-nav-cta">Get Started</Link>
           </div>
         </div>
       </nav>
@@ -25,7 +26,7 @@ export default function LandingPage() {
             <div className="lp-hero-eyebrow">NSW K–10 Mathematics</div>
             <h1 className="lp-hero-headline">
               Know exactly where your child<br />
-              stands in maths —<br />
+              stands in maths, <br />
               <em>and what to do about it.</em>
             </h1>
             <p className="lp-hero-sub">
@@ -34,7 +35,7 @@ export default function LandingPage() {
               tutor. You get a clear progress report every week.
             </p>
             <div className="lp-hero-ctas">
-              <Link to="/register/parent" className="sm-btn-primary">
+              <Link to={registerHref} className="sm-btn-primary">
                 Get a Free Assessment
               </Link>
               <Link to="/register/tutor" className="sm-btn-secondary">
@@ -166,10 +167,10 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <div className="lp-footer-logo">
-            <img src="/subjectmatter_wordmark.svg" alt="SubjectMatter" />
+            <img src="/subjectmatter_wordmark_orange.svg" alt="SubjectMatter" />
           </div>
           <div className="lp-footer-links">
-            <Link to="/register/parent">Get Started</Link>
+            <Link to={registerHref}>Get Started</Link>
             <Link to="/login">Login</Link>
             <Link to="/register/tutor">Become a Tutor</Link>
           </div>

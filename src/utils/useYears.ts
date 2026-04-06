@@ -25,8 +25,9 @@ export function useYears() {
       apiFetch("/api/years/")
         .then(r => r.json())
         .then((data: Year[]) => {
-          _cache = data;
-          _listeners.forEach(fn => fn(data));
+          const years = Array.isArray(data) ? data : [];
+          _cache = years;
+          _listeners.forEach(fn => fn(years));
           _listeners.length = 0;
         })
         .catch(() => {});

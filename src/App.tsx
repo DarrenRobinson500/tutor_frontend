@@ -35,6 +35,11 @@ import { KnowledgeListPage } from "./pages/KnowledgeListPage";
 import { PastTestsPage } from "./pages/PastTestsPage";
 import AuthPage from "./pages/AuthPage/AuthPage";
 import LandingPage from "./pages/public/LandingPage";
+import DistributorPage from "./pages/public/DistributorPage";
+import TutorPage from "./pages/public/TutorPage";
+import DistributorRegisterPage from "./pages/public/DistributorRegisterPage";
+import ReferralLandingPage from "./pages/public/ReferralLandingPage";
+import DistributorHomePage from "./pages/DistributorHomePage";
 import LoginPage from "./pages/public/LoginPage";
 import ParentRegisterPage from "./pages/public/ParentRegisterPage";
 import TutorRegisterPage from "./pages/public/TutorRegisterPage";
@@ -88,8 +93,15 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register/parent" element={<ParentRegisterPage />} />
         <Route path="/register/tutor" element={<TutorRegisterPage />} />
+        <Route path="/distributors" element={<DistributorPage />} />
+        <Route path="/tutors" element={<TutorPage />} />
+        <Route path="/register/distributor" element={<DistributorRegisterPage />} />
+        <Route path="/ref/:code" element={<ReferralLandingPage />} />
         <Route path="/assessment-launch" element={<AssessmentLaunchPage />} />
         <Route path="/auth" element={<AuthPage />} />
+
+        {/* PROTECTED — distributor */}
+        <Route path="/distributors/:id" element={<ProtectedRoute><DistributorHomePage /></ProtectedRoute>} />
 
         {/* PROTECTED — parent */}
         <Route path="/parents/:id" element={<ProtectedRoute><ParentHomePage /></ProtectedRoute>} />
