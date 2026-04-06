@@ -264,3 +264,108 @@
   min-width: 80px;
   text-align: center;
 }
+
+/* ── Student home: focus area cards ────────────────────── */
+.fa-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 640px;
+}
+
+.fa-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  gap: 12px;
+}
+
+.fa-card-done {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.fa-card-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.fa-card-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.fa-card-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.fa-done-label {
+  font-size: 0.82rem;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.fa-improved-label {
+  font-size: 0.78rem;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+/* ── Focus area learning status ────────────────────────── */
+.fa-learning-status {
+  font-size: 0.78rem;
+  display: inline-block;
+}
+
+.fa-learning-pending {
+  color: #6b7280;   /* grey — not yet done */
+}
+
+.fa-learning-done {
+  color: #16a34a;   /* green — completed */
+}
+
+.fa-learning-improved {
+  color: #0369a1;   /* blue — level changed */
+}
+
+/* ── Skill star ratings ─────────────────────────────────── */
+.skill-stars {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  line-height: 1;
+}
+
+.star {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Standard filled star — solid amber */
+.star-filled {
+  color: #f59e0b;
+}
+
+/* Empty star — light grey outline */
+.star-empty {
+  color: #d1d5db;
+}
+
+/* Bonus star (levels 5–6) — brighter, larger, richer gold */
+.star-bonus {
+  font-size: 22px;
+  color: #d97706;
+  filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.6));
+}

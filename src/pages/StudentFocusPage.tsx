@@ -11,6 +11,11 @@ interface FocusArea {
   order: number;
   mastery: number;
   competence_label: string;
+  learning_done_this_week: boolean;
+  level_before_learning: number | null;
+  level_after_learning: number | null;
+  label_before_learning: string | null;
+  label_after_learning: string | null;
 }
 
 interface SkillRow {
@@ -28,11 +33,39 @@ interface MasteryEntry {
 }
 
 const COMPETENCE_BADGE: Record<string, string> = {
-  Developing: "secondary",
-  Emerging: "warning",
-  Competent: "primary",
-  Mastered: "success",
+  "Not Started":    "secondary",
+  "Developing":     "secondary",
+  "Easy Complete":  "warning",
+  "Emerging":       "warning",
+  "Competent":      "primary",
+  "Advanced":       "info",
+  "Mastered":       "success",
 };
+
+function LearningStatus({ fa }: { fa: FocusArea }) {
+  if (!fa.learning_done_this_week) {
+    return (
+      <span className="fa-learning-status fa-learning-pending">
+        Learning not completed yet
+      </span>
+    );
+  }
+  const before = fa.label_before_learning;
+  const after  = fa.label_after_learning;
+  if (before !== null && after !== null && before !== after) {
+    return (
+      <span className="fa-learning-status fa-learning-done fa-learning-improved">
+        Learning completed: Skill level changed from <strong>{before}</strong> to <strong>{after}</strong>
+      </span>
+    );
+  }
+  const label = after ?? before ?? fa.competence_label;
+  return (
+    <span className="fa-learning-status fa-learning-done">
+      Learning completed: Skill level <strong>{label}</strong>
+    </span>
+  );
+}
 
 const PARENT_STYLE: React.CSSProperties = {
   background: "#f0f0f0",
@@ -206,6 +239,9 @@ export function StudentFocusPage() {
                       <span className={`badge bg-${COMPETENCE_BADGE[fa.competence_label] ?? "secondary"} ms-2`}>
                         {fa.competence_label}
                       </span>
+                      <div className="mt-1">
+                        <LearningStatus fa={fa} />
+                      </div>
                     </div>
                   </div>
                   <button

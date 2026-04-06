@@ -299,18 +299,24 @@ export function TestPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const testTypeParam = (searchParams.get("type") ?? "") as string;
+  const modeParam = searchParams.get("mode") ?? "";
+  const skillCodesParam = searchParams.get("skill_codes") ?? "";
+  const focusAreaIdParam = searchParams.get("focus_area_id") ?? "";
 
   const storedUser = localStorage.getItem("user");
   const isTutor = storedUser ? JSON.parse(storedUser)?.role === "tutor" : false;
 
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [testType, setTestType] = useState(testTypeParam);
+  const [mode, setMode] = useState(modeParam);
   const [question, setQuestion] = useState<TestQuestion | null>(null);
   const [skillProgress, setSkillProgress] = useState<SkillProgress[]>([]);
   const [status, setStatus] = useState<"loading" | "active" | "complete" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [showMetadata, setShowMetadata] = useState(false);
+  const questionStartRef = useState<number>(() => Date.now())[0];
+  const questionStartTime = useState<number>(Date.now());
 
   useEffect(() => {
     startTest();
@@ -319,24 +325,32 @@ export function TestPage() {
   // Close metadata panel when question changes
   useEffect(() => {
     setShowMetadata(false);
+    questionStartTime[1](Date.now());
   }, [question?.template_id]);
 
   async function startTest() {
     setStatus("loading");
     try {
+      const body: Record<string, any> = { student_id: studentId, test_type: testTypeParam };
+      if (modeParam) body.mode = modeParam;
+      if (skillCodesParam) body.skill_codes = skillCodesParam.split(",").map(s => s.trim()).filter(Boolean);
+      if (focusAreaIdParam) body.focus_area_id = parseInt(focusAreaIdParam, 10);
+
       const res = await apiFetch("/api/tests/start/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_id: studentId, test_type: testTypeParam }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) { setErrorMsg(data.error || "Failed to start test"); setStatus("error"); return; }
       if (data.complete) { setStatus("complete"); setSessionId(data.session_id); return; }
       setSessionId(data.session_id);
       if (data.test_type) setTestType(data.test_type);
+      if (data.mode) setMode(data.mode);
       setQuestion(data.question);
       setPreview(data.question.preview);
       if (data.skill_progress) setSkillProgress(data.skill_progress);
+      questionStartTime[1](Date.now());
       setStatus("active");
     } catch (e: any) {
       setErrorMsg(e.message || "Unexpected error");
@@ -346,6 +360,7 @@ export function TestPage() {
 
   const handleAnswer = useCallback(async (result: StudentRecordResponse) => {
     if (!sessionId || !question) return;
+    const timeTakenMs = Date.now() - questionStartTime[0];
     try {
       const res = await apiFetch(`/api/tests/${sessionId}/answer/`, {
         method: "POST",
@@ -353,6 +368,7 @@ export function TestPage() {
         body: JSON.stringify({
           template_id: question.template_id,
           correct: result.correct ?? false,
+          time_taken_ms: timeTakenMs,
         }),
       });
       const data = await res.json();
@@ -368,7 +384,7 @@ export function TestPage() {
       setErrorMsg(e.message || "Unexpected error");
       setStatus("error");
     }
-  }, [sessionId, question]);
+  }, [sessionId, question, questionStartTime]);
 
   if (status === "loading") {
     return (
@@ -393,10 +409,16 @@ export function TestPage() {
   }
 
   if (status === "complete") {
+    const isLearning = mode === "learning";
     return (
       <Layout>
         <div className="container py-4" style={{ maxWidth: 700 }}>
-          <h3 className="mb-3">Test Complete</h3>
+          <h3 className="mb-1">{isLearning ? "Learning session complete" : "Test Complete"}</h3>
+          {isLearning && (
+            <p className="text-muted mb-3" style={{ fontSize: 14 }}>
+              You've completed both loops. Keep it up — learning done for this week!
+            </p>
+          )}
           {skillProgress.length > 0 && (
             <div className="mb-4">
               <h5>Results by Skill</h5>
@@ -421,7 +443,7 @@ export function TestPage() {
             </div>
           )}
           <div className="d-flex gap-2">
-            {sessionId && (
+            {sessionId && !isLearning && (
               <a
                 href={`/api/tests/${sessionId}/report/`}
                 className="btn btn-primary"
@@ -431,8 +453,8 @@ export function TestPage() {
                 Download PDF Report
               </a>
             )}
-            <button className="btn btn-outline-secondary" onClick={() => navigate(-1)}>
-              Back
+            <button className="btn btn-outline-secondary" onClick={() => navigate(`/students/${studentId}`)}>
+              Back to home
             </button>
           </div>
         </div>
@@ -456,8 +478,21 @@ export function TestPage() {
           ← Back
         </button>
 
-        {/* Test label */}
-        {testType && TEST_LABEL[testType] && (
+        {/* Mode / test label */}
+        {mode === "learning" && question && (
+          <div className="d-flex align-items-center gap-3 mb-2">
+            <span className="badge bg-success" style={{ fontSize: 12 }}>
+              Loop {(question as any).loop ?? 1} of 2
+            </span>
+            <span className="text-muted" style={{ fontSize: 13 }}>
+              {(question as any).loop_remaining ?? 0} question{(question as any).loop_remaining !== 1 ? "s" : ""} left in this loop
+            </span>
+          </div>
+        )}
+        {mode === "test" && (
+          <h5 className="mb-2 text-muted fw-normal" style={{ fontSize: 14 }}>Skills Test</h5>
+        )}
+        {!mode && testType && TEST_LABEL[testType] && (
           <h5 className="mb-2 text-muted fw-normal" style={{ fontSize: 14 }}>
             {TEST_LABEL[testType]}
           </h5>
