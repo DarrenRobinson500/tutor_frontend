@@ -22,7 +22,6 @@ export default function DistributorRegisterPage() {
     if (!email.trim()) return "Please enter your email address.";
     if (!mobile.trim()) return "Please enter your mobile number.";
     if (!password) return "Please choose a password.";
-    if (password.length < 8) return "Password must be at least 8 characters.";
     if (password !== confirm) return "Passwords do not match.";
     if (bio.length > BIO_MAX) return `Bio must be ${BIO_MAX} characters or fewer.`;
     return null;

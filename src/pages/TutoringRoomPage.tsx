@@ -133,7 +133,7 @@ export function TutoringRoomPage() {
             </div>
           )}
           {showQuestion && (
-            <div className={colClass} style={{ height: "100%", overflow: "hidden" }}>
+            <div className={colClass} style={{ height: "100%", overflow: "hidden", background: "#fff" }}>
               <QuestionPanel isTutor={isTutor} roomName={roomName!} studentId={studentId} />
             </div>
           )}

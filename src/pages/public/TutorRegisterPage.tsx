@@ -31,7 +31,6 @@ export default function TutorRegisterPage() {
     if (!email.trim()) return "Please enter your email address.";
     if (!mobile.trim()) return "Please enter your mobile number.";
     if (!password) return "Please choose a password.";
-    if (password.length < 8) return "Password must be at least 8 characters.";
     if (password !== confirm) return "Passwords do not match.";
     if (!qualification.trim()) return "Please enter what you are currently studying.";
     if (yearLevels.length === 0) return "Please select at least one year level you can tutor.";

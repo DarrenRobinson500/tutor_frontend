@@ -125,7 +125,7 @@ export default function DistributorHomePage() {
             <div className="dh-referral-section">
               <div className="dh-section-label">Your referral link</div>
               <p className="dh-referral-hint">
-                Share this link. Any parent who signs up through it is attributed to you.
+                Share this link. This is a link to the parent and student landing page, which leads to their registration page. Any parent who signs up through it is attributed to you.
               </p>
               <div className="dh-referral-box">
                 <span className="dh-referral-url">{referralUrl}</span>
