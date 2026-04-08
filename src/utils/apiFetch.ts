@@ -1,14 +1,48 @@
-export async function apiFetch(url: string, options: any = {}) {
-//   const API_URL = "http://localhost:8000";
-  const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
-//   const API_URL = "https://web-production-f1310.up.railway.app";
+const API_URL = (process.env.REACT_APP_API_URL ?? "").replace(/\/$/, "");
 
+// Shared refresh promise — prevents two concurrent 401s from each trying to
+// refresh independently (which races and clears localStorage on the loser).
+let _refreshPromise: Promise<string | null> | null = null;
+
+async function getNewAccessToken(): Promise<string | null> {
+  if (_refreshPromise) return _refreshPromise;
+
+  _refreshPromise = (async () => {
+    const refresh = localStorage.getItem("refresh");
+    if (!refresh) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("user");
+      return null;
+    }
+
+    const res = await fetch(`${API_URL}/api/auth/jwt/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+      credentials: "include",
+    });
+
+    if (!res.ok) {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("user");
+      return null;
+    }
+
+    const data = await res.json();
+    localStorage.setItem("access", data.access);
+    if (data.refresh) localStorage.setItem("refresh", data.refresh);
+    return data.access as string;
+  })().finally(() => { _refreshPromise = null; });
+
+  return _refreshPromise;
+}
+
+export async function apiFetch(url: string, options: any = {}) {
   const fullUrl = `${API_URL}${url}`;
 
   const access = localStorage.getItem("access");
 
-  // Don't set Content-Type for FormData — the browser must set it with the
-  // multipart boundary. For everything else default to application/json.
   const isFormData = options.body instanceof FormData;
   const headers = {
     ...(isFormData ? {} : { "Content-Type": "application/json" }),
@@ -16,58 +50,22 @@ export async function apiFetch(url: string, options: any = {}) {
     ...(access ? { Authorization: `Bearer ${access}` } : {}),
   };
 
-  // Helper to perform a fetch with merged headers
   const doFetch = (overrideHeaders = headers) =>
-    fetch(fullUrl, {
-      ...options,
-      headers: overrideHeaders,
-    });
+    fetch(fullUrl, { ...options, headers: overrideHeaders });
 
-  // If no access token, just do a simple fetch
-  if (!access) {
-    return doFetch();
-  }
+  // No token — unauthenticated request
+  if (!access) return doFetch();
 
-  // First attempt
   let res = await doFetch();
 
-  // If unauthorized → try refresh
   if (res.status === 401) {
-    const refresh = localStorage.getItem("refresh");
+    const newToken = await getNewAccessToken();
+    if (!newToken) return res;
 
-    if (!refresh) {
-      localStorage.removeItem("access");
-      localStorage.removeItem("refresh");
-      localStorage.removeItem("user");
-      return res;
-    }
-
-    // Attempt refresh
-    const refreshRes = await fetch(`${API_URL}/api/auth/refresh/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
-      credentials: "include",
-    });
-
-    if (!refreshRes.ok) {
-      localStorage.removeItem("access");
-      localStorage.removeItem("refresh");
-      localStorage.removeItem("user");
-      return res;
-    }
-
-    // Store new access token
-    const data = await refreshRes.json();
-    localStorage.setItem("access", data.access);
-
-    const retryHeaders = {
+    res = await doFetch({
       ...headers,
-      Authorization: `Bearer ${data.access}`,
-    };
-
-    // Retry original request with new token
-    res = await doFetch(retryHeaders);
+      Authorization: `Bearer ${newToken}`,
+    });
   }
 
   return res;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/apiFetch";
 import "./DistributorHomePage.css";
 
@@ -33,9 +33,17 @@ interface DistributorData {
 
 export default function DistributorHomePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [data, setData] = useState<DistributorData | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  function handleLogout() {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("user");
+    navigate("/distributors");
+  }
 
   useEffect(() => {
     apiFetch(`/api/distributors/${id}/`)
@@ -91,6 +99,9 @@ export default function DistributorHomePage() {
             {!data.approved && (
               <span className="dh-pending-badge">Pending approval</span>
             )}
+            <button className="dh-logout-btn" onClick={handleLogout}>
+              Sign out
+            </button>
           </div>
         </div>
       </header>

@@ -51,7 +51,12 @@ export function TutorHomePage() {
   return (
   <Layout>
     <div className="container mt-4">
-      <h2>{tutor.name}</h2>
+      <div className="d-flex align-items-center gap-2 mb-1">
+        <h2 className="mb-0">{tutor.name}</h2>
+        {!tutor.approved && (
+          <span className="badge text-bg-warning">Pending approval</span>
+        )}
+      </div>
       <p>
         Email: {tutor.email}<br/>
         Mobile: {tutor.mobile || "Not set"}<br/>

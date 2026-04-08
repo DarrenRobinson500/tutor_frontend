@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./RegisterPage.css";
 import { useYears } from "../../utils/useYears";
 const BIO_MAX = 300;
 
 export default function TutorRegisterPage() {
+  const navigate = useNavigate();
   const years = useYears();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
@@ -18,7 +19,6 @@ export default function TutorRegisterPage() {
 
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   function toggleYear(y: string) {
     setYearLevels((prev) =>
@@ -68,42 +68,15 @@ export default function TutorRegisterPage() {
         setError(data.error || "Submission failed. Please try again.");
         return;
       }
-      setSuccess(true);
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate(`/tutors/${data.user.id}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
-
-  if (success) {
-    return (
-      <div className="reg-page">
-        <nav className="reg-nav">
-          <Link to="/" className="reg-nav-logo">
-            <img src="/subjectmatter_wordmark.svg" alt="SubjectMatter" />
-          </Link>
-          <Link to="/" className="reg-nav-back">← Back to home</Link>
-        </nav>
-        <main className="reg-main" style={{ alignItems: "center" }}>
-          <div className="reg-card" style={{ textAlign: "center", padding: "3.5rem 2.5rem" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1.5rem" }}>🎉</div>
-            <h1 className="reg-heading">Application received</h1>
-            <p className="reg-sub" style={{ maxWidth: "380px", margin: "0 auto 2rem" }}>
-              Thanks for applying to join SubjectMatter. We'll review your
-              application and be in touch shortly.
-            </p>
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--sm-text-muted)", lineHeight: 1.6 }}>
-              Tutor accounts require manual approval before you can log in.
-              You'll receive an email once your application has been assessed.
-            </p>
-            <Link to="/" className="sm-btn-primary" style={{ marginTop: "2rem", display: "inline-flex" }}>
-              Back to home
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
   }
 
   return (
@@ -235,9 +208,6 @@ export default function TutorRegisterPage() {
               <div className="sm-form-group">
                 <label htmlFor="t-bio">
                   Brief bio{" "}
-                  <span style={{ fontWeight: 400, color: "var(--sm-text-muted)" }}>
-                    (optional)
-                  </span>
                 </label>
                 <textarea
                   id="t-bio"
