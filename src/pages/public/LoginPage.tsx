@@ -38,7 +38,7 @@ export default function LoginPage() {
       if (role === "parent") navigate(`/parents/${data.user.id}`);
       else if (role === "tutor") navigate(`/tutors/${data.user.id}`);
       else if (role === "student") navigate(`/students/${data.user.id}`);
-      else if (role === "admin") navigate("/admin/tutors");
+      else if (role === "admin") navigate("/admin");
       else if (role === "distributor") navigate(`/distributors/${data.user.id}`);
       else navigate("/");
     } catch {

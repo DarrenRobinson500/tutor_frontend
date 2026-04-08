@@ -142,13 +142,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {user?.role === "admin" && (
                 <>
+                  <li className="nav-item"><Link className="nav-link" to="/admin">Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/tutors">Tutors</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
-                  <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/principles">Principles</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/docs">Docs</Link></li>
                 </>
               )}
 

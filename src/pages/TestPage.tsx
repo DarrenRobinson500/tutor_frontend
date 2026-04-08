@@ -317,6 +317,12 @@ export function TestPage() {
   const [showMetadata, setShowMetadata] = useState(false);
   const questionStartRef = useState<number>(() => Date.now())[0];
   const questionStartTime = useState<number>(Date.now());
+  const [learnComplete, setLearnComplete] = useState<{
+    starsBefore: number | null;
+    starsAfter: number | null;
+    starsGained: number | null;
+    skillDescription: string | null;
+  } | null>(null);
 
   useEffect(() => {
     startTest();
@@ -373,6 +379,14 @@ export function TestPage() {
       });
       const data = await res.json();
       if (data.complete) {
+        if (data.mode === "learning") {
+          setLearnComplete({
+            starsBefore: data.stars_before ?? null,
+            starsAfter: data.stars_after ?? null,
+            starsGained: data.stars_gained ?? null,
+            skillDescription: data.skill_description ?? null,
+          });
+        }
         setStatus("complete");
         if (data.skill_progress) setSkillProgress(data.skill_progress);
         return;
@@ -410,15 +424,70 @@ export function TestPage() {
 
   if (status === "complete") {
     const isLearning = mode === "learning";
+
+    if (isLearning && learnComplete) {
+      const { starsBefore, starsAfter, starsGained, skillDescription } = learnComplete;
+      const totalStars = starsAfter ?? 0;
+      return (
+        <Layout>
+          <div className="container py-5 text-center" style={{ maxWidth: 560 }}>
+            {/* Stars display */}
+            <div style={{ fontSize: 48, letterSpacing: 6, color: "#f5a623", marginBottom: 16 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <span key={i} style={{ opacity: i < totalStars ? 1 : 0.2 }}>★</span>
+              ))}
+            </div>
+
+            <h2 className="fw-bold mb-1" style={{ fontSize: 28 }}>
+              {starsGained && starsGained > 0
+                ? `You gained ${starsGained} star${starsGained !== 1 ? "s" : ""}!`
+                : "Learning session complete!"}
+            </h2>
+
+            {skillDescription && (
+              <p className="text-muted mb-2" style={{ fontSize: 15 }}>{skillDescription}</p>
+            )}
+
+            {starsBefore !== null && starsAfter !== null && (
+              <div
+                className="d-inline-flex align-items-center gap-3 px-4 py-2 rounded-pill mt-2 mb-4"
+                style={{ background: "#fff8e1", border: "1px solid #ffe082", fontSize: 15 }}
+              >
+                <span>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <span key={i} style={{ color: i < starsBefore ? "#f5a623" : "#ddd", fontSize: 18 }}>★</span>
+                  ))}
+                </span>
+                <span style={{ color: "#888" }}>→</span>
+                <span>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <span key={i} style={{ color: i < starsAfter ? "#f5a623" : "#ddd", fontSize: 18 }}>★</span>
+                  ))}
+                </span>
+              </div>
+            )}
+
+            {(!starsGained || starsGained === 0) && (
+              <p className="text-muted mb-4" style={{ fontSize: 14 }}>
+                Come back in 6 days to consolidate this skill and earn your next star.
+              </p>
+            )}
+
+            <button
+              className="btn btn-success btn-lg px-5"
+              onClick={() => navigate(`/students/${studentId}`)}
+            >
+              Done
+            </button>
+          </div>
+        </Layout>
+      );
+    }
+
     return (
       <Layout>
         <div className="container py-4" style={{ maxWidth: 700 }}>
           <h3 className="mb-1">{isLearning ? "Learning session complete" : "Test Complete"}</h3>
-          {isLearning && (
-            <p className="text-muted mb-3" style={{ fontSize: 14 }}>
-              You've completed both loops. Keep it up — learning done for this week!
-            </p>
-          )}
           {skillProgress.length > 0 && (
             <div className="mb-4">
               <h5>Results by Skill</h5>

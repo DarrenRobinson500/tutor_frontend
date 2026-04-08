@@ -41,6 +41,7 @@ import CompetitionPage from "./pages/public/CompetitionPage";
 import DistributorRegisterPage from "./pages/public/DistributorRegisterPage";
 import ReferralLandingPage from "./pages/public/ReferralLandingPage";
 import DistributorHomePage from "./pages/DistributorHomePage";
+import AdminHomePage from "./pages/AdminHomePage";
 import LoginPage from "./pages/public/LoginPage";
 import ParentRegisterPage from "./pages/public/ParentRegisterPage";
 import TutorRegisterPage from "./pages/public/TutorRegisterPage";
@@ -109,6 +110,7 @@ function App() {
         <Route path="/dist" element={<Navigate to="/distributors" replace />} />
         <Route path="/tut" element={<Navigate to="/tutors" replace />} />
         <Route path="/comp" element={<HtmlRedirect to="/market-makers.html" />} />
+        <Route path="/admin" element={<ProtectedRoute><AdminHomePage /></ProtectedRoute>} />
         <Route path="/register/distributor" element={<DistributorRegisterPage />} />
         <Route path="/ref/:code" element={<ReferralLandingPage />} />
         <Route path="/assessment-launch" element={<AssessmentLaunchPage />} />

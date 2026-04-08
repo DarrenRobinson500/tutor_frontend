@@ -21,10 +21,12 @@ export function TutoringRoomPage() {
   const [showWhiteboard, setShowWhiteboard] = useState(true);
   const [showQuestion, setShowQuestion] = useState(true);
 
-  // Parse isTutor from room name and stored user
+  // Parse isTutor and studentId from room name (format: t{tutor_id}-s{student_id})
   const storedUser = localStorage.getItem("user");
   const user = storedUser ? JSON.parse(storedUser) : null;
   const isTutor = user?.role === "tutor" || user?.role === "admin";
+  const roomMatch = roomName?.match(/^t(\d+)-s(\d+)$/);
+  const studentId = roomMatch ? parseInt(roomMatch[2], 10) : undefined;
 
   useEffect(() => {
     if (!roomName) return;
@@ -132,7 +134,7 @@ export function TutoringRoomPage() {
           )}
           {showQuestion && (
             <div className={colClass} style={{ height: "100%", overflow: "hidden" }}>
-              <QuestionPanel isTutor={isTutor} roomName={roomName!} />
+              <QuestionPanel isTutor={isTutor} roomName={roomName!} studentId={studentId} />
             </div>
           )}
           {activePanels === 0 && (

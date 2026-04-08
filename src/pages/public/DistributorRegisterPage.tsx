@@ -1,22 +1,21 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./RegisterPage.css";
 
 const BIO_MAX = 500;
 
 export default function DistributorRegisterPage() {
+  const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName]   = useState("");
   const [email, setEmail]         = useState("");
   const [mobile, setMobile]       = useState("");
-  const [university, setUniversity] = useState("");
   const [password, setPassword]   = useState("");
   const [confirm, setConfirm]     = useState("");
   const [bio, setBio]             = useState("");
 
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   function validate(): string | null {
     if (!firstName.trim() || !lastName.trim()) return "Please enter your full name.";
@@ -25,7 +24,6 @@ export default function DistributorRegisterPage() {
     if (!password) return "Please choose a password.";
     if (password.length < 8) return "Password must be at least 8 characters.";
     if (password !== confirm) return "Passwords do not match.";
-    if (!university.trim()) return "Please enter your university.";
     if (bio.length > BIO_MAX) return `Bio must be ${BIO_MAX} characters or fewer.`;
     return null;
   }
@@ -50,7 +48,6 @@ export default function DistributorRegisterPage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           mobile: mobile.trim(),
-          university: university.trim(),
           bio: bio.trim(),
         }),
       });
@@ -59,7 +56,10 @@ export default function DistributorRegisterPage() {
         setError(data.error || "Submission failed. Please try again.");
         return;
       }
-      setSuccess(true);
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      navigate(`/distributors/${data.user.id}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -67,35 +67,6 @@ export default function DistributorRegisterPage() {
     }
   }
 
-  if (success) {
-    return (
-      <div className="reg-page">
-        <nav className="reg-nav">
-          <Link to="/" className="reg-nav-logo">
-            <img src="/subjectmatter_wordmark.svg" alt="SubjectMatter" />
-          </Link>
-          <Link to="/distributors" className="reg-nav-back">← Back</Link>
-        </nav>
-        <main className="reg-main" style={{ alignItems: "center" }}>
-          <div className="reg-card" style={{ textAlign: "center", padding: "3.5rem 2.5rem" }}>
-            <div style={{ fontSize: "3rem", marginBottom: "1.5rem" }}>🎉</div>
-            <h1 className="reg-heading">Application received</h1>
-            <p className="reg-sub" style={{ maxWidth: "380px", margin: "0 auto 2rem" }}>
-              Thanks for applying to become a SubjectMatter distributor.
-              We'll review your application and be in touch shortly.
-            </p>
-            <p style={{ fontSize: "var(--text-sm)", color: "var(--sm-text-muted)", lineHeight: 1.6 }}>
-              Distributor accounts require manual approval. You'll receive an
-              email once your application has been assessed.
-            </p>
-            <Link to="/" className="sm-btn-primary" style={{ marginTop: "2rem", display: "inline-flex" }}>
-              Back to home
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="reg-page">
@@ -188,17 +159,7 @@ export default function DistributorRegisterPage() {
               </div>
 
               <div className="sm-form-group">
-                <label htmlFor="d-uni">University</label>
-                <input id="d-uni" type="text" className="sm-input"
-                  placeholder="e.g. University of Sydney"
-                  value={university} onChange={(e) => setUniversity(e.target.value)} required />
-              </div>
-
-              <div className="sm-form-group">
-                <label htmlFor="d-bio">
-                  Why do you want to become a distributor?{" "}
-                  <span style={{ fontWeight: 400, color: "var(--sm-text-muted)" }}></span>
-                </label>
+                <label htmlFor="d-bio">Your approach</label>
                 <textarea
                   id="d-bio"
                   className="sm-input"
