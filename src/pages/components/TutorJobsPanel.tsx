@@ -18,15 +18,17 @@ interface StoredJob {
 
 type Job = DerivedJob | StoredJob;
 
-const JOB_LABELS: Record<string, (firstName: string) => string> = {
+const JOB_LABELS: Record<string, (firstName: string | null) => string> = {
   send_progress_message: (n) => `Send progress message for ${n}`,
   review_focus_area: (n) => `Review focus area for ${n}`,
+  review_available_hours: () => `Review my available hours`,
 };
 
 const JOB_LINKS: Record<string, (tutorId: string, studentId: number) => string> = {
   send_progress_message: (tutorId) => `/tutors/${tutorId}/sms`,
   review_focus_area: (tutorId, studentId) =>
     `/students/${studentId}/focus-areas?returnTo=/tutors/${tutorId}`,
+  review_available_hours: (tutorId) => `/tutors/${tutorId}/schedule`,
 };
 
 export function TutorJobsPanel({ tutorId }: { tutorId: string }) {

@@ -18,6 +18,7 @@ export function TutorSchedulePage() {
         setAvailability(data.availability);
         setBlockedDays(data.blocked_days);
       });
+    apiFetch(`/api/tutors/${id}/visited_schedule/`, { method: "POST" });
   }, [id]);
 
   return (

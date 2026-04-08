@@ -255,6 +255,11 @@ export default function ParentRegisterPage() {
               <p className="reg-terms">
                 By creating an account you agree to our Terms of Service and Privacy Policy.
               </p>
+              {error && (
+                <div className="sm-alert sm-alert-error" style={{ marginTop: "1rem" }}>
+                  {error}
+                </div>
+              )}
             </div>
           </form>
 

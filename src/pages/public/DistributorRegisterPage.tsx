@@ -183,6 +183,11 @@ export default function DistributorRegisterPage() {
                 Your application will be reviewed within 1–2 business days.
                 You'll receive an email once approved.
               </p>
+              {error && (
+                <div className="sm-alert sm-alert-error" style={{ marginTop: "1rem" }}>
+                  {error}
+                </div>
+              )}
             </div>
           </form>
 

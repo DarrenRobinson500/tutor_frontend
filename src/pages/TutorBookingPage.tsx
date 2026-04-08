@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ExistingBookingsWeek } from "./components/ExistingBookingsWeek";
 import { apiFetch } from "../utils/apiFetch";
@@ -215,6 +215,12 @@ const createAdhoc = () => {
   return (
     <Layout>
       <div className="container mt-4">
+
+        <div className="mb-3">
+          <Link to={`/tutors/${id}/schedule`} className="btn btn-outline-secondary btn-sm">
+            ⏱ Set my available hours
+          </Link>
+        </div>
 
         {loading && (
           <div className="text-center my-3">

@@ -142,6 +142,7 @@ function App() {
 
         <Route path="/tutors/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
         <Route path="/tutors/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />
+        <Route path="/tutors/:id/schedule" element={<ProtectedRoute><TutorSchedulePage /></ProtectedRoute>} />
         <Route path="/tutors/:id/edit" element={<ProtectedRoute><TutorEditPage /></ProtectedRoute>} />
         <Route path="/tutors/:id/sms" element={<TutorSMSInboxPage />} />
         <Route path="/tutors/:id/sms/:conversationId" element={<TutorSMSConversationPage />} />
