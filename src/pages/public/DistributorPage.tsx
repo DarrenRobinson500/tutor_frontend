@@ -193,7 +193,7 @@ function EarningsCard() {
           <div className="dp-stat-label">Students acquired</div>
         </div>
         <div className="dp-card-stat">
-          <div className="dp-stat-value dp-stat-green">$420<span className="dp-stat-unit">/mo</span></div>
+          <div className="dp-stat-value dp-stat-green">$280<span className="dp-stat-unit">/mo</span></div>
           <div className="dp-stat-label">Monthly revenue</div>
         </div>
       </div>

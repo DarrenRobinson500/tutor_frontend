@@ -20,6 +20,10 @@ async function saveToBackend(templateId: string | number | null, content: string
     console.log("Autosave skipped: no valid templateId yet");
     return;
   }
+  if (content.trim().length < 5) {
+    console.log("Autosave skipped: content too short");
+    return;
+  }
   const resp = await apiFetch("/api/templates/autosave/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -135,6 +139,21 @@ export const EditorPanel = forwardRef<EditorHandle, EditorPanelProps>(
           editorInstanceRef.current = editor;
           decorationsRef.current = editor.createDecorationsCollection([]);
           applyExpressionDecorations(editor, decorationsRef.current);
+
+          // Ctrl+B — wrap selection in **bold**
+          editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyB, () => {
+            const sel = editor.getSelection();
+            if (!sel) return;
+            const model = editor.getModel();
+            if (!model) return;
+            const selected = model.getValueInRange(sel);
+            editor.executeEdits("bold", [{
+              range: sel,
+              text: `**${selected}**`,
+              forceMoveMarkers: true,
+            }]);
+            editor.focus();
+          });
         }}
         options={{
           fontSize: 14,

@@ -207,7 +207,7 @@ export function DocsPage() {
 
         {/* Main content */}
         <div ref={contentRef} className="flex-grow-1 py-4 px-5" style={{ maxWidth: 820 }}>
-          <h4 className="mb-4">Template Editor — Documentation</h4>
+
           {sections.map(section => (
             <section key={section.id} className="mb-5">
               <h5

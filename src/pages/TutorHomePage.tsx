@@ -78,6 +78,12 @@ export function TutorHomePage() {
         >
           {lookingForStudents ? "Looking for students" : "Not looking for students"}
         </button>
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => window.location.href = `/tutors/${id}/schedule`}
+        >
+          Set available hours
+        </button>
       </div>
       <hr />
 

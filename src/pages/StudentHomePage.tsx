@@ -21,6 +21,7 @@ interface SkillRow {
   parent_id: number | null;
   children_count: number;
   cells: Record<string, CellData>;
+  detail_coverage: Record<string, { covered: number; total: number }> | null;
 }
 
 interface FocusArea {
@@ -192,6 +193,40 @@ export function StudentHomePage() {
           <p>No syllabus available for this year level.</p>
         )}
 
+      {(() => {
+        // Build a map of parent_id → direct child skill IDs
+        const childrenOf: Record<number, number[]> = {};
+        for (const skill of syllabus) {
+          if (skill.parent_id !== null) {
+            if (!childrenOf[skill.parent_id]) childrenOf[skill.parent_id] = [];
+            childrenOf[skill.parent_id].push(skill.id);
+          }
+        }
+
+        // Recursively compute average mastery for any skill node
+        function avgMastery(skillId: number): number {
+          const children = childrenOf[skillId];
+          if (!children || children.length === 0) {
+            return mastery[skillId]?.mastery ?? 0;
+          }
+          const vals = children.map(avgMastery);
+          return vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
+
+        // Overall average across all leaf skills
+        const leafSkills = syllabus.filter(s => s.children_count === 0);
+        const overallAvg = leafSkills.length > 0
+          ? leafSkills.reduce((sum, s) => sum + (mastery[s.id]?.mastery ?? 0), 0) / leafSkills.length
+          : 0;
+
+        return (
+          <>
+            <div className="mb-2">
+              <strong>Overall: </strong>
+              <SkillStars level={Math.round(overallAvg)} />
+              <span className="text-muted ms-2">{overallAvg.toFixed(1)}</span>
+            </div>
+
       <table className="skills-matrix">
         <thead>
           <tr>
@@ -208,7 +243,26 @@ export function StudentHomePage() {
             const cell = gradeStr ? skill.cells[gradeStr] : null;
             const templateCount = gradeStr && cell ? cell.validated : null;
 
+            // For parent skills use average of children; for leaves use recorded mastery
+            const masteryAvg = avgMastery(skill.id);
+            const masteryEntry = mastery[skill.id];
+            const masteryLevel = isParent ? masteryAvg : (masteryEntry?.mastery ?? 0);
+            const difficulty = masteryLevel <= 2 ? 'easy' : masteryLevel <= 4 ? 'medium' : 'hard';
+            const coverage = skill.detail_coverage;
+            const hasTemplatesAtDifficulty = coverage
+              ? (coverage[difficulty]?.covered ?? 0) > 0
+              : templateCount !== null && templateCount > 0;
 
+            // Time-lock: if the student has at least 1 star, they must wait 6 days
+            // from when that level was achieved before they can learn again.
+            let lockedUntil: Date | null = null;
+            if (!isParent && masteryLevel >= 1 && masteryEntry?.updated_at) {
+              const updatedAt = new Date(masteryEntry.updated_at);
+              const unlock = new Date(updatedAt.getTime() + 6 * 24 * 60 * 60 * 1000);
+              if (unlock > new Date()) {
+                lockedUntil = unlock;
+              }
+            }
 
             return (
               <tr key={skill.id} className={isParent ? "parent-row" : ""}>
@@ -218,19 +272,32 @@ export function StudentHomePage() {
                 </td>
 
                 <td>
-                  <SkillStars level={mastery[skill.id]?.mastery ?? 0} />
+                  <SkillStars level={Math.round(masteryLevel)} />
+                  {isParent && leafSkills.length > 0 && (
+                    <span className="text-muted ms-1" style={{ fontSize: '0.75rem' }}>
+                      {masteryAvg.toFixed(1)}
+                    </span>
+                  )}
                 </td>
 
                 <td>
                   {templateCount !== null && templateCount > 0 && (
-                    <button
-                      className="btn btn-sm btn-outline-primary"
-                      onClick={() =>
-                        navigate(`/students/${id}/test/${skill.id}`)
-                      }
-                    >
-                      Learn
-                    </button>
+                    lockedUntil ? (
+                      <button className="btn btn-sm btn-outline-secondary" disabled title={`Available from ${lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`}>
+                        More stars from {lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                      </button>
+                    ) : hasTemplatesAtDifficulty ? (
+                      <button
+                        className="btn btn-sm btn-outline-primary"
+                        onClick={() => navigate(`/students/${id}/test/${skill.id}`)}
+                      >
+                        Learn
+                      </button>
+                    ) : (
+                      <button className="btn btn-sm btn-outline-secondary" disabled>
+                        No Templates
+                      </button>
+                    )
                   )}
                 </td>
 
@@ -240,9 +307,9 @@ export function StudentHomePage() {
           })}
         </tbody>
       </table>
-
-
-
+          </>
+        );
+      })()}
 
       </div>
     </Layout>

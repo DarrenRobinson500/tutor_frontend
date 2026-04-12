@@ -9,6 +9,7 @@ export interface TemplateSummary {
   updated_at: string;
   note_count: number;
   notes: string[];
+  question_text: string;
 }
 
 
@@ -29,6 +30,8 @@ export type TemplateMetadata = {
   skill: number | null;     // parent Skill-level node ID — used for filtering only
   validated: boolean;
   validated_filter?: "all" | "validated" | "unvalidated";
+  group?: number | null;
+
 }
 
 export const emptyMetadata: TemplateMetadata = {
@@ -47,5 +50,7 @@ export const emptyMetadata: TemplateMetadata = {
   version: 1,
   skill: null,
   validated: false,
+  group: null,
+
 };
 

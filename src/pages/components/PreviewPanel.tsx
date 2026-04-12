@@ -25,6 +25,8 @@ interface PreviewPanelEditorProps extends PreviewPanelBase {
   templateId?: never;
   studentId?: never;
   onStudentNext?: never;
+  seenTemplateIds?: never;
+  sessionTemplateIds?: never;
 }
 
 /**
@@ -38,6 +40,8 @@ interface PreviewPanelStudentProps extends PreviewPanelBase {
   templateId: number;
   studentId: number;
   onStudentNext: (result: StudentRecordResponse) => void;
+  seenTemplateIds?: number[];
+  sessionTemplateIds?: number[];
 
   // explicitly forbidden in student mode
   templateContent?: never;
@@ -89,6 +93,8 @@ export function PreviewPanel({
   templateId,
   onStudentNext,
   studentId,
+  seenTemplateIds,
+  sessionTemplateIds,
 }: PreviewPanelProps) {
   const [selected, setSelected] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -198,6 +204,8 @@ export function PreviewPanel({
         correct,
         time_taken_ms: timeTaken,
         help_requested: helpRequested !== undefined ? helpRequested : flagged,
+        seen_template_ids: seenTemplateIds ?? [],
+        session_template_ids: sessionTemplateIds ?? [],
       }),
     });
     return res.json();
@@ -356,17 +364,20 @@ export function PreviewPanel({
     // Require format match: a percentage answer must be entered as a percentage
     if (b.endsWith("%") && !a.endsWith("%")) return false;
 
-    // Parse a ratio like "1:2" → [1, 2] simplified
+    // Parse a ratio like "1:2" → [1, 2] as integers (no simplification).
+    // The student's ratio must already be in simplified form.
     const parseRatio = (s: string): number[] | null => {
       if (!s.includes(":")) return null;
       const parts = s.split(":").map(p => Number(p.trim()));
       if (parts.some(isNaN) || parts.some(p => p <= 0)) return null;
-      const gcd = (x: number, y: number): number => y === 0 ? x : gcd(y, x % y);
-      const g = parts.reduce(gcd);
-      return parts.map(p => p / g);
+      return parts;
     };
+    const gcdOf = (x: number, y: number): number => y === 0 ? x : gcdOf(y, x % y);
     const ra = parseRatio(a), rb = parseRatio(b);
     if (ra !== null && rb !== null && ra.length === rb.length) {
+      // Reject the student's answer if it isn't already fully simplified.
+      const studentGcd = ra.map(Math.round).reduce(gcdOf);
+      if (studentGcd !== 1) return false;
       return ra.every((v, i) => Math.abs(v - rb[i]) < 1e-9);
     }
 
@@ -464,8 +475,16 @@ export function PreviewPanel({
       return "Please enter your answer as a ratio, e.g. 1:2";
     if ((format === "percent" || format === "percentage") && !/^-?\d+(\.\d+)?%$/.test(s))
       return "Please enter your answer as a percentage, e.g. 25%";
-    if (format === "proper_fraction" && !/^\d+(\s+\d+\/\d+)?$/.test(s))
-      return "Please enter as a mixed number, e.g. 2 1/3";
+    if (format === "proper_fraction") {
+      const fracMatch  = s.match(/^(\d+)\/(\d+)$/);
+      const mixedMatch = s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+      if (!(/^\d+$/.test(s)) && !fracMatch && !mixedMatch)
+        return "Please enter a whole number, proper fraction (e.g. 3/4), or mixed number (e.g. 2 1/3)";
+      if (fracMatch && parseInt(fracMatch[1]) >= parseInt(fracMatch[2]))
+        return "Please enter as a proper fraction where the numerator is less than the denominator, or as a mixed number (e.g. 2 1/3)";
+      if (mixedMatch && parseInt(mixedMatch[2]) >= parseInt(mixedMatch[3]))
+        return "The fractional part must be proper — numerator less than denominator (e.g. 2 1/3)";
+    }
     if (format === "equation" && !/^\d+(\^\d+)?$/.test(s))
       return "Please enter a number or power, e.g. 5^2";
     return null;
@@ -480,6 +499,8 @@ export function PreviewPanel({
     const multiStep = preview?.multi_step;
     if (multiStep?.steps?.length) {
       const step = multiStep.steps[multiStepIndex];
+      const stepFmtErr = checkAnswerFormat(textInput, step.answer_format ?? null);
+      if (stepFmtErr) { setFormatError(stepFmtErr); return; }
       const correct = answersMatch(textInput, step.answer, step.tolerance ?? 1e-9);
       setSelected(0);
       setIsCorrect(correct);
@@ -619,12 +640,13 @@ export function PreviewPanel({
   const inputAnswerMeta = answers.find((a: any) => a?.input_type === "text");
   const answerFormat = inputAnswerMeta?.answer_format ?? null;
   const DEFAULT_FORMAT_INSTRUCTIONS: Record<string, string> = {
-    fraction: "Enter as a fraction, e.g. 3/5",
-    integer:  "Enter a whole number, e.g. 42",
-    decimal:  "Enter as a decimal to one decimal place, e.g. 5.0",
-    ratio:    "Enter as a ratio, e.g. 3:2",
-    percent:  "Enter as a percentage, e.g. 35%",
-    equation: "Enter a base and power, e.g. 5^2 (press ^ or the xⁿ button to enter the power)",
+    fraction:        "Enter as a fraction, e.g. 3/5",
+    integer:         "Enter a whole number, e.g. 42",
+    decimal:         "Enter as a decimal to one decimal place, e.g. 5.0",
+    ratio:           "Enter as a ratio, e.g. 3:2",
+    percent:         "Enter as a percentage, e.g. 35%",
+    equation:        "Enter a base and power, e.g. 5^2 (press ^ or the xⁿ button to enter the power)",
+    proper_fraction: "Enter as a whole number, proper fraction (e.g. 3/4), or mixed number (e.g. 2 1/3)",
   };
   const formatInstruction = activeStep?.format_instruction
     ?? inputAnswerMeta?.format_instruction

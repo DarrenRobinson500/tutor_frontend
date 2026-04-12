@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { TemplateListPage } from "./pages/TemplateListPage";
 import { TemplateEditorPage } from "./pages/TemplateEditorPage";
+import { TemplateGroupEditorPage } from "./pages/TemplateGroupEditorPage";
 import { NewTemplatePage } from "./pages/NewTemplatePage";
 import { SkillCreatePage } from "./pages/SkillCreatePage";
 import { TutorListPage } from "./pages/TutorListPage";
@@ -14,6 +15,8 @@ import { TutorSchedulePage } from "./pages/TutorSchedulePage";
 import { TutorBookingPage } from "./pages/TutorBookingPage";
 import { TutorSMSInboxPage } from "./pages/TutorSMSInboxPage";
 import { TutorSMSConversationPage } from "./pages/TutorSMSConversationPage";
+import { AdminSMSInboxPage } from "./pages/AdminSMSInboxPage";
+import { AdminSMSConversationPage } from "./pages/AdminSMSConversationPage";
 
 import { StudentListPage } from "./pages/StudentListPage";
 import { StudentEditPage } from "./pages/StudentEditPage";
@@ -126,6 +129,7 @@ function App() {
         <Route path="/templates" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
         <Route path="/templates/new" element={<ProtectedRoute><NewTemplatePage /></ProtectedRoute>} />
         <Route path="/templates/editor" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
+        <Route path="/templates/group/:groupId" element={<ProtectedRoute><TemplateGroupEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id/metadata" element={<ProtectedRoute><TemplateMetadataPage /></ProtectedRoute>} />
 
@@ -139,6 +143,8 @@ function App() {
 
         <Route path="/admin/tutors" element={<ProtectedRoute><TutorListPage /></ProtectedRoute>} />
         <Route path="/admin/tutors/new" element={<ProtectedRoute><TutorCreatePage /></ProtectedRoute>} />
+        <Route path="/admin/sms" element={<ProtectedRoute><AdminSMSInboxPage /></ProtectedRoute>} />
+        <Route path="/admin/sms/:conversationId" element={<ProtectedRoute><AdminSMSConversationPage /></ProtectedRoute>} />
 
         <Route path="/tutors/:id" element={<ProtectedRoute><TutorHomePage /></ProtectedRoute>} />
         <Route path="/tutors/:id/booking" element={<ProtectedRoute><TutorBookingPage /></ProtectedRoute>} />

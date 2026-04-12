@@ -6,6 +6,7 @@ export interface MultiStep {
     question?: string;
     tolerance?: number;
     format_instruction?: string;
+    answer_format?: string;
     choices?: Array<{ text: string; correct: boolean }>;
   }>;
 }
@@ -48,5 +49,6 @@ export interface StudentRecordResponse {
   skill_name: string;
   template_id: number;
   correct?: boolean;
+  loop_complete?: boolean;
 }
 

@@ -28,7 +28,7 @@ export function TutorSchedulePage() {
 
         <button
           className="btn btn-outline-primary"
-          onClick={() => window.location.href = `/tutor/${id}`}
+          onClick={() => window.location.href = `/tutors/${id}`}
         >
           ← Back
         </button>
@@ -59,6 +59,8 @@ export function TutorSchedulePage() {
                 setAvailability(availability.filter(a => a.id !== id));
               }}
             />
+        <p></p>
+        <p className="text-muted">To delete availability, press the red square.</p>
 
         <hr className="mt-4" />
 

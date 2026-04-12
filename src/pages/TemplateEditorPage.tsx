@@ -102,9 +102,8 @@ function buildMetadataFromTemplate(
     version: tpl.version ?? 1,
     skill: tpl.skill_id ?? null,
     validated: tpl.validated ?? false,
-
-    // ⭐ Always preserve the user's validated filter preference
     validated_filter: currentFilter,
+    group: tpl.group ?? null,
   };
 }
 
@@ -593,6 +592,35 @@ const handleToggleValidated = async () => {
     navigate(`/templates/${data.id}`);
   };
 
+      const handleShowRelated = async () => {
+        if (!metadata.id) return;
+
+        // Case 1: Template already belongs to a group
+        if (metadata.group) {
+          navigate(`/templates/group/${metadata.group}`);
+          return;
+        }
+
+        // Case 2: No group — create one and attach this template
+        const res = await apiFetch(`/api/templates/${metadata.id}/create_group/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!res.ok) {
+          alert("Failed to create related group");
+          return;
+        }
+
+        const data = await res.json();
+
+        // Update metadata so the page knows the template now has a group
+        setMetadata(prev => ({ ...prev, group: data.group_id }));
+
+        // Navigate to the multi-difficulty editor
+        navigate(`/templates/group/${data.group_id}`);
+      };
+
   const handleMetadataChange = async (updated: Partial<TemplateMetadata>) => {
     const newMeta = { ...metadata, ...updated };
     setMetadata(newMeta);
@@ -714,6 +742,8 @@ const handleToggleValidated = async () => {
       skills={skills}
       subjects={subjects}
       onSubjectChange={handleSubjectChange}
+      onShowRelated={handleShowRelated}
+
     />
 
     <div className="container-fluid">

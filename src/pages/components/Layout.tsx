@@ -145,6 +145,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin">Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/tutors">Tutors</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/admin/sms">Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
@@ -156,7 +157,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
               {user?.role === "tutor" && (
                 <>
-                  <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/`}>Students</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/booking`}>Bookings</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/sms`}>Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>

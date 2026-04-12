@@ -6,21 +6,34 @@ export function useTemplateApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function listTemplates(hasNotesOnly = false, noSubjectOnly = false): Promise<TemplateSummary[]> {
+  async function listTemplates(opts: {
+    hasNotesOnly?: boolean;
+    noSubjectOnly?: boolean;
+    grade?: string;
+    skill?: string;
+    difficulty?: string;
+    page?: number;
+    pageSize?: number;
+  } = {}): Promise<{ count: number; results: TemplateSummary[]; grade_options: string[]; skill_options: string[]; diff_options: string[] }> {
     setLoading(true);
     setError(null);
 
     try {
       const params = new URLSearchParams();
-      if (hasNotesOnly) params.set("has_notes", "true");
-      if (noSubjectOnly) params.set("no_subject", "true");
+      if (opts.hasNotesOnly) params.set("has_notes", "true");
+      if (opts.noSubjectOnly) params.set("no_skill_detail", "true");
+      if (opts.grade)      params.set("grade", opts.grade);
+      if (opts.skill)      params.set("skill", opts.skill);
+      if (opts.difficulty) params.set("difficulty", opts.difficulty);
+      if (opts.page && opts.page > 1) params.set("page", String(opts.page));
+      if (opts.pageSize)   params.set("page_size", String(opts.pageSize));
       const url = params.toString() ? `/api/templates/?${params}` : "/api/templates/";
       const res = await apiFetch(url);
       if (!res.ok) throw new Error("Failed to load templates");
       return await res.json();
     } catch (err: any) {
       setError(err.message);
-      return [];
+      return { count: 0, results: [], grade_options: [], skill_options: [], diff_options: [] };
     } finally {
       setLoading(false);
     }

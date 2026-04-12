@@ -13,13 +13,16 @@ interface WeeklyCalendarProps {
 export function WeeklyCalendarSimple({ availability, onRemove }: WeeklyCalendarProps) {
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday",];
 
-  // Group availability by weekday
+  // Group availability by display column index (0=Mon … 6=Sun).
+  // Weekday convention: Mon=1, Tue=2, …, Sat=6, Sun=0.
+  // Map to display index: (weekday + 6) % 7  →  Mon→0, Tue→1, …, Sun→6.
   const grouped: Record<number, Availability[]> = {
     0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
   };
 
   availability.forEach(a => {
-    grouped[a.weekday].push(a);
+    const col = (a.weekday + 6) % 7;
+    grouped[col].push(a);
   });
 
   for (let day = 0; day < 7; day++) {

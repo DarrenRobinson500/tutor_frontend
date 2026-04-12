@@ -19,7 +19,7 @@ export function WeeklyAvailabilityEditor({
 }: WeeklyAvailabilityProps) {
   const [weekday, setWeekday] = useState("1");
   const [start, setStart] = useState("09:00");
-  const [end, setEnd] = useState("17:00");
+  const [end, setEnd] = useState("20:00");
 
   async function addSlot() {
   console.log("addSlot called");

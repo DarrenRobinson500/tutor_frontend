@@ -9,6 +9,7 @@ interface TemplateMetadataBarProps {
   onDelete: () => void;
   onCopy: () => void;
   onCopyHarder: () => void;
+  onShowRelated: () => void;
   isSaving: boolean;
   saveSuccess: boolean;
   saveError: string | null;
@@ -32,6 +33,7 @@ export function TemplateMetadataBar({
   onDelete,
   onCopy,
   onCopyHarder,
+  onShowRelated,
   onValidate,
   onPreview,
   onToSkill,
@@ -168,6 +170,14 @@ export function TemplateMetadataBar({
         >
           Create harder version
         </button>
+
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={onShowRelated}
+        >
+          Related Templates
+        </button>
+
 
         <div style={{ width: 16 }} />
 

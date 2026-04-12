@@ -1,5 +1,5 @@
 import { Layout } from "./components/Layout";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/apiFetch";
 
@@ -17,27 +17,34 @@ interface SMSMessage {
 interface SMSConversationThread {
   conversation_id: number;
   tutor_id: number;
+  tutor_name: string;
   student_id: number;
   student_name: string;
   messages: SMSMessage[];
 }
 
-export function TutorSMSConversationPage() {
-  const { id, conversationId } = useParams();
+export function AdminSMSConversationPage() {
+  const { conversationId } = useParams();
   const [thread, setThread] = useState<SMSConversationThread | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    apiFetch(`/api/tutors/${id}/sms/conversation/${conversationId}/`)
+    apiFetch(`/api/tutors/admin_sms/conversation/${conversationId}/`)
       .then(res => res.json())
       .then(setThread);
-  }, [id, conversationId]);
+  }, [conversationId]);
 
   if (!thread) return <Layout><div className="container mt-4">Loading…</div></Layout>;
 
   return (
     <Layout>
       <div className="container mt-4">
-        <h3>Conversation with {thread.student_name}</h3>
+        <button className="btn btn-outline-secondary btn-sm mb-3" onClick={() => navigate("/admin/sms")}>
+          ← Back
+        </button>
+
+        <h3>{thread.student_name}</h3>
+        <p className="text-muted" style={{ fontSize: 13 }}>via {thread.tutor_name}</p>
 
         <div className="sms-thread mt-3">
           {thread.messages.map(msg => (

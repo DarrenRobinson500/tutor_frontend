@@ -1,19 +1,23 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { Calculator } from "./components/Calculator";
 import type { PreviewResponse } from "../types/PreviewResponse";
 import type { StudentRecordResponse } from "../types/PreviewResponse";
 
 export function StudentQuestionPage() {
   const { studentId, skillId } = useParams();
+  const navigate = useNavigate();
   const [current, setCurrent] = useState<PreviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [skillName, setSkillName] = useState("");
   const [mastery, setMastery] = useState<number | null>(null);
   const [competence, setCompetence] = useState("");
   const [templateId, setTemplateId] = useState<number | undefined>(undefined);
+  const [seenTemplateIds, setSeenTemplateIds] = useState<number[]>([]);
+  const [sessionTemplateIds, setSessionTemplateIds] = useState<number[]>([]);
 
   useEffect(() => {
     async function loadInitial() {
@@ -31,11 +35,19 @@ export function StudentQuestionPage() {
 
       const data = await res.json();
 
+      if (!data.next_question) {
+        console.error("No question returned:", data.error ?? data);
+        setLoading(false);
+        return;
+      }
+
       setTemplateId(data.template_id);
       setCurrent(data.next_question);
-      setSkillName(data.next_question.skill);
+      setSkillName(data.next_question.skill ?? "");
       setMastery(data.mastery);
       setCompetence(data.competence_label);
+      setSeenTemplateIds([data.template_id]);
+      setSessionTemplateIds(data.session_template_ids ?? []);
       setLoading(false);
     }
 
@@ -50,33 +62,46 @@ export function StudentQuestionPage() {
     );
   }
 
-return (
-  <Layout>
-    <div className="container mt-4">
+  return (
+    <Layout>
+      <div className="container mt-4">
 
-      {current && (
-        <div className="row justify-content-center">
-          <div className="col-md-4">
-      <h2>{skillName} ({competence}) {mastery}</h2>
-      <hr/>
-            <PreviewPanel
-              preview={current}
-              mode="student"
-              studentId={Number(studentId)}
-              templateId={templateId!}
-              onStudentNext={(result: StudentRecordResponse) => {
-                console.log("About to update templateId to:", result.template_id);
-                setTemplateId(result.template_id);
-                setCurrent(result.next_question);
-                setMastery(result.mastery);
-                setCompetence(result.competence_label);
-              }}
-            />
+        {current && (
+          <div className="row justify-content-center align-items-start">
+            <div className="col-md-4">
+              <h2>{skillName} ({competence}) {mastery}</h2>
+              <div className="text-muted small">Template #{templateId}</div>
+              <hr/>
+              <PreviewPanel
+                preview={current}
+                mode="student"
+                studentId={Number(studentId)}
+                templateId={templateId!}
+                seenTemplateIds={seenTemplateIds}
+                sessionTemplateIds={sessionTemplateIds}
+                onStudentNext={(result: StudentRecordResponse) => {
+                  if (result.loop_complete) {
+                    navigate(`/students/${studentId}`);
+                    return;
+                  }
+                  const nextId = result.template_id;
+                  if (nextId) {
+                    setSeenTemplateIds(prev => [...prev, nextId]);
+                  }
+                  setTemplateId(nextId ?? undefined);
+                  setCurrent(result.next_question);
+                  setMastery(result.mastery);
+                  setCompetence(result.competence_label);
+                }}
+              />
+            </div>
+            <div className="col-md-3 mt-5" style={{ marginLeft: "3cm" }}>
+              <Calculator />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-    </div>
-  </Layout>
-);
+      </div>
+    </Layout>
+  );
 }

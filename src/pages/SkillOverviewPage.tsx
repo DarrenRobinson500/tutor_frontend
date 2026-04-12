@@ -222,7 +222,7 @@ export function SkillOverviewPage() {
         <div className="d-flex align-items-center gap-3 mb-4 flex-wrap">
           <button
             className="btn btn-outline-secondary btn-sm"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/skills")}
           >
             ← Back
           </button>
