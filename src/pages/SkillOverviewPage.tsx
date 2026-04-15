@@ -63,6 +63,7 @@ export function SkillOverviewPage() {
   const [creatingSlot, setCreatingSlot] = useState<string | null>(null); // "grade:diff:detailId"
   const [creatingEmptySlot, setCreatingEmptySlot] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [shiftingGrade, setShiftingGrade] = useState<string | null>(null);
 
   useEffect(() => {
     if (!skillId) return;
@@ -197,6 +198,18 @@ export function SkillOverviewPage() {
     fetchKnowledge();
   };
 
+  const shiftGrade = async (grade: string, delta: number) => {
+    setShiftingGrade(grade);
+    await apiFetch("/api/templates/shift_grade/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skill_id: skillId, grade, delta }),
+    });
+    const res = await apiFetch(`/api/templates/filtered/?skill=${skillId}`);
+    setTemplates(await res.json());
+    setShiftingGrade(null);
+  };
+
   // Sort templates by their skill_detail's position in detailSkills
   function sortByDetail(group: TemplateSummary[]): TemplateSummary[] {
     return [...group].sort((a, b) => {
@@ -290,9 +303,29 @@ export function SkillOverviewPage() {
                   <div className="d-flex align-items-center gap-2 mb-2">
                     <h5 className="mb-0">Year {g}</h5>
                     {isOutOfSyllabus && (
-                      <span className="badge bg-warning text-dark">
-                        Not in syllabus for this year
-                      </span>
+                      <>
+                        <span className="badge bg-warning text-dark">
+                          Not in syllabus for this year
+                        </span>
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          style={{ padding: "1px 8px", fontWeight: "bold" }}
+                          title={`Move all Year ${g} templates to Year ${parseInt(g) - 1}`}
+                          disabled={shiftingGrade === g}
+                          onClick={() => shiftGrade(g, -1)}
+                        >
+                          −
+                        </button>
+                        <button
+                          className="btn btn-sm btn-outline-secondary"
+                          style={{ padding: "1px 8px", fontWeight: "bold" }}
+                          title={`Move all Year ${g} templates to Year ${parseInt(g) + 1}`}
+                          disabled={shiftingGrade === g}
+                          onClick={() => shiftGrade(g, +1)}
+                        >
+                          +
+                        </button>
+                      </>
                     )}
                   </div>
                   <div className="row g-3">

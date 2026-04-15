@@ -4,7 +4,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(python:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")"
     ]
   }
 }

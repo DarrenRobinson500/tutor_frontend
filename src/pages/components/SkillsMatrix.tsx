@@ -120,7 +120,14 @@ export function SkillsMatrix() {
             </thead>
             <tbody>
               {data.skills.map(skill => (
-                <tr key={skill.id} className={skill.children_count > 0 ? "parent-row" : ""}>
+                <tr
+                  key={skill.id}
+                  className={skill.children_count > 0 ? "parent-row" : ""}
+                  style={{ cursor: skill.children_count === 0 ? "pointer" : undefined }}
+                  onClick={() => {
+                    if (skill.children_count === 0) navigate(`/skills/${skill.id}/overview`);
+                  }}
+                >
                   <td style={{ paddingLeft: `${skill.depth * 16 + 8}px`, whiteSpace: "nowrap", position: "sticky", left: 0, zIndex: 1, background: skill.children_count > 0 ? "#f0f0f0" : "#fff" }} title={skill.detail || undefined}>
                     {skill.description}
                   </td>

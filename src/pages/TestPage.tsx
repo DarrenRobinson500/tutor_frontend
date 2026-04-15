@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { Calculator } from "./components/Calculator";
 import { apiFetch } from "../utils/apiFetch";
 import { useYears } from "../utils/useYears";
 import type { PreviewResponse, StudentRecordResponse } from "../types/PreviewResponse";
@@ -315,6 +316,7 @@ export function TestPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const questionStartRef = useState<number>(() => Date.now())[0];
   const questionStartTime = useState<number>(Date.now());
   const [learnComplete, setLearnComplete] = useState<{
@@ -613,6 +615,23 @@ export function TestPage() {
           preview={preview}
           onStudentNext={handleAnswer}
         />
+
+        {/* Calculator toggle */}
+        <div className="mt-3">
+          <button
+            className="btn btn-outline-secondary btn-sm"
+            onClick={() => setShowCalculator(v => !v)}
+          >
+            {showCalculator ? "Hide calculator" : "Show calculator"}
+          </button>
+        </div>
+
+        {/* Floating calculator */}
+        {showCalculator && (
+          <div style={{ position: "fixed", right: 24, top: 80, zIndex: 1000, width: 286, transform: "scale(0.82)", transformOrigin: "top right" }}>
+            <Calculator />
+          </div>
+        )}
 
         {/* Tutor tools */}
         {isTutor && (

@@ -15,6 +15,11 @@ export function SkillDetailEditPage() {
   const navigate = useNavigate();
 
   const [skillName, setSkillName] = useState("");
+  const [grades, setGrades] = useState<string[]>([]);
+  const [gradesDraft, setGradesDraft] = useState<string[]>([]);
+  const [gradesEditing, setGradesEditing] = useState(false);
+  const [gradesSaving, setGradesSaving] = useState(false);
+  const [newGrade, setNewGrade] = useState("");
   const [details, setDetails] = useState<DetailSkill[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,6 +43,10 @@ export function SkillDetailEditPage() {
       apiFetch(`/api/skills/?parent=${skillId}`).then(r => r.json()),
     ]).then(([skill, children]) => {
       setSkillName(skill.description ?? "");
+      const parsed: string[] = (skill.grades ?? "")
+        .split(",").map((g: string) => g.trim()).filter(Boolean);
+      setGrades(parsed);
+      setGradesDraft(parsed);
       const d = (children as any[]).filter(c => c.is_detail);
       d.sort((a, b) => a.order_index - b.order_index);
       setDetails(d);
@@ -63,6 +72,21 @@ export function SkillDetailEditPage() {
     } finally {
       setAdding(false);
     }
+  }
+
+  async function handleSaveGrades() {
+    setGradesSaving(true);
+    const gradesStr = gradesDraft.join(", ");
+    const res = await apiFetch(`/api/skills/${skillId}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ grades: gradesStr }),
+    });
+    if (res.ok) {
+      setGrades([...gradesDraft]);
+      setGradesEditing(false);
+    }
+    setGradesSaving(false);
   }
 
   async function handleSaveEdit(detailId: number) {
@@ -147,6 +171,118 @@ export function SkillDetailEditPage() {
           </div>
         ) : (
           <>
+            {/* Grades */}
+            <div className="border rounded p-3 bg-light mb-4">
+              <div className="d-flex align-items-center gap-2 mb-2">
+                <label className="form-label fw-semibold mb-0">Syllabus Years</label>
+                {!gradesEditing && (
+                  <button
+                    className="btn btn-sm btn-outline-secondary ms-auto"
+                    onClick={() => { setGradesDraft([...grades]); setGradesEditing(true); setNewGrade(""); }}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              {!gradesEditing ? (
+                grades.length === 0
+                  ? <p className="text-muted small mb-0">No years set.</p>
+                  : <div className="d-flex gap-2 flex-wrap">
+                      {grades.map(g => (
+                        <span key={g} className="badge bg-primary fs-6 px-3 py-2 d-flex align-items-center gap-1">
+                          Year {g}
+                          <button
+                            type="button"
+                            className="btn-close btn-close-white"
+                            style={{ fontSize: 10 }}
+                            aria-label={`Remove Year ${g}`}
+                            onClick={async () => {
+                              const next = grades.filter(x => x !== g);
+                              setGrades(next);
+                              setGradesDraft(next);
+                              await apiFetch(`/api/skills/${skillId}/`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ grades: next.join(", ") }),
+                              });
+                            }}
+                          />
+                        </span>
+                      ))}
+                    </div>
+              ) : (
+                <>
+                  <div className="d-flex gap-2 flex-wrap mb-2">
+                    {gradesDraft.map(g => (
+                      <span key={g} className="badge bg-primary fs-6 px-3 py-2 d-flex align-items-center gap-1">
+                        Year {g}
+                        <button
+                          type="button"
+                          className="btn-close btn-close-white"
+                          style={{ fontSize: 10 }}
+                          aria-label="Remove"
+                          onClick={() => setGradesDraft(prev => prev.filter(x => x !== g))}
+                        />
+                      </span>
+                    ))}
+                    {gradesDraft.length === 0 && (
+                      <span className="text-muted small">No years — add one below.</span>
+                    )}
+                  </div>
+
+                  <div className="d-flex gap-2 align-items-center mb-2">
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      style={{ width: 100 }}
+                      placeholder="Year e.g. 8"
+                      value={newGrade}
+                      onChange={e => setNewGrade(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          const v = newGrade.trim();
+                          if (v && !gradesDraft.includes(v)) {
+                            setGradesDraft(prev => [...prev, v].sort((a, b) => Number(a) - Number(b)));
+                            setNewGrade("");
+                          }
+                        }
+                      }}
+                    />
+                    <button
+                      className="btn btn-sm btn-outline-primary"
+                      disabled={!newGrade.trim() || gradesDraft.includes(newGrade.trim())}
+                      onClick={() => {
+                        const v = newGrade.trim();
+                        if (v) {
+                          setGradesDraft(prev => [...prev, v].sort((a, b) => Number(a) - Number(b)));
+                          setNewGrade("");
+                        }
+                      }}
+                    >
+                      + Add Year
+                    </button>
+                  </div>
+
+                  <div className="d-flex gap-2">
+                    <button
+                      className="btn btn-sm btn-primary"
+                      disabled={gradesSaving}
+                      onClick={handleSaveGrades}
+                    >
+                      {gradesSaving ? "Saving…" : "Save"}
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-secondary"
+                      onClick={() => { setGradesEditing(false); setGradesDraft([...grades]); }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Existing details */}
             {details.length === 0 ? (
               <p className="text-muted">No skill details yet. Add one below.</p>

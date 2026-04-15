@@ -135,20 +135,28 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         if (!isTutor) {
           // Student: receive the initial template + learn session info
           const newLearnMode = !!event.learn_mode;
+          console.log("[QuestionPanel] Student received set_template event:", {
+            template_id: event.template_id,
+            session_id: event.session_id,
+            learn_mode: event.learn_mode,
+            newLearnMode,
+          });
           setStudentLearnMode(newLearnMode);
           setStudentSessionId(event.session_id ?? null);
           setStudentLearnComplete(false);
 
           if (newLearnMode && event.template_id) {
             // Fetch preview for the first question
+            console.log("[QuestionPanel] Student fetching preview for template", event.template_id);
             setStudentTemplateId(event.template_id);
             setStudentLoadingPreview(true);
             apiFetch(`/api/templates/${event.template_id}/preview/`)
               .then((r) => r.json())
-              .then((data) => setStudentPreview(data))
-              .catch(() => setStudentPreview(null))
+              .then((data) => { console.log("[QuestionPanel] Student got preview:", data); setStudentPreview(data); })
+              .catch((err) => { console.error("[QuestionPanel] Student preview fetch failed:", err); setStudentPreview(null); })
               .finally(() => setStudentLoadingPreview(false));
           } else {
+            console.log("[QuestionPanel] Student non-learn mode, setting activeTemplateId:", event.template_id);
             // Non-learn: fall through to activeTemplateId path
             setActiveTemplateId(event.template_id);
           }
@@ -223,6 +231,11 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
       if (data.error) { setLearnError(data.error); return; }
 
+      console.log("[QuestionPanel] Tutor learn_mode response:", {
+        session_id: data.session_id,
+        template_id: data.question?.template_id,
+        error: data.error,
+      });
       setLearnSessionId(data.session_id);
       const q: LearnQuestion = data.question;
       setLearnQuestion(q);
@@ -236,17 +249,36 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
   // ── Student: answer a learn-mode question ──────────────────────────────────
 
   async function submitStudentAnswer(result: StudentRecordResponse) {
-    if (!studentSessionId || !studentTemplateId) return;
+    console.log("[QuestionPanel] submitStudentAnswer called:", {
+      studentSessionId,
+      studentTemplateId,
+      correct: result.correct,
+      result,
+    });
+
+    if (!studentSessionId || !studentTemplateId) {
+      console.warn("[QuestionPanel] submitStudentAnswer: bailing early — missing sessionId or templateId", {
+        studentSessionId,
+        studentTemplateId,
+      });
+      return;
+    }
+
     try {
-      const data = await apiFetch(`/api/tests/${studentSessionId}/answer/`, {
+      console.log("[QuestionPanel] Posting to /api/tests/", studentSessionId, "/answer/ with template", studentTemplateId);
+      const res = await apiFetch(`/api/tests/${studentSessionId}/answer/`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           template_id: studentTemplateId,
           correct: result.correct ?? false,
         }),
-      }).then((r) => r.json());
+      });
+      const data = await res.json();
+      console.log("[QuestionPanel] /answer/ response:", data);
 
       if (data.complete) {
+        console.log("[QuestionPanel] Session complete, setting studentLearnComplete=true");
         setStudentLearnComplete(true);
         // Notify tutor session is done
         room.localParticipant.publishData(
@@ -258,7 +290,13 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         return;
       }
 
+      if (!data.question) {
+        console.error("[QuestionPanel] /answer/ response has no 'question' field:", data);
+        return;
+      }
+
       const q: LearnQuestion = data.question;
+      console.log("[QuestionPanel] Next question:", { template_id: q.template_id, hasPreview: !!q.preview });
       // Update student's preview directly from API response — no extra fetch needed
       setStudentTemplateId(q.template_id);
       setStudentPreview(q.preview);
@@ -280,7 +318,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         body: JSON.stringify({ room_name: roomName, template_id: q.template_id }),
       }).catch(() => {});
     } catch (err) {
-      console.error("submitStudentAnswer failed:", err);
+      console.error("[QuestionPanel] submitStudentAnswer failed:", err);
     }
   }
 
@@ -323,6 +361,14 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
   });
 
   const showStudentLearn = !isTutor && studentLearnMode && !!studentSessionId && !!studentTemplateId;
+  console.log("[QuestionPanel] render — showStudentLearn:", showStudentLearn, {
+    isTutor,
+    studentLearnMode,
+    studentSessionId,
+    studentTemplateId,
+    studentLearnComplete,
+    studentPreview: !!studentPreview,
+  });
 
   // ─────────────────────────────────────────────────────────────────────────
 

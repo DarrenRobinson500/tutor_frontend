@@ -63,7 +63,7 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
       return;
     }
 
-    if (/^\d$/.test(ev.key)) {
+    if (/^[A-Za-z0-9]$/.test(ev.key)) {
       ev.preventDefault();
       if (mode === "base") {
         const next = base + ev.key;

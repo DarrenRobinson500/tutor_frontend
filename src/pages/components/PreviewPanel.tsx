@@ -340,7 +340,7 @@ export function PreviewPanel({
       if (na !== null && nb !== null) return Math.abs(na - nb) <= tolerance;
     }
 
-    const normalize = (s: any) => String(s).trim().toLowerCase().replace(/\s+/g, "");
+    const normalize = (s: any) => String(s).trim().toLowerCase().replace(/\s+/g, "").replace(/\*\*/g, "^");
     const a = normalize(input);
     const b = normalize(correct);
 
@@ -360,6 +360,10 @@ export function PreviewPanel({
     }
 
     if (a === b) return true;
+
+    // If the correct answer has a leading $ (currency formatting) but the student
+    // didn't type one, also accept the answer without the $ prefix.
+    if (b.startsWith("$") && !a.startsWith("$") && a === b.slice(1)) return true;
 
     // Require format match: a percentage answer must be entered as a percentage
     if (b.endsWith("%") && !a.endsWith("%")) return false;
@@ -465,8 +469,12 @@ export function PreviewPanel({
   function checkAnswerFormat(input: string, format: string | null): string | null {
     if (!format) return null;
     const s = input.trim();
-    if (format === "fraction" && !s.includes("/"))
-      return "Please enter your answer as a fraction, e.g. 3/5";
+    if (format === "fraction") {
+      if (!s.includes("/") && !/^-?\d+$/.test(s))
+        return "Please enter your answer as a fraction, e.g. 7/20";
+      if (/^-?\d+\s+\d+\/\d+$/.test(s))
+        return "Please enter as an improper fraction, not a mixed number — e.g. 7/3 not 2 1/3";
+    }
     if (format === "integer" && !/^-?\d+$/.test(s))
       return "Please enter a whole number, e.g. 42";
     if (format === "decimal" && !/^-?\d*\.?\d+$/.test(s))
@@ -485,8 +493,8 @@ export function PreviewPanel({
       if (mixedMatch && parseInt(mixedMatch[2]) >= parseInt(mixedMatch[3]))
         return "The fractional part must be proper — numerator less than denominator (e.g. 2 1/3)";
     }
-    if (format === "equation" && !/^\d+(\^\d+)?$/.test(s))
-      return "Please enter a number or power, e.g. 5^2";
+    if (format === "equation" && !/^[A-Za-z0-9]+(\^[A-Za-z0-9]+)?$/.test(s))
+      return "Please enter a base and optional power, e.g. 5^2 or A^3";
     return null;
   }
 
@@ -638,7 +646,7 @@ export function PreviewPanel({
   const isInputMode = (isMultiStep && !isStepMC) || answers.some((a: any) => a?.input_type === "text");
   const correctInputAnswer = answers.find((a: any) => a?.correct);
   const inputAnswerMeta = answers.find((a: any) => a?.input_type === "text");
-  const answerFormat = inputAnswerMeta?.answer_format ?? null;
+  const answerFormat = (isMultiStep ? activeStep?.answer_format : null) ?? inputAnswerMeta?.answer_format ?? null;
   const DEFAULT_FORMAT_INSTRUCTIONS: Record<string, string> = {
     fraction:        "Enter as a fraction, e.g. 3/5",
     integer:         "Enter a whole number, e.g. 42",
@@ -868,7 +876,7 @@ export function PreviewPanel({
           >
             {solution
               ? <Latex>{solution}</Latex>
-              : <span>The correct answer is <strong>{correctInputAnswer?.text}</strong></span>
+              : <span>The correct answer is <strong>{correctInputAnswer?.text?.replace(/^\$/, "")}</strong></span>
             }
           </div>
 

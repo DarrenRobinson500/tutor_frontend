@@ -18,6 +18,7 @@ export function StudentQuestionPage() {
   const [templateId, setTemplateId] = useState<number | undefined>(undefined);
   const [seenTemplateIds, setSeenTemplateIds] = useState<number[]>([]);
   const [sessionTemplateIds, setSessionTemplateIds] = useState<number[]>([]);
+  const [showCalculator, setShowCalculator] = useState(false);
 
   useEffect(() => {
     async function loadInitial() {
@@ -68,7 +69,7 @@ export function StudentQuestionPage() {
 
         {current && (
           <div className="row justify-content-center align-items-start">
-            <div className="col-md-4">
+            <div className="col-md-5">
               <h2>{skillName} ({competence}) {mastery}</h2>
               <div className="text-muted small">Template #{templateId}</div>
               <hr/>
@@ -94,9 +95,20 @@ export function StudentQuestionPage() {
                   setCompetence(result.competence_label);
                 }}
               />
-            </div>
-            <div className="col-md-3 mt-5" style={{ marginLeft: "3cm" }}>
-              <Calculator />
+              <div className="mt-3">
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => setShowCalculator(v => !v)}
+                >
+                  {showCalculator ? "Hide calculator" : "Show calculator"}
+                </button>
+              </div>
+
+              {showCalculator && (
+                <div style={{ position: "fixed", right: 24, top: 80, zIndex: 1000, width: 286, transform: "scale(0.82)", transformOrigin: "top right" }}>
+                  <Calculator />
+                </div>
+              )}
             </div>
           </div>
         )}

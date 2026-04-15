@@ -33,15 +33,18 @@ export default function SkillsPage() {
   }
 
   const handleSkillsDownload = () => {
-    const d = new Date();
-    const date = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,"0")}_${String(d.getDate()).padStart(2,"0")}`;
     apiFetch("/api/skills/export_all/")
-      .then(res => res.blob())
-      .then(blob => {
+      .then(res => {
+        const disposition = res.headers.get("Content-Disposition") ?? "";
+        const match = disposition.match(/filename="([^"]+)"/);
+        const filename = match ? match[1] : "skills.yaml";
+        return res.blob().then(blob => ({ blob, filename }));
+      })
+      .then(({ blob, filename }) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `skills_${date}.json`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       })
@@ -118,7 +121,7 @@ export default function SkillsPage() {
             <input
               ref={skillsUploadRef}
               type="file"
-              accept=".json"
+              accept=".yaml,.yml,.json"
               className="d-none"
               onChange={handleSkillsUpload}
             />

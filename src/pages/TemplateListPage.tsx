@@ -32,15 +32,18 @@ export function TemplateListPage() {
   const uploadRef = useRef<HTMLInputElement>(null);
 
   const handleDownload = () => {
-    const d = new Date();
-    const date = `${d.getFullYear()}_${String(d.getMonth()+1).padStart(2,"0")}_${String(d.getDate()).padStart(2,"0")}`;
     apiFetch("/api/templates/export_all/")
-      .then(res => res.blob())
-      .then(blob => {
+      .then(res => {
+        const disposition = res.headers.get("Content-Disposition") ?? "";
+        const match = disposition.match(/filename="([^"]+)"/);
+        const filename = match ? match[1] : "templates.yaml";
+        return res.blob().then(blob => ({ blob, filename }));
+      })
+      .then(({ blob, filename }) => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `templates_${date}.json`;
+        a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
       })
@@ -145,7 +148,7 @@ export function TemplateListPage() {
               >
                 {importing ? "Uploading…" : "Upload All Templates"}
               </button>
-              <input ref={uploadRef} type="file" accept=".json" className="d-none" onChange={handleUpload} />
+              <input ref={uploadRef} type="file" accept=".yaml,.yml,.json" className="d-none" onChange={handleUpload} />
               {process.env.REACT_APP_SHOW_DELETE_ALL === "true" && <button
                 className="btn btn-outline-danger"
                 onClick={async () => {
@@ -171,7 +174,7 @@ export function TemplateListPage() {
         {loading && <p>Loading templates…</p>}
         {error && <p className="text-danger">{error}</p>}
 
-        {!loading && totalCount > 0 && (
+        {!loading && (totalCount > 0 || filterGrade || filterSkill || filterDifficulty) && (
           <div className="d-flex gap-2 flex-wrap align-items-center mb-3">
             <select
               className="form-select form-select-sm"
@@ -220,7 +223,7 @@ export function TemplateListPage() {
               </button>
             )}
 
-            <span className="text-muted small ms-1">{totalCount} total</span>
+            {totalCount > 0 && <span className="text-muted small ms-1">{totalCount} total</span>}
           </div>
         )}
 
