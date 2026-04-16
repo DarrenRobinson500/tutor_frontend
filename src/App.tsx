@@ -51,6 +51,7 @@ import TutorRegisterPage from "./pages/public/TutorRegisterPage";
 import AssessmentLaunchPage from "./pages/public/AssessmentLaunchPage";
 import ParentHomePage from "./pages/ParentHomePage";
 import { TutoringRoomPage } from "./pages/TutoringRoomPage";
+import { PostTuitionPage } from "./pages/PostTuitionPage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
 
@@ -152,6 +153,7 @@ function App() {
         <Route path="/tutors/:id/edit" element={<ProtectedRoute><TutorEditPage /></ProtectedRoute>} />
         <Route path="/tutors/:id/sms" element={<TutorSMSInboxPage />} />
         <Route path="/tutors/:id/sms/:conversationId" element={<TutorSMSConversationPage />} />
+        <Route path="/tutors/:id/post-tuition" element={<ProtectedRoute><PostTuitionPage /></ProtectedRoute>} />
 
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
