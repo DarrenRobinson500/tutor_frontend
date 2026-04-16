@@ -208,7 +208,10 @@ export function PreviewPanel({
         session_template_ids: sessionTemplateIds ?? [],
       }),
     });
-    return res.json();
+    const data = await res.json();
+    // Attach the answer text so callers (e.g. QuestionPanel) can broadcast it
+    if (data && answer?.text != null) data.student_answer = answer.text;
+    return data;
   }
 
   function advanceMultiStep(stepQuestion: string, studentAnswer: string, correct: boolean) {

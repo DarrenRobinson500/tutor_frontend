@@ -11,10 +11,14 @@ type Mode = "learn" | "assessment" | "manual";
 
 interface SessionEvent {
   topic: string;
-  type: "set_template";
-  template_id: number | null;
+  type: "set_template" | "answer_result";
+  template_id?: number | null;
   session_id?: number;
   learn_mode?: boolean;
+  preview?: any;          // rendered preview — shared so both sides see the same question
+  // answer_result fields
+  answer?: string;
+  correct?: boolean;
 }
 
 interface QuestionPanelProps {
@@ -95,6 +99,10 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
   const [studentLearnComplete, setStudentLearnComplete] = useState(false);
   const [studentLoadingPreview, setStudentLoadingPreview] = useState(false);
 
+  // ── Answer visibility ──────────────────────────────────────────────────────
+  // Last answer submitted by either party, shown on the other's screen.
+  const [lastAnswer, setLastAnswer] = useState<{ answer: string; correct: boolean } | null>(null);
+
   // ── Assessment mode (tutor) ────────────────────────────────────────────────
   const [assessContext, setAssessContext] = useState<AssessmentContext | null>(null);
 
@@ -112,12 +120,19 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           setStudentSessionId(data.learn_session_id);
           setStudentLearnComplete(false);
           setStudentTemplateId(data.active_template_id);
-          setStudentLoadingPreview(true);
-          apiFetch(`/api/templates/${data.active_template_id}/preview/`)
-            .then((r) => r.json())
-            .then((p) => { console.log("[QuestionPanel] restored preview from state"); setStudentPreview(p); })
-            .catch(() => setStudentPreview(null))
-            .finally(() => setStudentLoadingPreview(false));
+          if (data.preview) {
+            // Use the stored preview so student sees the same question as tutor
+            console.log("[QuestionPanel] restored preview from session state");
+            setStudentPreview(data.preview);
+          } else {
+            // Fallback: fetch fresh (different params, but better than nothing)
+            setStudentLoadingPreview(true);
+            apiFetch(`/api/templates/${data.active_template_id}/preview/`)
+              .then((r) => r.json())
+              .then((p) => { console.log("[QuestionPanel] restored preview from fetch (fallback)"); setStudentPreview(p); })
+              .catch(() => setStudentPreview(null))
+              .finally(() => setStudentLoadingPreview(false));
+          }
         } else if (data.active_template_id) {
           setActiveTemplateId(data.active_template_id);
         }
@@ -147,7 +162,17 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       if (topic !== TOPIC) return;
       try {
         const event: SessionEvent = JSON.parse(new TextDecoder().decode(payload));
+
+        // ── answer_result: someone submitted an answer ──────────────────────
+        if (event.type === "answer_result") {
+          setLastAnswer({ answer: event.answer ?? "", correct: !!event.correct });
+          return;
+        }
+
         if (event.type !== "set_template") return;
+
+        // Clear last answer whenever the question changes
+        setLastAnswer(null);
 
         if (!isTutor) {
           // Student: receive the initial template + learn session info
@@ -157,31 +182,35 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             session_id: event.session_id,
             learn_mode: event.learn_mode,
             newLearnMode,
+            hasPreview: !!event.preview,
           });
           setStudentLearnMode(newLearnMode);
           setStudentSessionId(event.session_id ?? null);
           setStudentLearnComplete(false);
 
           if (newLearnMode && event.template_id) {
-            // Fetch preview for the first question
-            console.log("[QuestionPanel] Student fetching preview for template", event.template_id);
             setStudentTemplateId(event.template_id);
-            setStudentLoadingPreview(true);
-            apiFetch(`/api/templates/${event.template_id}/preview/`)
-              .then((r) => r.json())
-              .then((data) => { console.log("[QuestionPanel] Student got preview:", data); setStudentPreview(data); })
-              .catch((err) => { console.error("[QuestionPanel] Student preview fetch failed:", err); setStudentPreview(null); })
-              .finally(() => setStudentLoadingPreview(false));
+            if (event.preview) {
+              // Use the preview sent by the tutor — same parameters, same question
+              setStudentPreview(event.preview);
+            } else {
+              // Fallback: fetch (different params)
+              setStudentLoadingPreview(true);
+              apiFetch(`/api/templates/${event.template_id}/preview/`)
+                .then((r) => r.json())
+                .then((data) => setStudentPreview(data))
+                .catch(() => setStudentPreview(null))
+                .finally(() => setStudentLoadingPreview(false));
+            }
           } else {
-            console.log("[QuestionPanel] Student non-learn mode, setting activeTemplateId:", event.template_id);
-            // Non-learn: fall through to activeTemplateId path
-            setActiveTemplateId(event.template_id);
+            setActiveTemplateId(event.template_id ?? null);
           }
         } else {
-          // Tutor receives echo from student (student advanced question)
-          setActiveTemplateId(event.template_id);
-          if (event.learn_mode && event.template_id) {
-            // Fetch updated preview for the tutor side
+          // Tutor: student advanced to next question — use preview from event
+          setActiveTemplateId(event.template_id ?? null);
+          if (event.learn_mode && event.preview) {
+            setPreview(event.preview);
+          } else if (event.learn_mode && event.template_id) {
             apiFetch(`/api/templates/${event.template_id}/preview/`)
               .then((r) => r.json())
               .then((data) => setPreview(data))
@@ -211,7 +240,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
   const pushTemplate = async (
     templateId: number | null,
-    opts?: { sessionId?: number; learnMode?: boolean }
+    opts?: { sessionId?: number; learnMode?: boolean; preview?: any }
   ) => {
     const event: SessionEvent = {
       topic: TOPIC,
@@ -219,6 +248,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       template_id: templateId,
       session_id: opts?.sessionId,
       learn_mode: opts?.learnMode,
+      preview: opts?.preview ?? null,
     };
     room.localParticipant.publishData(
       new TextEncoder().encode(JSON.stringify(event)),
@@ -232,6 +262,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         template_id: templateId,
         learn_mode: opts?.learnMode ?? false,
         session_id: opts?.sessionId ?? null,
+        preview: opts?.preview ?? null,
       }),
     }).catch(() => {});
     setActiveTemplateId(templateId);
@@ -263,7 +294,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       const q: LearnQuestion = data.question;
       setLearnQuestion(q);
       setPreview(q.preview);
-      await pushTemplate(q.template_id, { sessionId: data.session_id, learnMode: true });
+      await pushTemplate(q.template_id, { sessionId: data.session_id, learnMode: true, preview: q.preview });
     } finally {
       setActionLoading(false);
     }
@@ -300,6 +331,17 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       const data = await res.json();
       console.log("[QuestionPanel] /answer/ response:", data);
 
+      // Broadcast the answer to the tutor so they can see what was submitted
+      room.localParticipant.publishData(
+        new TextEncoder().encode(JSON.stringify({
+          topic: TOPIC,
+          type: "answer_result",
+          answer: result.student_answer ?? "",
+          correct: result.correct ?? false,
+        })),
+        { reliable: true, topic: TOPIC }
+      );
+
       if (data.complete) {
         console.log("[QuestionPanel] Session complete, setting studentLearnComplete=true");
         setStudentLearnComplete(true);
@@ -320,17 +362,17 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
       const q: LearnQuestion = data.question;
       console.log("[QuestionPanel] Next question:", { template_id: q.template_id, hasPreview: !!q.preview });
-      // Update student's preview directly from API response — no extra fetch needed
       setStudentTemplateId(q.template_id);
       setStudentPreview(q.preview);
 
-      // Tell tutor the question has advanced
+      // Tell tutor the question has advanced, including the new preview
       const event: SessionEvent = {
         topic: TOPIC,
         type: "set_template",
         template_id: q.template_id,
-        session_id: studentSessionId,
+        session_id: studentSessionId ?? undefined,
         learn_mode: true,
+        preview: q.preview,
       };
       room.localParticipant.publishData(
         new TextEncoder().encode(JSON.stringify(event)),
@@ -344,6 +386,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           template_id: q.template_id,
           learn_mode: true,
           session_id: studentSessionId,
+          preview: q.preview,
         }),
       }).catch(() => {});
     } catch (err) {
@@ -492,6 +535,13 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             </div>
           )}
 
+          {/* Student answer indicator (tutor view) */}
+          {mode === "learn" && lastAnswer && (
+            <div className={`alert alert-sm py-1 px-2 mb-2 ${lastAnswer.correct ? "alert-success" : "alert-danger"}`} style={{ fontSize: 12 }}>
+              Student answered: <strong>{lastAnswer.answer}</strong> — {lastAnswer.correct ? "✓ Correct" : "✗ Incorrect"}
+            </div>
+          )}
+
           {/* Manual: template picker */}
           {mode === "manual" && (
             <div style={{ maxHeight: 160, overflowY: "auto" }}>
@@ -544,13 +594,20 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
               </div>
             )}
             {!studentLoadingPreview && studentPreview && studentId != null && (
-              <PreviewPanel
-                mode="student"
-                templateId={studentTemplateId}
-                studentId={studentId}
-                preview={studentPreview}
-                onStudentNext={submitStudentAnswer}
-              />
+              <>
+                {lastAnswer && (
+                  <div className={`alert alert-sm py-1 px-2 mb-2 ${lastAnswer.correct ? "alert-success" : "alert-danger"}`} style={{ fontSize: 13 }}>
+                    {lastAnswer.correct ? "✓ Correct" : "✗ Incorrect"} — answered: <strong>{lastAnswer.answer}</strong>
+                  </div>
+                )}
+                <PreviewPanel
+                  mode="student"
+                  templateId={studentTemplateId}
+                  studentId={studentId}
+                  preview={studentPreview}
+                  onStudentNext={submitStudentAnswer}
+                />
+              </>
             )}
           </>
         )}

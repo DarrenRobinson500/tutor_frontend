@@ -8,12 +8,18 @@ const NAV_STYLES = `
     background: #2D2D2D;
     border-bottom: 3px solid #FF8C42;
     padding: 0 1.5rem;
-    height: 60px;
-    display: flex;
-    align-items: center;
+    min-height: 60px;
     position: sticky;
     top: 0;
     z-index: 100;
+  }
+  .sm-layout-nav .container-fluid {
+    min-height: 60px;
+  }
+  @media (max-width: 991px) {
+    .sm-layout-nav {
+      padding-bottom: 0.75rem;
+    }
   }
   .sm-layout-nav .navbar-brand {
     display: flex;

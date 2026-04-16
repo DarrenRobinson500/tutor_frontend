@@ -50,5 +50,6 @@ export interface StudentRecordResponse {
   template_id: number;
   correct?: boolean;
   loop_complete?: boolean;
+  student_answer?: string;
 }
 
