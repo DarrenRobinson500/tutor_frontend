@@ -100,13 +100,30 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
   const initialised = useRef(false);
 
-  // Restore active template on reconnect
+  // Restore active template + learn mode on reconnect / late mount
   useEffect(() => {
     apiFetch(`/api/sessions/state/?room_name=${encodeURIComponent(roomName)}`)
       .then((r) => r.json())
-      .then((data) => { if (data.active_template_id) setActiveTemplateId(data.active_template_id); })
+      .then((data) => {
+        console.log("[QuestionPanel] state restore:", data);
+        if (!isTutor && data.learn_mode && data.learn_session_id && data.active_template_id) {
+          // Student missed the LiveKit event — restore learn mode from server state
+          setStudentLearnMode(true);
+          setStudentSessionId(data.learn_session_id);
+          setStudentLearnComplete(false);
+          setStudentTemplateId(data.active_template_id);
+          setStudentLoadingPreview(true);
+          apiFetch(`/api/templates/${data.active_template_id}/preview/`)
+            .then((r) => r.json())
+            .then((p) => { console.log("[QuestionPanel] restored preview from state"); setStudentPreview(p); })
+            .catch(() => setStudentPreview(null))
+            .finally(() => setStudentLoadingPreview(false));
+        } else if (data.active_template_id) {
+          setActiveTemplateId(data.active_template_id);
+        }
+      })
       .catch(() => {});
-  }, [roomName]);
+  }, [roomName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-start learn mode for tutor on mount
   useEffect(() => {
@@ -209,7 +226,13 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
     );
     await apiFetch("/api/sessions/set_template/", {
       method: "POST",
-      body: JSON.stringify({ room_name: roomName, template_id: templateId }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        room_name: roomName,
+        template_id: templateId,
+        learn_mode: opts?.learnMode ?? false,
+        session_id: opts?.sessionId ?? null,
+      }),
     }).catch(() => {});
     setActiveTemplateId(templateId);
   };
@@ -315,7 +338,13 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       );
       await apiFetch("/api/sessions/set_template/", {
         method: "POST",
-        body: JSON.stringify({ room_name: roomName, template_id: q.template_id }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room_name: roomName,
+          template_id: q.template_id,
+          learn_mode: true,
+          session_id: studentSessionId,
+        }),
       }).catch(() => {});
     } catch (err) {
       console.error("[QuestionPanel] submitStudentAnswer failed:", err);
