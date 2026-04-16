@@ -103,6 +103,9 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
   // Last answer submitted by either party, shown on the other's screen.
   const [lastAnswer, setLastAnswer] = useState<{ answer: string; correct: boolean } | null>(null);
 
+  // ── Tutor preview key — increment to force PreviewPanel remount on new question ──
+  const [tutorPreviewKey, setTutorPreviewKey] = useState(0);
+
   // ── Assessment mode (tutor) ────────────────────────────────────────────────
   const [assessContext, setAssessContext] = useState<AssessmentContext | null>(null);
 
@@ -206,18 +209,42 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             setActiveTemplateId(event.template_id ?? null);
           }
         } else {
-          // Tutor: student advanced to next question — use preview from event
-          setActiveTemplateId(event.template_id ?? null);
+          // Tutor: student advanced to next question
+          console.log("[QuestionPanel] Tutor received set_template from student:", {
+            template_id: event.template_id,
+            learn_mode: event.learn_mode,
+            hasPreview: !!event.preview,
+            previewQuestion: event.preview?.question?.slice?.(0, 60),
+          });
           if (event.learn_mode && event.preview) {
+            // Student sent the new preview directly — use it
+            setActiveTemplateId(event.template_id ?? null);
             setPreview(event.preview);
+            setTutorPreviewKey((k) => k + 1);
           } else if (event.learn_mode && event.template_id) {
-            apiFetch(`/api/templates/${event.template_id}/preview/`)
+            // Fallback: fetch from server session state (preview was saved there first)
+            setActiveTemplateId(event.template_id ?? null);
+            apiFetch(`/api/sessions/state/?room_name=${encodeURIComponent(roomName)}`)
               .then((r) => r.json())
-              .then((data) => setPreview(data))
+              .then((data) => {
+                if (data.preview) {
+                  setPreview(data.preview);
+                  setTutorPreviewKey((k) => k + 1);
+                } else {
+                  apiFetch(`/api/templates/${event.template_id}/preview/`)
+                    .then((r) => r.json())
+                    .then((p) => { setPreview(p); setTutorPreviewKey((k) => k + 1); })
+                    .catch(() => {});
+                }
+              })
               .catch(() => {});
+          } else if (!event.learn_mode) {
+            setActiveTemplateId(event.template_id ?? null);
           }
         }
-      } catch {}
+      } catch (e) {
+        console.error("[QuestionPanel] DataReceived parse error:", e);
+      }
     };
     room.on(RoomEvent.DataReceived, handleData);
     return () => { room.off(RoomEvent.DataReceived, handleData); };
@@ -294,6 +321,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       const q: LearnQuestion = data.question;
       setLearnQuestion(q);
       setPreview(q.preview);
+      setTutorPreviewKey((k) => k + 1);
       await pushTemplate(q.template_id, { sessionId: data.session_id, learnMode: true, preview: q.preview });
     } finally {
       setActionLoading(false);
@@ -365,7 +393,21 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       setStudentTemplateId(q.template_id);
       setStudentPreview(q.preview);
 
-      // Tell tutor the question has advanced, including the new preview
+      // Save to server FIRST so the tutor can fetch it if needed, then broadcast signal
+      await apiFetch("/api/sessions/set_template/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room_name: roomName,
+          template_id: q.template_id,
+          learn_mode: true,
+          session_id: studentSessionId,
+          preview: q.preview,
+        }),
+      }).catch(() => {});
+
+      // Tell tutor the question has advanced — include preview directly so tutor
+      // doesn't need to re-fetch (avoids different random params)
       const event: SessionEvent = {
         topic: TOPIC,
         type: "set_template",
@@ -378,17 +420,6 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         new TextEncoder().encode(JSON.stringify(event)),
         { reliable: true, topic: TOPIC }
       );
-      await apiFetch("/api/sessions/set_template/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room_name: roomName,
-          template_id: q.template_id,
-          learn_mode: true,
-          session_id: studentSessionId,
-          preview: q.preview,
-        }),
-      }).catch(() => {});
     } catch (err) {
       console.error("[QuestionPanel] submitStudentAnswer failed:", err);
     }
@@ -635,6 +666,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             )}
             {!loadingPreview && activeTemplateId && preview && (
               <PreviewPanel
+                key={tutorPreviewKey}
                 mode="editor"
                 preview={preview}
                 templateContent=""
