@@ -113,7 +113,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           setStudentLearnComplete(false);
           setStudentTemplateId(data.active_template_id);
           setStudentLoadingPreview(true);
-          apiFetch(`/api/templates/${data.active_template_id}/preview_by_id/`)
+          apiFetch(`/api/templates/${data.active_template_id}/preview/`)
             .then((r) => r.json())
             .then((p) => { console.log("[QuestionPanel] restored preview from state"); setStudentPreview(p); })
             .catch(() => setStudentPreview(null))
@@ -167,7 +167,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             console.log("[QuestionPanel] Student fetching preview for template", event.template_id);
             setStudentTemplateId(event.template_id);
             setStudentLoadingPreview(true);
-            apiFetch(`/api/templates/${event.template_id}/preview_by_id/`)
+            apiFetch(`/api/templates/${event.template_id}/preview/`)
               .then((r) => r.json())
               .then((data) => { console.log("[QuestionPanel] Student got preview:", data); setStudentPreview(data); })
               .catch((err) => { console.error("[QuestionPanel] Student preview fetch failed:", err); setStudentPreview(null); })
@@ -182,7 +182,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           setActiveTemplateId(event.template_id);
           if (event.learn_mode && event.template_id) {
             // Fetch updated preview for the tutor side
-            apiFetch(`/api/templates/${event.template_id}/preview_by_id/`)
+            apiFetch(`/api/templates/${event.template_id}/preview/`)
               .then((r) => r.json())
               .then((data) => setPreview(data))
               .catch(() => {});
@@ -199,7 +199,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
     if (!activeTemplateId) { setPreview(null); return; }
     if (!isTutor || mode === "manual") {
       setLoadingPreview(true);
-      apiFetch(`/api/templates/${activeTemplateId}/preview_by_id/`)
+      apiFetch(`/api/templates/${activeTemplateId}/preview/`)
         .then((r) => r.json())
         .then(setPreview)
         .catch(() => setPreview(null))
