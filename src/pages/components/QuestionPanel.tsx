@@ -3,6 +3,7 @@ import { useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import { apiFetch } from "../../utils/apiFetch";
 import { PreviewPanel } from "./PreviewPanel";
+import { Latex } from "./Latex";
 import type { PreviewResponse, StudentRecordResponse } from "../../types/PreviewResponse";
 
 const TOPIC = "session";
@@ -295,6 +296,21 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
     setActiveTemplateId(templateId);
   };
 
+  // ── Immediate answer broadcast (student → tutor) ──────────────────────────
+  // Called by PreviewPanel the instant an answer is evaluated, before any delay.
+
+  function handleImmediateAnswer(answer: string, correct: boolean) {
+    room.localParticipant.publishData(
+      new TextEncoder().encode(JSON.stringify({
+        topic: TOPIC,
+        type: "answer_result",
+        answer,
+        correct,
+      })),
+      { reliable: true, topic: TOPIC }
+    );
+  }
+
   // ── Tutor: start learn mode ────────────────────────────────────────────────
 
   async function startLearnMode() {
@@ -303,6 +319,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
     setLearnError(null);
     setLearnQuestion(null);
     setLearnSessionId(null);
+    setLastAnswer(null);
     setActionLoading(true);
     try {
       const data = await apiFetch("/api/sessions/learn_mode/", {
@@ -358,17 +375,6 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       });
       const data = await res.json();
       console.log("[QuestionPanel] /answer/ response:", data);
-
-      // Broadcast the answer to the tutor so they can see what was submitted
-      room.localParticipant.publishData(
-        new TextEncoder().encode(JSON.stringify({
-          topic: TOPIC,
-          type: "answer_result",
-          answer: result.student_answer ?? "",
-          correct: result.correct ?? false,
-        })),
-        { reliable: true, topic: TOPIC }
-      );
 
       if (data.complete) {
         console.log("[QuestionPanel] Session complete, setting studentLearnComplete=true");
@@ -566,12 +572,6 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             </div>
           )}
 
-          {/* Student answer indicator (tutor view) */}
-          {mode === "learn" && lastAnswer && (
-            <div className={`alert alert-sm py-1 px-2 mb-2 ${lastAnswer.correct ? "alert-success" : "alert-danger"}`} style={{ fontSize: 12 }}>
-              Student answered: <strong>{lastAnswer.answer}</strong> — {lastAnswer.correct ? "✓ Correct" : "✗ Incorrect"}
-            </div>
-          )}
 
           {/* Manual: template picker */}
           {mode === "manual" && (
@@ -637,6 +637,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
                   studentId={studentId}
                   preview={studentPreview}
                   onStudentNext={submitStudentAnswer}
+                  onImmediateAnswer={handleImmediateAnswer}
                 />
               </>
             )}
@@ -665,13 +666,84 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
               </div>
             )}
             {!loadingPreview && activeTemplateId && preview && (
-              <PreviewPanel
-                key={tutorPreviewKey}
-                mode="editor"
-                preview={preview}
-                templateContent=""
-                onEditorNext={(newPreview) => setPreview(newPreview)}
-              />
+              mode === "learn" ? (
+                /* ── Learn mode: unified question view mirrors student's view ── */
+                <div style={{ padding: 12, fontSize: 18 }}>
+                  {/* Question text */}
+                  <div style={{ marginBottom: 12 }}>
+                    <Latex>{preview.question ?? ""}</Latex>
+                  </div>
+
+                  {/* Diagram */}
+                  {preview.diagram_svg && (
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+                      <div dangerouslySetInnerHTML={{ __html: preview.diagram_svg }} />
+                    </div>
+                  )}
+
+                  {/* Result overlay — shown immediately after student answers */}
+                  {lastAnswer ? (
+                    <div
+                      className={`mt-2 p-3 rounded border ${
+                        lastAnswer.correct
+                          ? "border-success bg-success bg-opacity-10"
+                          : "border-danger bg-danger bg-opacity-10"
+                      }`}
+                    >
+                      <div className="fw-bold mb-1" style={{ fontSize: 16 }}>
+                        {lastAnswer.correct ? "✓ Correct!" : "✗ Incorrect"}
+                        {" — Student answered: "}
+                        <span style={{ fontFamily: "monospace" }}>{lastAnswer.answer}</span>
+                      </div>
+                      {!lastAnswer.correct && (
+                        <>
+                          {/* Solution text */}
+                          {preview.solution && (
+                            <div
+                              className="mt-2 p-2"
+                              style={{
+                                background: "#f8f9fa",
+                                borderLeft: "4px solid #dc3545",
+                                fontSize: 16,
+                                whiteSpace: "pre-wrap",
+                              }}
+                            >
+                              <Latex>{preview.solution}</Latex>
+                            </div>
+                          )}
+                          {/* Solution diagram (if different from question diagram) */}
+                          {preview.multi_step?.steps?.[0]?.svg && (
+                            <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
+                              <div dangerouslySetInnerHTML={{ __html: preview.multi_step.steps[0].svg }} />
+                            </div>
+                          )}
+                          <div className="text-muted mt-2" style={{ fontSize: 13 }}>
+                            Waiting for student to advance…
+                          </div>
+                        </>
+                      )}
+                      {lastAnswer.correct && (
+                        <div className="text-muted" style={{ fontSize: 13 }}>
+                          Next question loading…
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-muted" style={{ fontSize: 13 }}>
+                      Waiting for student to answer…
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* ── Manual / Assessment mode: full editor view ── */
+                <PreviewPanel
+                  key={tutorPreviewKey}
+                  mode="editor"
+                  preview={preview}
+                  templateContent=""
+                  onEditorNext={(newPreview) => setPreview(newPreview)}
+                />
+              )
             )}
           </>
         )}

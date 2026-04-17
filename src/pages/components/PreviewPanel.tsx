@@ -40,6 +40,9 @@ interface PreviewPanelStudentProps extends PreviewPanelBase {
   templateId: number;
   studentId: number;
   onStudentNext: (result: StudentRecordResponse) => void;
+  /** Called the instant an answer is evaluated — before any advance delay.
+   *  Use this to broadcast the result to remote participants immediately. */
+  onImmediateAnswer?: (answer: string, correct: boolean) => void;
   seenTemplateIds?: number[];
   sessionTemplateIds?: number[];
 
@@ -92,6 +95,7 @@ export function PreviewPanel({
   onEditorNext,
   templateId,
   onStudentNext,
+  onImmediateAnswer,
   studentId,
   seenTemplateIds,
   sessionTemplateIds,
@@ -230,13 +234,14 @@ export function PreviewPanel({
     const correct = choice.correct;
     setIsCorrect(correct);
     const isLastStep = multiStepIndex === multiStep.steps.length - 1;
+    if (mode === "student") onImmediateAnswer?.(choice.text, correct);
     if (correct) {
       if (!isLastStep) {
         setTimeout(() => { advanceMultiStep(activeStep.question ?? "", choice.text, true); }, 800);
       } else {
         if (mode === "student") {
           const result = await recordAttempt({ text: choice.text }, true);
-          setTimeout(() => { onStudentNext?.(result); }, 1000);
+          setTimeout(() => { onStudentNext?.(result); }, 2000);
         }
         if (mode === "editor") {
           setTimeout(() => { loadNextEditorPreview(); }, 1000);
@@ -255,6 +260,7 @@ export function PreviewPanel({
     const isLastStep = multiStepIndex === multiStep.steps.length - 1;
     if (isLastStep) {
       if (mode === "student") {
+        onImmediateAnswer?.(activeStep?.answer ?? "", false);
         const result = await recordAttempt({ text: activeStep.answer }, false, true);
         setTimeout(() => { onStudentNext?.(result); }, 1500);
       }
@@ -302,6 +308,7 @@ export function PreviewPanel({
     setIsCorrect(false);
 
     if (mode === "student") {
+      onImmediateAnswer?.("", false);
       const result = await recordAttempt(null, false, true);
       setShowIncorrectFeedback(true);
       setBackendResult(result);
@@ -315,6 +322,7 @@ export function PreviewPanel({
     setFlagged(true);
 
     if (mode === "student") {
+      onImmediateAnswer?.(selectedAnswer?.text ?? "", false);
       const result = await recordAttempt(selectedAnswer, false);
       setShowIncorrectFeedback(true);
       setBackendResult(result);
@@ -515,6 +523,7 @@ export function PreviewPanel({
       const correct = answersMatch(textInput, step.answer, step.tolerance ?? 1e-9);
       setSelected(0);
       setIsCorrect(correct);
+      if (mode === "student") onImmediateAnswer?.(textInput, correct);
       if (correct) {
         const isLastStep = multiStepIndex === multiStep.steps.length - 1;
         if (!isLastStep) {
@@ -524,7 +533,7 @@ export function PreviewPanel({
         } else {
           if (mode === "student") {
             const result = await recordAttempt({ text: textInput }, true);
-            setTimeout(() => { onStudentNext?.(result); }, 1000);
+            setTimeout(() => { onStudentNext?.(result); }, 2000);
           }
           if (mode === "editor") {
             setTimeout(() => { loadNextEditorPreview(); }, 1000);
@@ -543,9 +552,10 @@ export function PreviewPanel({
     setIsCorrect(correct);
 
     if (mode === "student") {
+      onImmediateAnswer?.(textInput, correct);
       const result = await recordAttempt(answerObj, correct);
       if (correct) {
-        setTimeout(() => { onStudentNext?.(result); }, 1000);
+        setTimeout(() => { onStudentNext?.(result); }, 2000);
       } else {
         setShowIncorrectFeedback(true);
         setBackendResult(result);
@@ -564,12 +574,13 @@ export function PreviewPanel({
     setIsCorrect(correct);
 
     if (mode === "student") {
+      onImmediateAnswer?.(answer?.text ?? "", correct);
       const result = await recordAttempt(answer, correct);
 
       if (correct) {
           setTimeout(() => {
             onStudentNext?.(result);
-          }, 1000);
+          }, 2000);
           return;
       } else {
         setShowIncorrectFeedback(true);
@@ -849,8 +860,8 @@ export function PreviewPanel({
       )}
 
       {selected !== null && (
-        <div className="mt-3" style={{ fontWeight: "bold", fontSize: 18 }}>
-          {isCorrect ? "Correct!" : "Try again"}
+        <div className="mt-3" style={{ fontWeight: "bold", fontSize: 18, color: isCorrect ? "#2e7d32" : "#c62828" }}>
+          {isCorrect ? "✓ Correct! Next question loading…" : "✗ Incorrect"}
         </div>
       )}
 

@@ -19,12 +19,15 @@ interface StoredJob {
 type Job = DerivedJob | StoredJob;
 
 const JOB_LABELS: Record<string, (firstName: string | null) => string> = {
+  post_tuition_review: (n) => `Post Tuition Review${n ? ` — ${n}` : ""}`,
   send_progress_message: (n) => `Send progress message for ${n}`,
   review_focus_area: (n) => `Review focus area for ${n}`,
   review_available_hours: () => `Review my available hours`,
 };
 
-const JOB_LINKS: Record<string, (tutorId: string, studentId: number) => string> = {
+const JOB_LINKS: Record<string, (tutorId: string, studentId: number, jobId: number) => string> = {
+  post_tuition_review: (tutorId, studentId, jobId) =>
+    `/tutors/${tutorId}/post-tuition?student_id=${studentId}&job_id=${jobId}`,
   send_progress_message: (tutorId) => `/tutors/${tutorId}/sms`,
   review_focus_area: (tutorId, studentId) =>
     `/students/${studentId}/focus-areas?returnTo=/tutors/${tutorId}`,
@@ -80,7 +83,7 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
       kind: "stored",
       id: j.id,
       label: (JOB_LABELS[j.job_type] ?? ((n: string) => j.job_type))(j.student_first_name),
-      to: (JOB_LINKS[j.job_type] ?? (() => `/tutors/${tutorId}`))(String(j.tutor_id), j.student_id),
+      to: (JOB_LINKS[j.job_type] ?? (() => `/tutors/${tutorId}`))(String(j.tutor_id), j.student_id, j.id),
     }));
 
     setJobs([...derived, ...stored]);
