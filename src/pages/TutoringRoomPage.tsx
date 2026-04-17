@@ -6,6 +6,7 @@ import { VideoPanel } from "./components/VideoPanel";
 import { WhiteboardPanel } from "./components/WhiteboardPanel";
 import { QuestionPanel } from "./components/QuestionPanel";
 import { apiFetch } from "../utils/apiFetch";
+import { usePreferenceStore } from "../utils/pref";
 
 // Cast to any to handle React 19 / @livekit/components-react type incompatibility
 const LKRoom = LiveKitRoom as React.ComponentType<any>;
@@ -17,9 +18,10 @@ export function TutoringRoomPage() {
   const [livekitUrl, setLivekitUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [showVideo, setShowVideo] = useState(true);
-  const [showWhiteboard, setShowWhiteboard] = useState(true);
-  const [showQuestion, setShowQuestion] = useState(true);
+  const pref = usePreferenceStore();
+  const [showVideo, setShowVideo] = useState(() => pref.get("chat_show_video") ?? true);
+  const [showWhiteboard, setShowWhiteboard] = useState(() => pref.get("chat_show_whiteboard") ?? true);
+  const [showQuestion, setShowQuestion] = useState(() => pref.get("chat_show_question") ?? true);
 
   // Parse isTutor and studentId from room name (format: t{tutor_id}-s{student_id})
   const storedUser = localStorage.getItem("user");
@@ -79,19 +81,19 @@ export function TutoringRoomPage() {
         </span>
         <button
           className={`btn btn-sm ${showVideo ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowVideo((v) => !v)}
+          onClick={() => setShowVideo((v) => { pref.set("chat_show_video", !v); return !v; })}
         >
           Video
         </button>
         <button
           className={`btn btn-sm ${showWhiteboard ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowWhiteboard((v) => !v)}
+          onClick={() => setShowWhiteboard((v) => { pref.set("chat_show_whiteboard", !v); return !v; })}
         >
           Whiteboard
         </button>
         <button
           className={`btn btn-sm ${showQuestion ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowQuestion((v) => !v)}
+          onClick={() => setShowQuestion((v) => { pref.set("chat_show_question", !v); return !v; })}
         >
           Question
         </button>
