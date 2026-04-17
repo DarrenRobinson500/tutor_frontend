@@ -81,19 +81,19 @@ export function TutoringRoomPage() {
         </span>
         <button
           className={`btn btn-sm ${showVideo ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowVideo((v) => { pref.set("chat_show_video", !v); return !v; })}
+          onClick={() => setShowVideo((v: boolean) => { pref.set("chat_show_video", !v); return !v; })}
         >
           Video
         </button>
         <button
           className={`btn btn-sm ${showWhiteboard ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowWhiteboard((v) => { pref.set("chat_show_whiteboard", !v); return !v; })}
+          onClick={() => setShowWhiteboard((v: boolean) => { pref.set("chat_show_whiteboard", !v); return !v; })}
         >
           Whiteboard
         </button>
         <button
           className={`btn btn-sm ${showQuestion ? "btn-light" : "btn-outline-secondary"}`}
-          onClick={() => setShowQuestion((v) => { pref.set("chat_show_question", !v); return !v; })}
+          onClick={() => setShowQuestion((v: boolean) => { pref.set("chat_show_question", !v); return !v; })}
         >
           Question
         </button>
