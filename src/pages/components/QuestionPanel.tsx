@@ -638,7 +638,7 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           <div className="d-flex gap-2 mb-2">
             <button
               className={`btn btn-sm ${mode === "learn" ? "btn-primary" : "btn-outline-primary"}`}
-              onClick={startLearnMode}
+              onClick={() => startLearnMode()}
               disabled={actionLoading}
             >
               Learn

@@ -25,6 +25,7 @@ interface PreviewPanelEditorProps extends PreviewPanelBase {
   templateId?: never;
   studentId?: never;
   onStudentNext?: never;
+  onImmediateAnswer?: never;
   seenTemplateIds?: never;
   sessionTemplateIds?: never;
 }
