@@ -12,14 +12,43 @@ type Mode = "learn" | "assessment" | "manual";
 
 interface SessionEvent {
   topic: string;
-  type: "set_template" | "answer_result";
+  type: "set_template" | "answer_result" | "session_complete" | "select_focus_area";
   template_id?: number | null;
   session_id?: number;
   learn_mode?: boolean;
-  preview?: any;          // rendered preview — shared so both sides see the same question
+  preview?: any;
   // answer_result fields
   answer?: string;
   correct?: boolean;
+  // session_complete fields
+  student_id?: number;
+  stars_before?: number | null;
+  stars_after?: number | null;
+  stars_gained?: number | null;
+  skill_description?: string | null;
+  // select_focus_area fields
+  focus_area_id?: number;
+}
+
+interface FocusAreaItem {
+  id: number;
+  skill_id: number;
+  skill_code: string;
+  skill_description: string;
+  mastery: number;
+  competence_label: string;
+  learning_done_this_week: boolean;
+  tutoring_done_this_week: boolean;
+  level_before_learning?: number | null;
+  level_after_learning?: number | null;
+}
+
+interface CompleteData {
+  focus_areas: FocusAreaItem[];
+  stars_before?: number | null;
+  stars_after?: number | null;
+  stars_gained?: number | null;
+  skill_description?: string | null;
 }
 
 interface QuestionPanelProps {
@@ -56,6 +85,73 @@ interface AssessmentContext {
   difficulty?: string;
   complete?: boolean;
   error?: string;
+}
+
+function renderStars(count: number | null | undefined, max = 5): string {
+  const n = Math.max(0, Math.min(Math.round(count ?? 0), max));
+  return "★".repeat(n) + "☆".repeat(max - n);
+}
+
+function LearnCompleteView({
+  completeData,
+  isTutor,
+  onStart,
+}: {
+  completeData: CompleteData;
+  isTutor: boolean;
+  onStart: (focusAreaId: number) => void;
+}) {
+  return (
+    <div style={{ padding: 16 }}>
+      <div className="fw-bold mb-3" style={{ fontSize: 18, color: "#198754" }}>
+        ✓ Session Complete!
+      </div>
+      {completeData.skill_description && (
+        <div className="mb-3 p-3 rounded border border-success bg-success bg-opacity-10">
+          <div className="fw-semibold">{completeData.skill_description}</div>
+          {completeData.stars_gained != null && (
+            <div className="mt-1 text-muted" style={{ fontSize: 13 }}>
+              {completeData.stars_before != null && completeData.stars_after != null && (
+                <span style={{ fontFamily: "monospace" }}>
+                  {renderStars(completeData.stars_before)} → {renderStars(completeData.stars_after)}
+                </span>
+              )}
+              {completeData.stars_gained > 0
+                ? ` (+${completeData.stars_gained} ★ gained)`
+                : " (no change)"}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="fw-semibold mb-2" style={{ fontSize: 14 }}>
+        {isTutor ? "Select next focus area to start:" : "Choose next focus area:"}
+      </div>
+      {completeData.focus_areas.length === 0 && (
+        <div className="text-muted" style={{ fontSize: 13 }}>No focus areas found.</div>
+      )}
+      {completeData.focus_areas.map((fa) => (
+        <div
+          key={fa.id}
+          className="d-flex align-items-center justify-content-between mb-2 p-2 rounded border"
+          style={{ fontSize: 13 }}
+        >
+          <div>
+            <div className="fw-semibold">{fa.skill_description}</div>
+            <div style={{ fontSize: 15, letterSpacing: 1, color: "#f5a623" }}>
+              {renderStars(fa.mastery)}
+            </div>
+            <div className="text-muted" style={{ fontSize: 11 }}>{fa.competence_label}</div>
+          </div>
+          <button
+            className="btn btn-sm btn-outline-primary"
+            onClick={() => onStart(fa.id)}
+          >
+            Start →
+          </button>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 const DIFFICULTY_BADGE: Record<string, string> = {
@@ -101,8 +197,10 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
   const [studentLoadingPreview, setStudentLoadingPreview] = useState(false);
 
   // ── Answer visibility ──────────────────────────────────────────────────────
-  // Last answer submitted by either party, shown on the other's screen.
   const [lastAnswer, setLastAnswer] = useState<{ answer: string; correct: boolean } | null>(null);
+
+  // ── Session completion — shared between tutor and student ─────────────────
+  const [completeData, setCompleteData] = useState<CompleteData | null>(null);
 
   // ── Tutor preview key — increment to force PreviewPanel remount on new question ──
   const [tutorPreviewKey, setTutorPreviewKey] = useState(0);
@@ -167,19 +265,48 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       try {
         const event: SessionEvent = JSON.parse(new TextDecoder().decode(payload));
 
-        // ── answer_result: someone submitted an answer ──────────────────────
+        // ── answer_result ────────────────────────────────────────────────────
         if (event.type === "answer_result") {
           setLastAnswer({ answer: event.answer ?? "", correct: !!event.correct });
           return;
         }
 
+        // ── session_complete: student finished a learn loop ──────────────────
+        if (event.type === "session_complete") {
+          if (isTutor && event.student_id) {
+            setLearnComplete(true);
+            setLastAnswer(null);
+            setActiveTemplateId(null);
+            apiFetch(`/api/focus-areas/?student_id=${event.student_id}`)
+              .then((r) => r.json())
+              .then((fas: FocusAreaItem[]) => setCompleteData({
+                focus_areas: fas,
+                stars_before: event.stars_before,
+                stars_after: event.stars_after,
+                stars_gained: event.stars_gained,
+                skill_description: event.skill_description,
+              }))
+              .catch(() => {});
+          }
+          return;
+        }
+
+        // ── select_focus_area: student asks tutor to start a specific skill ──
+        if (event.type === "select_focus_area") {
+          if (isTutor && event.focus_area_id) {
+            startLearnMode(event.focus_area_id);
+          }
+          return;
+        }
+
         if (event.type !== "set_template") return;
 
-        // Clear last answer whenever the question changes
+        // Clear state whenever the question changes
         setLastAnswer(null);
+        setCompleteData(null);
 
         if (!isTutor) {
-          // Student: receive the initial template + learn session info
+          // Student: receive template from tutor
           const newLearnMode = !!event.learn_mode;
           console.log("[QuestionPanel] Student received set_template event:", {
             template_id: event.template_id,
@@ -191,14 +318,13 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
           setStudentLearnMode(newLearnMode);
           setStudentSessionId(event.session_id ?? null);
           setStudentLearnComplete(false);
+          setCompleteData(null);
 
           if (newLearnMode && event.template_id) {
             setStudentTemplateId(event.template_id);
             if (event.preview) {
-              // Use the preview sent by the tutor — same parameters, same question
               setStudentPreview(event.preview);
             } else {
-              // Fallback: fetch (different params)
               setStudentLoadingPreview(true);
               apiFetch(`/api/templates/${event.template_id}/preview/`)
                 .then((r) => r.json())
@@ -218,12 +344,10 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
             previewQuestion: event.preview?.question?.slice?.(0, 60),
           });
           if (event.learn_mode && event.preview) {
-            // Student sent the new preview directly — use it
             setActiveTemplateId(event.template_id ?? null);
             setPreview(event.preview);
             setTutorPreviewKey((k) => k + 1);
           } else if (event.learn_mode && event.template_id) {
-            // Fallback: fetch from server session state (preview was saved there first)
             setActiveTemplateId(event.template_id ?? null);
             apiFetch(`/api/sessions/state/?room_name=${encodeURIComponent(roomName)}`)
               .then((r) => r.json())
@@ -313,18 +437,21 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
   // ── Tutor: start learn mode ────────────────────────────────────────────────
 
-  async function startLearnMode() {
+  async function startLearnMode(focusAreaId?: number) {
     setMode("learn");
     setLearnComplete(false);
     setLearnError(null);
     setLearnQuestion(null);
     setLearnSessionId(null);
     setLastAnswer(null);
+    setCompleteData(null);
     setActionLoading(true);
     try {
+      const body: Record<string, any> = { room_name: roomName };
+      if (focusAreaId) body.focus_area_id = focusAreaId;
       const data = await apiFetch("/api/sessions/learn_mode/", {
         method: "POST",
-        body: JSON.stringify({ room_name: roomName }),
+        body: JSON.stringify(body),
       }).then((r) => r.json());
 
       if (data.error) { setLearnError(data.error); return; }
@@ -379,13 +506,33 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
       if (data.complete) {
         console.log("[QuestionPanel] Session complete, setting studentLearnComplete=true");
         setStudentLearnComplete(true);
-        // Notify tutor session is done
+        setLastAnswer(null);
+        // Broadcast session_complete to tutor with stars data
         room.localParticipant.publishData(
           new TextEncoder().encode(JSON.stringify({
-            topic: TOPIC, type: "set_template", template_id: null, learn_mode: true,
+            topic: TOPIC,
+            type: "session_complete",
+            student_id: studentId,
+            stars_before: data.stars_before ?? null,
+            stars_after: data.stars_after ?? null,
+            stars_gained: data.stars_gained ?? null,
+            skill_description: data.skill_description ?? null,
           })),
           { reliable: true, topic: TOPIC }
         );
+        // Fetch focus areas for student completion screen
+        if (studentId != null) {
+          apiFetch(`/api/focus-areas/?student_id=${studentId}`)
+            .then((r) => r.json())
+            .then((fas: FocusAreaItem[]) => setCompleteData({
+              focus_areas: fas,
+              stars_before: data.stars_before ?? null,
+              stars_after: data.stars_after ?? null,
+              stars_gained: data.stars_gained ?? null,
+              skill_description: data.skill_description ?? null,
+            }))
+            .catch(() => {});
+        }
         return;
       }
 
@@ -611,9 +758,26 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
         {/* Student: learn complete */}
         {!isTutor && studentLearnComplete && (
-          <div className="text-success text-center mt-4 fw-semibold" style={{ fontSize: 15 }}>
-            Learning complete for this week!
-          </div>
+          completeData ? (
+            <LearnCompleteView
+              completeData={completeData}
+              isTutor={false}
+              onStart={(focusAreaId) => {
+                room.localParticipant.publishData(
+                  new TextEncoder().encode(JSON.stringify({
+                    topic: TOPIC,
+                    type: "select_focus_area",
+                    focus_area_id: focusAreaId,
+                  })),
+                  { reliable: true, topic: TOPIC }
+                );
+              }}
+            />
+          ) : (
+            <div className="text-success text-center mt-4 fw-semibold" style={{ fontSize: 15 }}>
+              Session complete!
+            </div>
+          )
         )}
 
         {/* Student: learn mode question */}
@@ -652,7 +816,14 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
                 <div className="spinner-border spinner-border-sm text-primary" role="status" />
               </div>
             )}
-            {!actionLoading && !loadingPreview && !activeTemplateId && (
+            {!actionLoading && !loadingPreview && !activeTemplateId && isTutor && learnComplete && completeData && (
+              <LearnCompleteView
+                completeData={completeData}
+                isTutor={true}
+                onStart={(focusAreaId) => startLearnMode(focusAreaId)}
+              />
+            )}
+            {!actionLoading && !loadingPreview && !activeTemplateId && !(isTutor && learnComplete && completeData) && (
               <div className="text-muted text-center mt-4" style={{ fontSize: 14 }}>
                 {isTutor
                   ? mode === "manual"

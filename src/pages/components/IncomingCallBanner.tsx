@@ -62,6 +62,7 @@ export function IncomingCallBanner() {
         className="btn btn-light btn-sm"
         style={{ fontWeight: 600 }}
         onClick={() => {
+          setDismissed(call.room_name);
           setCall(null);
           navigate(`/session/${call.room_name}`);
         }}
