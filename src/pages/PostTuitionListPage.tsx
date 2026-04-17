@@ -62,7 +62,7 @@ export function PostTuitionListPage() {
                 className="list-group-item list-group-item-action d-flex align-items-center justify-content-between"
                 onClick={() =>
                   navigate(
-                    `/tutors/${tutorId}/post-tuition/review?job_id=${job.id}&student_id=${job.student_id ?? ""}`
+                    `/tutors/${tutorId}/post-tuition/review?job_id=${job.id}&student_id=${job.student_id ?? ""}${job.booking_date ? `&booking_date=${job.booking_date}` : ""}`
                   )
                 }
               >

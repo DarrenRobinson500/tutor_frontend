@@ -79,19 +79,20 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
       }
     });
 
-    const stored: StoredJob[] = storedRaw.map((j: any) => ({
-      kind: "stored",
-      id: j.id,
-      label: (JOB_LABELS[j.job_type] ?? ((n: string) => j.job_type))(j.student_first_name),
-      to: (JOB_LINKS[j.job_type] ?? (() => `/tutors/${tutorId}`))(String(j.tutor_id), j.student_id, j.id),
-    }));
+    const stored: StoredJob[] = storedRaw.map((j: any) => {
+      let to = (JOB_LINKS[j.job_type] ?? (() => `/tutors/${tutorId}`))(String(j.tutor_id), j.student_id, j.id);
+      if (j.job_type === 'post_tuition_review' && j.booking_date) {
+        to += `&booking_date=${j.booking_date}`;
+      }
+      return {
+        kind: "stored",
+        id: j.id,
+        label: (JOB_LABELS[j.job_type] ?? ((n: string) => j.job_type))(j.student_first_name),
+        to,
+      };
+    });
 
     setJobs([...derived, ...stored]);
-  }
-
-  async function complete(id: number) {
-    await apiFetch(`/api/jobs/${id}/complete/`, { method: "POST" });
-    setJobs(prev => prev.filter(j => !(j.kind === "stored" && j.id === id)));
   }
 
   if (jobs.length === 0) return null;
@@ -103,21 +104,14 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
         {jobs.map((job, i) => (
           <div key={i} className="col">
             {job.kind === "stored" ? (
-              <div
-                className="px-3 py-2 rounded"
-                style={{ background: "#fff3cd", border: "1px solid #ffc107" }}
-              >
-                <Link to={job.to} className="text-decoration-none fw-semibold d-block mb-1">
-                  {job.label}
-                </Link>
-                <button
-                  className="btn btn-sm btn-outline-secondary py-0 px-2"
-                  style={{ fontSize: 11 }}
-                  onClick={() => complete(job.id)}
+              <Link to={job.to} className="text-decoration-none d-block">
+                <div
+                  className="px-3 py-2 rounded fw-semibold"
+                  style={{ background: "#fff3cd", border: "1px solid #ffc107" }}
                 >
-                  Done
-                </button>
-              </div>
+                  {job.label}
+                </div>
+              </Link>
             ) : (
               <Link to={job.to} className="text-decoration-none d-block">
                 <div
