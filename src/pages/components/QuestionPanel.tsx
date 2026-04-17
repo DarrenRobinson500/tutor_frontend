@@ -868,21 +868,27 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
                       </div>
                       {!lastAnswer.correct && (
                         <>
-                          {/* Solution text */}
-                          {preview.solution && (
-                            <div
-                              className="mt-2 p-2"
-                              style={{
-                                background: "#f8f9fa",
-                                borderLeft: "4px solid #dc3545",
-                                fontSize: 16,
-                                whiteSpace: "pre-wrap",
-                              }}
-                            >
-                              <Latex>{preview.solution}</Latex>
-                            </div>
-                          )}
-                          {/* Solution diagram (if different from question diagram) */}
+                          {/* Solution — mirrors what the student sees */}
+                          <div
+                            className="mt-2 p-2"
+                            style={{
+                              background: "#f8f9fa",
+                              borderLeft: "4px solid #dc3545",
+                              fontSize: 16,
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {preview.solution
+                              ? <Latex>{preview.solution}</Latex>
+                              : (() => {
+                                  const correct = (preview.answers ?? []).find((a: any) => a?.correct);
+                                  return correct
+                                    ? <span>The correct answer is <strong>{String(correct.text ?? "").replace(/^\$/, "")}</strong></span>
+                                    : <span className="text-muted">No solution provided.</span>;
+                                })()
+                            }
+                          </div>
+                          {/* Solution diagram */}
                           {preview.multi_step?.steps?.[0]?.svg && (
                             <div style={{ display: "flex", justifyContent: "center", marginTop: 8 }}>
                               <div dangerouslySetInnerHTML={{ __html: preview.multi_step.steps[0].svg }} />

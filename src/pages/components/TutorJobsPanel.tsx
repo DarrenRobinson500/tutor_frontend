@@ -27,7 +27,7 @@ const JOB_LABELS: Record<string, (firstName: string | null) => string> = {
 
 const JOB_LINKS: Record<string, (tutorId: string, studentId: number, jobId: number) => string> = {
   post_tuition_review: (tutorId, studentId, jobId) =>
-    `/tutors/${tutorId}/post-tuition?student_id=${studentId}&job_id=${jobId}`,
+    `/tutors/${tutorId}/post-tuition/review?student_id=${studentId}&job_id=${jobId}`,
   send_progress_message: (tutorId) => `/tutors/${tutorId}/sms`,
   review_focus_area: (tutorId, studentId) =>
     `/students/${studentId}/focus-areas?returnTo=/tutors/${tutorId}`,
