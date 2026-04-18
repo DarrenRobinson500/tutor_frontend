@@ -19,9 +19,21 @@ export function TutoringRoomPage() {
   const [error, setError] = useState<string | null>(null);
 
   const pref = usePreferenceStore();
-  const [showVideo, setShowVideo] = useState(() => pref.get("chat_show_video") ?? true);
-  const [showWhiteboard, setShowWhiteboard] = useState(() => pref.get("chat_show_whiteboard") ?? true);
-  const [showQuestion, setShowQuestion] = useState(() => pref.get("chat_show_question") ?? true);
+  const prefLoaded = usePreferenceStore((s) => s.loaded);
+  const [showVideo, setShowVideo] = useState(true);
+  const [showWhiteboard, setShowWhiteboard] = useState(true);
+  const [showQuestion, setShowQuestion] = useState(true);
+
+  // Apply stored preferences once they have loaded from the backend
+  useEffect(() => {
+    if (!prefLoaded) return;
+    const v = pref.get("chat_show_video");
+    const w = pref.get("chat_show_whiteboard");
+    const q = pref.get("chat_show_question");
+    if (v !== undefined) setShowVideo(v);
+    if (w !== undefined) setShowWhiteboard(w);
+    if (q !== undefined) setShowQuestion(q);
+  }, [prefLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parse isTutor and studentId from room name (format: t{tutor_id}-s{student_id})
   const storedUser = localStorage.getItem("user");

@@ -63,27 +63,27 @@ export function PostTuitionPage() {
 
   const [studentName, setStudentName] = useState<string | null>(null);
   const [yearLevel, setYearLevel] = useState<string | null>(null);
-  const [completing, setCompleting] = useState(false);
-
   // Step 1: progress message
   const [message, setMessage] = useState<string>("");
   const [parentMobile, setParentMobile] = useState<string | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
   const [messageSaving, setMessageSaving] = useState(false);
   const [messageSending, setMessageSending] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
   const [messageError, setMessageError] = useState<string | null>(null);
 
-  // Step 2: payment
-  const [payment, setPayment] = useState<PaymentSummary | null>(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentApplying, setPaymentApplying] = useState(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-
-  // Step 3: focus areas
+  // Step 2: focus areas
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
   const [syllabus, setSyllabus] = useState<SkillRow[]>([]);
   const [mastery, setMastery] = useState<Record<number, number>>({});
   const [focusLoading, setFocusLoading] = useState(false);
+  const [focusAreasApproved, setFocusAreasApproved] = useState(false);
+
+  // Step 3: payment
+  const [payment, setPayment] = useState<PaymentSummary | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentApplying, setPaymentApplying] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!studentId) return;
@@ -205,15 +205,24 @@ export function PostTuitionPage() {
     setMessageSending(true);
     setMessageError(null);
     try {
+      await apiFetch(`/api/jobs/${jobId}/save_progress_message/`, {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      });
       await apiFetch(`/api/jobs/${jobId}/send_progress_message/`, { method: "POST" });
-      await completeJob({ parent_message: message });
+      setMessageSent(true);
     } catch {
       setMessageError("Failed to send message.");
+    } finally {
       setMessageSending(false);
     }
   }
 
-  async function handleApplyPayment() {
+  function handleApproveFocusAreas() {
+    setFocusAreasApproved(true);
+  }
+
+  async function handleRequestPayment() {
     if (!jobId) return;
     setPaymentApplying(true);
     setPaymentError(null);
@@ -221,23 +230,17 @@ export function PostTuitionPage() {
       const r = await apiFetch(`/api/jobs/${jobId}/apply_payment/`, { method: "POST" });
       const d = await r.json();
       if (d.ok) {
-        await completeJob();
+        await completeJob({
+          parent_message: message,
+          focus_area_next_ids: focusAreas.map((fa) => fa.skill_id),
+        });
       } else {
-        setPaymentError(d.error ?? "Failed to apply payment.");
+        setPaymentError(d.error ?? "Failed to request payment.");
         setPaymentApplying(false);
       }
     } catch {
-      setPaymentError("Failed to apply payment.");
+      setPaymentError("Failed to request payment.");
       setPaymentApplying(false);
-    }
-  }
-
-  async function handleApproveFocusAreas() {
-    setCompleting(true);
-    try {
-      await completeJob({ focus_area_next_ids: focusAreas.map((fa) => fa.skill_id) });
-    } finally {
-      setCompleting(false);
     }
   }
 
@@ -258,6 +261,7 @@ export function PostTuitionPage() {
           <div className="card-header d-flex align-items-center gap-2">
             <span className="badge bg-primary">1</span>
             <span className="fw-semibold">Send Progress Message</span>
+            {messageSent && <span className="badge bg-success ms-auto">Sent</span>}
           </div>
           <div className="card-body">
             <p className="text-muted mb-3">
@@ -274,7 +278,7 @@ export function PostTuitionPage() {
                   rows={5}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  disabled={messageSending}
+                  disabled={messageSending || messageSent}
                 />
                 {parentMobile && (
                   <div className="text-muted mb-2" style={{ fontSize: 13 }}>
@@ -290,16 +294,16 @@ export function PostTuitionPage() {
                   <button
                     className="btn btn-outline-secondary btn-sm"
                     onClick={handleSaveMessage}
-                    disabled={messageSaving || !message.trim()}
+                    disabled={messageSaving || !message.trim() || messageSent}
                   >
                     {messageSaving ? "Saving…" : "Save Draft"}
                   </button>
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={handleSendMessage}
-                    disabled={messageSending || !message.trim()}
+                    disabled={messageSending || !message.trim() || messageSent}
                   >
-                    {messageSending ? "Sending…" : "Send to Parent"}
+                    {messageSent ? "Sent" : messageSending ? "Sending…" : "Send to Parent"}
                   </button>
                 </div>
               </>
@@ -307,15 +311,130 @@ export function PostTuitionPage() {
           </div>
         </div>
 
-        {/* ── Step 2: Payment ── */}
+        {/* ── Step 2: Focus areas ── */}
         <div className="card mb-4">
           <div className="card-header d-flex align-items-center gap-2">
             <span className="badge bg-primary">2</span>
-            <span className="fw-semibold">Approve Payment Transfer</span>
+            <span className="fw-semibold">Update Student Focus Areas</span>
+            {focusAreasApproved && <span className="badge bg-success ms-auto">Approved</span>}
+          </div>
+          <div className="card-body">
+            {focusLoading ? (
+              <div className="text-center py-3">
+                <div className="spinner-border spinner-border-sm text-secondary" role="status" />
+              </div>
+            ) : (
+              <>
+                {/* Current focus areas */}
+                <div className="mb-3">
+                  <div className="fw-semibold mb-2" style={{ fontSize: 14 }}>Current Focus Areas</div>
+                  {focusAreas.length === 0 ? (
+                    <div className="text-muted" style={{ fontSize: 13 }}>No focus areas set.</div>
+                  ) : (
+                    <div>
+                      {focusAreas.map((fa) => (
+                        <div
+                          key={fa.id}
+                          className="d-flex align-items-center justify-content-between py-1 px-2 mb-1 rounded"
+                          style={{ background: "#f8f9fa", fontSize: 13 }}
+                        >
+                          <span>{fa.skill_description}</span>
+                          <div className="d-flex align-items-center gap-2">
+                            <SkillStars level={fa.mastery} />
+                            <button
+                              className="btn btn-outline-danger btn-sm py-0 px-2"
+                              style={{ fontSize: 12 }}
+                              onClick={() => handleRemoveFocusArea(fa.id)}
+                              disabled={focusAreasApproved}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {syllabus.length > 0 && !focusAreasApproved && (
+                  <div className="mt-3">
+                    <div className="fw-semibold mb-2" style={{ fontSize: 14 }}>Syllabus</div>
+                    <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid #dee2e6", borderRadius: 4 }}>
+                      <table className="table table-sm mb-0" style={{ fontSize: 12 }}>
+                        <tbody>
+                          {syllabus.map((skill) => {
+                            const isLeaf = skill.children_count === 0;
+                            const alreadyAdded = focusAreaSkillIds.has(skill.id);
+                            const gradeStr = yearLevel ?? "";
+                            const cell = skill.cells[gradeStr];
+                            const hasTemplates = cell ? cell.validated > 0 : false;
+                            const masteryLevel = Math.round(mastery[skill.id] ?? 0);
+                            return (
+                              <tr key={skill.id} style={{ background: isLeaf ? undefined : "#f8f9fa" }}>
+                                <td style={{ paddingLeft: `${skill.depth * 16 + 8}px`, fontWeight: isLeaf ? undefined : 600, color: isLeaf ? undefined : "#444" }}>
+                                  {skill.description}
+                                </td>
+                                <td style={{ width: 80, whiteSpace: "nowrap" }}>
+                                  {isLeaf && <SkillStars level={masteryLevel} />}
+                                </td>
+                                <td style={{ width: 70, textAlign: "right" }}>
+                                  {isLeaf && hasTemplates && (
+                                    alreadyAdded ? (
+                                      <span className="text-muted" style={{ fontSize: 11 }}>Added</span>
+                                    ) : (
+                                      <button
+                                        className="btn btn-outline-primary btn-sm py-0 px-2"
+                                        style={{ fontSize: 11 }}
+                                        onClick={() => handleAddFocusArea(skill.id)}
+                                      >
+                                        Add
+                                      </button>
+                                    )
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Approve button */}
+                <div className="mt-3">
+                  {payment && !payment.has_outcome ? (
+                    <div className="alert alert-warning py-2 mb-0" style={{ fontSize: 13 }}>
+                      No session record found — focus areas cannot be saved. This job may have been created before session tracking was enabled.
+                    </div>
+                  ) : (
+                    <button
+                      className={`btn btn-sm ${focusAreasApproved ? "btn-success" : "btn-primary"}`}
+                      onClick={handleApproveFocusAreas}
+                      disabled={focusAreasApproved || paymentLoading || focusAreas.length === 0}
+                    >
+                      {focusAreasApproved ? "Approved" : "Approve Focus Areas"}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Step 3: Payment ── */}
+        <div className="card mb-4">
+          <div className="card-header d-flex align-items-center gap-2">
+            <span className="badge bg-primary">3</span>
+            <span className="fw-semibold">Request Payment</span>
             {payment?.already_applied && <span className="badge bg-success ms-auto">Applied</span>}
           </div>
           <div className="card-body">
-            {paymentLoading ? (
+            {!messageSent || !focusAreasApproved ? (
+              <div className="alert alert-warning py-2 mb-0" style={{ fontSize: 13 }}>
+                Complete steps 1 and 2 before requesting payment.
+              </div>
+            ) : paymentLoading ? (
               <div className="text-center py-3">
                 <div className="spinner-border spinner-border-sm text-secondary" role="status" />
               </div>
@@ -377,132 +496,16 @@ export function PostTuitionPage() {
                 )}
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={handleApplyPayment}
+                  onClick={handleRequestPayment}
                   disabled={paymentApplying || payment.already_applied}
                 >
                   {payment.already_applied
                     ? `Payment Applied (#${payment.payment_id})`
-                    : paymentApplying ? "Applying…" : "Apply Payment"}
+                    : paymentApplying ? "Requesting…" : "Request Payment"}
                 </button>
               </>
             ) : (
               <p className="text-muted mb-0">No payment information available.</p>
-            )}
-          </div>
-        </div>
-
-        {/* ── Step 3: Focus areas ── */}
-        <div className="card mb-4">
-          <div className="card-header d-flex align-items-center gap-2">
-            <span className="badge bg-primary">3</span>
-            <span className="fw-semibold">Update Student Focus Areas</span>
-          </div>
-          <div className="card-body">
-            {focusLoading ? (
-              <div className="text-center py-3">
-                <div className="spinner-border spinner-border-sm text-secondary" role="status" />
-              </div>
-            ) : (
-              <>
-                {/* Current focus areas */}
-                <div className="mb-3">
-                  <div className="fw-semibold mb-2" style={{ fontSize: 14 }}>Current Focus Areas</div>
-                  {focusAreas.length === 0 ? (
-                    <div className="text-muted" style={{ fontSize: 13 }}>No focus areas set.</div>
-                  ) : (
-                    <div>
-                      {focusAreas.map((fa) => (
-                        <div
-                          key={fa.id}
-                          className="d-flex align-items-center justify-content-between py-1 px-2 mb-1 rounded"
-                          style={{ background: "#f8f9fa", fontSize: 13 }}
-                        >
-                          <span>{fa.skill_description}</span>
-                          <div className="d-flex align-items-center gap-2">
-                            <SkillStars level={fa.mastery} />
-                            <button
-                              className="btn btn-outline-danger btn-sm py-0 px-2"
-                              style={{ fontSize: 12 }}
-                              onClick={() => handleRemoveFocusArea(fa.id)}
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Syllabus */}
-                <div className="mt-3">
-                  {payment && !payment.has_outcome ? (
-                    <div className="alert alert-warning py-2 mb-0" style={{ fontSize: 13 }}>
-                      No session record found — focus areas cannot be saved. This job may have been created before session tracking was enabled.
-                    </div>
-                  ) : (
-                    <button
-                      className="btn btn-primary btn-sm"
-                      onClick={handleApproveFocusAreas}
-                      disabled={completing || paymentLoading}
-                    >
-                      {completing ? "Saving…" : "Approve Focus Areas"}
-                    </button>
-                  )}
-                </div>
-
-                {syllabus.length > 0 && (
-                  <div className="mt-3">
-                    <div className="fw-semibold mb-2" style={{ fontSize: 14 }}>Syllabus</div>
-                    <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid #dee2e6", borderRadius: 4 }}>
-                      <table className="table table-sm mb-0" style={{ fontSize: 12 }}>
-                        <tbody>
-                          {syllabus.map((skill) => {
-                            const isLeaf = skill.children_count === 0;
-                            const alreadyAdded = focusAreaSkillIds.has(skill.id);
-                            const gradeStr = yearLevel ?? "";
-                            const cell = skill.cells[gradeStr];
-                            const hasTemplates = cell ? cell.validated > 0 : false;
-                            const masteryLevel = Math.round(mastery[skill.id] ?? 0);
-
-                            return (
-                              <tr key={skill.id} style={{ background: isLeaf ? undefined : "#f8f9fa" }}>
-                                <td
-                                  style={{
-                                    paddingLeft: `${skill.depth * 16 + 8}px`,
-                                    fontWeight: isLeaf ? undefined : 600,
-                                    color: isLeaf ? undefined : "#444",
-                                  }}
-                                >
-                                  {skill.description}
-                                </td>
-                                <td style={{ width: 80, whiteSpace: "nowrap" }}>
-                                  {isLeaf && <SkillStars level={masteryLevel} />}
-                                </td>
-                                <td style={{ width: 70, textAlign: "right" }}>
-                                  {isLeaf && hasTemplates && (
-                                    alreadyAdded ? (
-                                      <span className="text-muted" style={{ fontSize: 11 }}>Added</span>
-                                    ) : (
-                                      <button
-                                        className="btn btn-outline-primary btn-sm py-0 px-2"
-                                        style={{ fontSize: 11 }}
-                                        onClick={() => handleAddFocusArea(skill.id)}
-                                      >
-                                        Add
-                                      </button>
-                                    )
-                                  )}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </>
             )}
           </div>
         </div>

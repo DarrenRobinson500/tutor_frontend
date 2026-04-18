@@ -14,6 +14,7 @@ export function TutorEditPage() {
     address: "",
     default_session_minutes: "",
     buffer_minutes: "",
+    default_hourly_rate: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export function TutorEditPage() {
           address: data.address || "",
           default_session_minutes: String(data.default_session_minutes || ""),
           buffer_minutes: String(data.buffer_minutes || ""),
+          default_hourly_rate: String(data.default_hourly_rate || ""),
         });
         setLoading(false);
       })
@@ -52,6 +54,8 @@ export function TutorEditPage() {
     if (!form.buffer_minutes.trim()) return "Buffer minutes is required.";
     if (isNaN(Number(form.default_session_minutes))) return "Default session minutes must be a number.";
     if (isNaN(Number(form.buffer_minutes))) return "Buffer minutes must be a number.";
+    if (form.default_hourly_rate.trim() && isNaN(Number(form.default_hourly_rate))) return "Hourly rate must be a number.";
+    if (Number(form.default_hourly_rate) < 0) return "Hourly rate cannot be negative.";
     return null;
   };
 
@@ -76,6 +80,7 @@ export function TutorEditPage() {
             address: form.address,
             default_session_minutes: Number(form.default_session_minutes),
             buffer_minutes: Number(form.buffer_minutes),
+            default_hourly_rate: Number(form.default_hourly_rate),
           },
         }),
       });
@@ -151,6 +156,20 @@ export function TutorEditPage() {
               onChange={handleChange}
               min={0}
             />
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label">Default Hourly Rate ($)</label>
+            <input
+              type="number"
+              name="default_hourly_rate"
+              className="form-control"
+              value={form.default_hourly_rate}
+              onChange={handleChange}
+              min={0}
+              step="0.01"
+            />
+            <div className="form-text">Applied to new students when they are added.</div>
           </div>
 
           <button

@@ -26,6 +26,7 @@ interface SessionEvent {
   stars_after?: number | null;
   stars_gained?: number | null;
   skill_description?: string | null;
+  focus_areas?: FocusAreaItem[];
   // select_focus_area fields
   focus_area_id?: number;
 }
@@ -273,20 +274,28 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
 
         // ── session_complete: student finished a learn loop ──────────────────
         if (event.type === "session_complete") {
-          if (isTutor && event.student_id) {
+          if (isTutor) {
             setLearnComplete(true);
             setLastAnswer(null);
             setActiveTemplateId(null);
-            apiFetch(`/api/focus-areas/?student_id=${event.student_id}`)
-              .then((r) => r.json())
-              .then((fas: FocusAreaItem[]) => setCompleteData({
-                focus_areas: fas,
-                stars_before: event.stars_before,
-                stars_after: event.stars_after,
-                stars_gained: event.stars_gained,
-                skill_description: event.skill_description,
-              }))
-              .catch(() => {});
+            const completeData: CompleteData = {
+              focus_areas: event.focus_areas ?? [],
+              stars_before: event.stars_before ?? null,
+              stars_after: event.stars_after ?? null,
+              stars_gained: event.stars_gained ?? null,
+              skill_description: event.skill_description ?? null,
+            };
+            // Use embedded focus areas from the event; fall back to API fetch if missing
+            if ((event.focus_areas ?? []).length > 0) {
+              setCompleteData(completeData);
+            } else if (event.student_id) {
+              apiFetch(`/api/focus-areas/?student_id=${event.student_id}`)
+                .then((r) => r.json())
+                .then((fas: FocusAreaItem[]) => setCompleteData({ ...completeData, focus_areas: fas }))
+                .catch(() => setCompleteData(completeData));
+            } else {
+              setCompleteData(completeData);
+            }
           }
           return;
         }
@@ -507,32 +516,36 @@ export function QuestionPanel({ isTutor, roomName, studentId }: QuestionPanelPro
         console.log("[QuestionPanel] Session complete, setting studentLearnComplete=true");
         setStudentLearnComplete(true);
         setLastAnswer(null);
-        // Broadcast session_complete to tutor with stars data
+        // Fetch focus areas first so we can share them with the tutor in a single broadcast
+        const completePayload: CompleteData = {
+          focus_areas: [],
+          stars_before: data.stars_before ?? null,
+          stars_after: data.stars_after ?? null,
+          stars_gained: data.stars_gained ?? null,
+          skill_description: data.skill_description ?? null,
+        };
+        if (studentId != null) {
+          try {
+            const fas: FocusAreaItem[] = await apiFetch(`/api/focus-areas/?student_id=${studentId}`)
+              .then((r) => r.json());
+            completePayload.focus_areas = fas;
+          } catch {}
+        }
+        setCompleteData(completePayload);
+        // Broadcast session_complete to tutor with all data including focus areas
         room.localParticipant.publishData(
           new TextEncoder().encode(JSON.stringify({
             topic: TOPIC,
             type: "session_complete",
             student_id: studentId,
-            stars_before: data.stars_before ?? null,
-            stars_after: data.stars_after ?? null,
-            stars_gained: data.stars_gained ?? null,
-            skill_description: data.skill_description ?? null,
+            stars_before: completePayload.stars_before,
+            stars_after: completePayload.stars_after,
+            stars_gained: completePayload.stars_gained,
+            skill_description: completePayload.skill_description,
+            focus_areas: completePayload.focus_areas,
           })),
           { reliable: true, topic: TOPIC }
         );
-        // Fetch focus areas for student completion screen
-        if (studentId != null) {
-          apiFetch(`/api/focus-areas/?student_id=${studentId}`)
-            .then((r) => r.json())
-            .then((fas: FocusAreaItem[]) => setCompleteData({
-              focus_areas: fas,
-              stars_before: data.stars_before ?? null,
-              stars_after: data.stars_after ?? null,
-              stars_gained: data.stars_gained ?? null,
-              skill_description: data.skill_description ?? null,
-            }))
-            .catch(() => {});
-        }
         return;
       }
 

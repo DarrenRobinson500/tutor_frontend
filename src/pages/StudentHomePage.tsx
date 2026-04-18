@@ -116,6 +116,7 @@ export function StudentHomePage() {
   const [mastery, setMastery] = useState<any>({});
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
 
+
   useEffect(() => {
     apiFetch(`/api/students/${id}/home/`)
       .then((res) => res.json())

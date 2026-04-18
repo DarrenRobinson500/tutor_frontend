@@ -81,6 +81,9 @@ export function TemplateEditorPage() {
   const [isAddingNote, setIsAddingNote] = useState(false);
   const editorRef = useRef<EditorHandle>(null);
   const { getTemplate, saveTemplate } = useTemplateApi();
+  const [templateLanguage, setTemplateLanguage] = useState<string>('en');
+  const [parentTemplateId, setParentTemplateId] = useState<number | null>(null);
+  const [templateTranslations, setTemplateTranslations] = useState<{ id: number; language: string }[]>([]);
 
 function buildMetadataFromTemplate(
   tpl: any,
@@ -185,6 +188,9 @@ const handleToggleValidated = async () => {
       if (!tpl) return;
 
       setContent(tpl.content);
+      setTemplateLanguage(tpl.language || 'en');
+      setParentTemplateId(tpl.parent_template || null);
+      setTemplateTranslations(tpl.translations ?? []);
       const currentFilter = usePreferenceStore.getState().get("template.validated_filter") ?? "all";
       setMetadata(prev =>
         buildMetadataFromTemplate(tpl, prev.validated_filter ?? currentFilter)
@@ -753,7 +759,30 @@ const handleToggleValidated = async () => {
         <div className="col-md-4 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1 d-flex flex-column">
             <div className="card-header d-flex justify-content-between align-items-start gap-1 flex-wrap">
-              <span>Question</span>
+              <div className="d-flex align-items-center gap-2">
+                <span>Question</span>
+                {templateLanguage && templateLanguage !== 'en' && parentTemplateId && (
+                  <button
+                    className="btn btn-sm btn-outline-warning"
+                    style={{ fontSize: 11 }}
+                    onClick={() => navigate(`/templates/${parentTemplateId}`)}
+                    title="Go to English version"
+                  >
+                    {templateLanguage.toUpperCase()} — View English version
+                  </button>
+                )}
+                {templateLanguage === 'en' && templateTranslations.map(t => (
+                  <button
+                    key={t.id}
+                    className="btn btn-sm btn-outline-info"
+                    style={{ fontSize: 11 }}
+                    onClick={() => navigate(`/templates/${t.id}`)}
+                    title={`View ${t.language.toUpperCase()} translation`}
+                  >
+                    {t.language.toUpperCase()}
+                  </button>
+                ))}
+              </div>
               <div className="d-flex gap-1 flex-wrap justify-content-end">
                 <button
                   className="btn btn-sm btn-outline-secondary"

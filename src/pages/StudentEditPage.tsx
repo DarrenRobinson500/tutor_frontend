@@ -16,6 +16,20 @@ export function StudentEditPage() {
   const [active, setActive] = useState(true);
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState("");
+  const [language, setLanguage] = useState("en");
+
+  const LANGUAGE_OPTIONS = [
+    { code: "en", label: "English" },
+    { code: "zh", label: "中文 (Chinese)" },
+    { code: "vi", label: "Tiếng Việt (Vietnamese)" },
+    { code: "ar", label: "العربية (Arabic)" },
+    { code: "ko", label: "한국어 (Korean)" },
+    { code: "hi", label: "हिन्दी (Hindi)" },
+    { code: "es", label: "Español (Spanish)" },
+    { code: "fr", label: "Français (French)" },
+    { code: "pt", label: "Português (Portuguese)" },
+    { code: "ja", label: "日本語 (Japanese)" },
+  ];
 
   const [loading, setLoading] = useState(true);
 
@@ -35,6 +49,7 @@ useEffect(() => {
       setMobile(data.mobile || "");
       setAddress(data.address || "");
       setActive(data.active);
+      setLanguage(data.language || "en");
     })
     .catch((err) => {
       console.error("Error fetching", url, err);
@@ -53,6 +68,7 @@ useEffect(() => {
           mobile: mobile,
           address: address,
           active: active,
+          language: language,
         },
       }),
     });
@@ -99,7 +115,19 @@ useEffect(() => {
         />
       </div>
 
-
+      <div className="mb-3">
+        <label className="form-label">Question Language</label>
+        <select
+          className="form-select"
+          value={language}
+          onChange={(e) => setLanguage(e.target.value)}
+        >
+          {LANGUAGE_OPTIONS.map((opt) => (
+            <option key={opt.code} value={opt.code}>{opt.label}</option>
+          ))}
+        </select>
+        <div className="form-text">Questions will be shown in this language during learning sessions.</div>
+      </div>
 
       <div className="form-check mb-3">
         <input

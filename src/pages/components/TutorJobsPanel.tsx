@@ -23,6 +23,7 @@ const JOB_LABELS: Record<string, (firstName: string | null) => string> = {
   send_progress_message: (n) => `Send progress message for ${n}`,
   review_focus_area: (n) => `Review focus area for ${n}`,
   review_available_hours: () => `Review my available hours`,
+  setup_weekly_session: (n) => `Set up weekly session${n ? ` for ${n}` : ""}`,
 };
 
 const JOB_LINKS: Record<string, (tutorId: string, studentId: number, jobId: number) => string> = {
@@ -32,6 +33,7 @@ const JOB_LINKS: Record<string, (tutorId: string, studentId: number, jobId: numb
   review_focus_area: (tutorId, studentId) =>
     `/students/${studentId}/focus-areas?returnTo=/tutors/${tutorId}`,
   review_available_hours: (tutorId) => `/tutors/${tutorId}/schedule`,
+  setup_weekly_session: (tutorId) => `/tutors/${tutorId}/booking`,
 };
 
 export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
@@ -47,9 +49,12 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
       apiFetch(`/api/jobs/`).then(r => r.json()),
     ]);
 
+    const activeStudents = students.filter(s => s.active);
+    const activeStudentIds = new Set(activeStudents.map(s => s.user_id));
+
     const derived: DerivedJob[] = [];
 
-    students.forEach(s => {
+    activeStudents.forEach(s => {
       if (!s.year_level) {
         derived.push({
           kind: "derived",
@@ -60,7 +65,7 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
     });
 
     const focusRes = await Promise.all(
-      students
+      activeStudents
         .filter(s => s.year_level)
         .map(s =>
           apiFetch(`/api/focus-areas/?student_id=${s.user_id}`)
@@ -79,7 +84,9 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
       }
     });
 
-    const stored: StoredJob[] = storedRaw.map((j: any) => {
+    const stored: StoredJob[] = storedRaw.filter((j: any) =>
+      j.student_id == null || activeStudentIds.has(j.student_id)
+    ).map((j: any) => {
       let to = (JOB_LINKS[j.job_type] ?? (() => `/tutors/${tutorId}`))(String(j.tutor_id), j.student_id, j.id);
       if (j.job_type === 'post_tuition_review' && j.booking_date) {
         to += `&booking_date=${j.booking_date}`;
