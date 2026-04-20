@@ -42,6 +42,7 @@ interface FocusAreaItem {
   tutoring_done_this_week: boolean;
   level_before_learning?: number | null;
   level_after_learning?: number | null;
+  next_star_available?: string | null;
 }
 
 interface CompleteData {
@@ -88,7 +89,7 @@ interface AssessmentContext {
   error?: string;
 }
 
-function renderStars(count: number | null | undefined, max = 5): string {
+function renderStars(count: number | null | undefined, max = 4): string {
   const n = Math.max(0, Math.min(Math.round(count ?? 0), max));
   return "★".repeat(n) + "☆".repeat(max - n);
 }
@@ -130,27 +131,37 @@ function LearnCompleteView({
       {completeData.focus_areas.length === 0 && (
         <div className="text-muted" style={{ fontSize: 13 }}>No focus areas found.</div>
       )}
-      {completeData.focus_areas.map((fa) => (
-        <div
-          key={fa.id}
-          className="d-flex align-items-center justify-content-between mb-2 p-2 rounded border"
-          style={{ fontSize: 13 }}
-        >
-          <div>
-            <div className="fw-semibold">{fa.skill_description}</div>
-            <div style={{ fontSize: 15, letterSpacing: 1, color: "#f5a623" }}>
-              {renderStars(fa.mastery)}
-            </div>
-            <div className="text-muted" style={{ fontSize: 11 }}>{fa.competence_label}</div>
-          </div>
-          <button
-            className="btn btn-sm btn-outline-primary"
-            onClick={() => onStart(fa.id)}
+      {completeData.focus_areas.map((fa) => {
+        const cooldownDate = fa.next_star_available
+          ? new Date(fa.next_star_available).toLocaleDateString("en-AU", { day: "numeric", month: "short" })
+          : null;
+        return (
+          <div
+            key={fa.id}
+            className="d-flex align-items-center justify-content-between mb-2 p-2 rounded border"
+            style={{ fontSize: 13 }}
           >
-            Start →
-          </button>
-        </div>
-      ))}
+            <div>
+              <div className="fw-semibold">{fa.skill_description}</div>
+              <div style={{ fontSize: 15, letterSpacing: 1, color: "#f5a623" }}>
+                {renderStars(fa.mastery)}
+              </div>
+              <div className="text-muted" style={{ fontSize: 11 }}>{fa.competence_label}</div>
+              {cooldownDate && (
+                <div className="text-warning" style={{ fontSize: 11 }}>
+                  Next star available {cooldownDate}
+                </div>
+              )}
+            </div>
+            <button
+              className="btn btn-sm btn-outline-primary"
+              onClick={() => onStart(fa.id)}
+            >
+              Start →
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

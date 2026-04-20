@@ -40,6 +40,7 @@ export default function LoginPage() {
       else if (role === "student") navigate(`/students/${data.user.id}`);
       else if (role === "admin") navigate("/admin");
       else if (role === "distributor") navigate(`/distributors/${data.user.id}`);
+      else if (role === "teacher") navigate(`/teachers/${data.user.id}`);
       else navigate("/");
     } catch {
       setError("Something went wrong. Please try again.");

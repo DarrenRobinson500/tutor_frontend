@@ -151,6 +151,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin">Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/tutors">Tutors</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/students">Students</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/admin/payments">Payments</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/sms">Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
@@ -166,7 +167,25 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/booking`}>Bookings</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/post-tuition`}>Post Tuition</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/payments`}>Payments</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/sms`}>Messages</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/docs">Docs</Link></li>
+                </>
+              )}
+
+              {user?.role === "parent" && (
+                <>
+                  <li className="nav-item"><Link className="nav-link" to={`/parents/${user.id}`}>Home</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to={`/parents/${user.id}/payments`}>Payments</Link></li>
+                </>
+              )}
+
+              {user?.role === "teacher" && (
+                <>
+                  <li className="nav-item"><Link className="nav-link" to={`/teachers/${user.id}`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>

@@ -115,6 +115,7 @@ export function StudentHomePage() {
   const [syllabus, setSyllabus] = useState<SkillRow[]>([]);
   const [mastery, setMastery] = useState<any>({});
   const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
+  const [activeAssessment, setActiveAssessment] = useState<{ id: number; class_name: string } | null>(null);
 
 
   useEffect(() => {
@@ -128,6 +129,20 @@ export function StudentHomePage() {
     apiFetch(`/api/focus-areas/?student_id=${id}`)
       .then((res) => res.json())
       .then((data) => { if (Array.isArray(data)) setFocusAreas(data); });
+  }, [id]);
+
+  // Poll for active assessment every 5 seconds
+  useEffect(() => {
+    if (!id) return;
+    function check() {
+      apiFetch(`/api/assessments/active/?student_id=${id}`)
+        .then(r => r.json())
+        .then(data => setActiveAssessment(data.assessment ?? null))
+        .catch(() => {});
+    }
+    check();
+    const t = setInterval(check, 5000);
+    return () => clearInterval(t);
   }, [id]);
 
 //   const tutorId = student?.tutor_id;
@@ -170,6 +185,26 @@ export function StudentHomePage() {
             Start Skills Test
           </Link>
         </div>
+
+        {activeAssessment && (
+          <div
+            className="alert mt-4 d-flex align-items-center justify-content-between"
+            style={{ background: "#e8f5e9", border: "2px solid #43a047", borderRadius: 8 }}
+          >
+            <div>
+              <strong style={{ fontSize: 16 }}>📋 Assessment in progress</strong>
+              <div className="text-muted" style={{ fontSize: 13 }}>
+                Your teacher has started an assessment for {activeAssessment.class_name}.
+              </div>
+            </div>
+            <button
+              className="btn btn-success ms-3"
+              onClick={() => navigate(`/students/${id}/assessment/${activeAssessment.id}`)}
+            >
+              Join Assessment
+            </button>
+          </div>
+        )}
 
         {focusAreas.length > 0 && (
           <>
@@ -283,16 +318,15 @@ export function StudentHomePage() {
 
                 <td>
                   {templateCount !== null && templateCount > 0 && (
-                    lockedUntil ? (
-                      <button className="btn btn-sm btn-outline-secondary" disabled title={`Available from ${lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`}>
-                        More stars from {lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
-                      </button>
-                    ) : hasTemplatesAtDifficulty ? (
+                    hasTemplatesAtDifficulty || lockedUntil ? (
                       <button
-                        className="btn btn-sm btn-outline-primary"
+                        className={lockedUntil ? "btn btn-sm btn-outline-warning" : "btn btn-sm btn-outline-primary"}
                         onClick={() => navigate(`/students/${id}/test/${skill.id}`)}
+                        title={lockedUntil ? `Next star available ${lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : undefined}
                       >
-                        Learn
+                        {lockedUntil
+                          ? `Practice — next star ${lockedUntil.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
+                          : "Learn"}
                       </button>
                     ) : (
                       <button className="btn btn-sm btn-outline-secondary" disabled>

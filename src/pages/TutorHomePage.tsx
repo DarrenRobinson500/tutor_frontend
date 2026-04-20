@@ -84,6 +84,12 @@ export function TutorHomePage() {
         >
           Set available hours
         </button>
+        <button
+          className="btn btn-outline-secondary"
+          onClick={() => window.location.href = `/tutors/${id}/payments`}
+        >
+          Payments
+        </button>
       </div>
       <hr />
 

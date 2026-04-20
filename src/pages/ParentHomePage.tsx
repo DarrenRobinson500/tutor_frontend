@@ -115,6 +115,7 @@ export default function ParentHomePage() {
         </Link>
         <div className="ph-nav-right">
           <span className="ph-nav-user">{parent.first_name} {parent.last_name}</span>
+          <Link to={`/parents/${parent.id}/payments`} className="ph-nav-logout" style={{ textDecoration: "none" }}>Payments</Link>
           <button className="ph-nav-logout" onClick={handleLogout}>Sign out</button>
         </div>
       </nav>
@@ -248,6 +249,8 @@ function AddChildForm({
   const [yearLevel, setYearLevel] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [mobile, setMobile]       = useState("");
+  const [password, setPassword]   = useState("");
+  const [confirm, setConfirm]     = useState("");
   const [error,  setError]        = useState("");
   const [loading, setLoading]     = useState(false);
 
@@ -256,6 +259,14 @@ function AddChildForm({
     setError("");
     if (!firstName.trim() || !lastName.trim() || !yearLevel) {
       setError("First name, last name and year level are required.");
+      return;
+    }
+    if (!password) {
+      setError("Please choose a password for your child.");
+      return;
+    }
+    if (password !== confirm) {
+      setError("Passwords do not match.");
       return;
     }
     setLoading(true);
@@ -268,6 +279,8 @@ function AddChildForm({
           year_level: yearLevel,
           school_name: schoolName.trim(),
           mobile: mobile.trim(),
+          password,
+          confirm_password: confirm,
         }),
       });
       const d = await res.json();
@@ -332,6 +345,19 @@ function AddChildForm({
           <label>School name <span style={{ fontWeight: 400, color: "var(--sm-text-muted)" }}>(optional)</span></label>
           <input type="text" className="sm-input" placeholder="e.g. Pymble Ladies' College"
             value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
+        </div>
+
+        <div className="ph-form-row">
+          <div className="sm-form-group">
+            <label>Password</label>
+            <input type="password" className="sm-input" placeholder="Choose a password"
+              value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <div className="sm-form-group">
+            <label>Confirm password</label>
+            <input type="password" className="sm-input" placeholder="Repeat password"
+              value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+          </div>
         </div>
 
         <div className="ph-form-actions">

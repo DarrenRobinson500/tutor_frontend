@@ -43,6 +43,15 @@ import TutorPage from "./pages/public/TutorPage";
 import CompetitionPage from "./pages/public/CompetitionPage";
 import DistributorRegisterPage from "./pages/public/DistributorRegisterPage";
 import ReferralLandingPage from "./pages/public/ReferralLandingPage";
+import TeachersLandingPage from "./pages/public/TeachersLandingPage";
+import TeacherRegisterPage from "./pages/public/TeacherRegisterPage";
+import { TeacherHomePage } from "./pages/TeacherHomePage";
+import { TeacherClassPage } from "./pages/TeacherClassPage";
+import { TeacherGapReportPage } from "./pages/TeacherGapReportPage";
+import { TeacherClassFocusPage } from "./pages/TeacherClassFocusPage";
+import { TeacherAssessmentPage } from "./pages/TeacherAssessmentPage";
+import { TeacherAssessmentSetupPage } from "./pages/TeacherAssessmentSetupPage";
+import { AssessmentQuestionPage } from "./pages/AssessmentQuestionPage";
 import DistributorHomePage from "./pages/DistributorHomePage";
 import AdminHomePage from "./pages/AdminHomePage";
 import LoginPage from "./pages/public/LoginPage";
@@ -53,6 +62,10 @@ import ParentHomePage from "./pages/ParentHomePage";
 import { TutoringRoomPage } from "./pages/TutoringRoomPage";
 import { PostTuitionPage } from "./pages/PostTuitionPage";
 import { PostTuitionListPage } from "./pages/PostTuitionListPage";
+import { TutorPaymentsPage } from "./pages/TutorPaymentsPage";
+import { ParentPaymentsPage } from "./pages/ParentPaymentsPage";
+import { AdminPaymentsPage } from "./pages/AdminPaymentsPage";
+import { TELanguagesPage } from "./pages/TELanguagesPage";
 import { apiFetch } from "./utils/apiFetch";
 import { usePreferenceStore } from "./utils/pref";
 
@@ -110,6 +123,16 @@ function App() {
         <Route path="/register/tutor" element={<TutorRegisterPage />} />
         <Route path="/distributors" element={<DistributorPage />} />
         <Route path="/tutors" element={<TutorPage />} />
+        <Route path="/teachers" element={<TeachersLandingPage />} />
+        <Route path="/register/teacher" element={<TeacherRegisterPage />} />
+
+        {/* PROTECTED — teacher */}
+        <Route path="/teachers/:id" element={<ProtectedRoute><TeacherHomePage /></ProtectedRoute>} />
+        <Route path="/teachers/:teacherId/classes/:classId" element={<ProtectedRoute><TeacherClassPage /></ProtectedRoute>} />
+        <Route path="/teachers/:teacherId/classes/:classId/gap-report" element={<ProtectedRoute><TeacherGapReportPage /></ProtectedRoute>} />
+        <Route path="/teachers/:teacherId/classes/:classId/focus" element={<ProtectedRoute><TeacherClassFocusPage /></ProtectedRoute>} />
+        <Route path="/teachers/:teacherId/classes/:classId/assessment-setup" element={<ProtectedRoute><TeacherAssessmentSetupPage /></ProtectedRoute>} />
+        <Route path="/teachers/:teacherId/classes/:classId/assessment/:assessmentId" element={<ProtectedRoute><TeacherAssessmentPage /></ProtectedRoute>} />
         <Route path="/competitions" element={<CompetitionPage />} />
         {/* Short aliases */}
         <Route path="/dist" element={<Navigate to="/distributors" replace />} />
@@ -126,6 +149,7 @@ function App() {
 
         {/* PROTECTED — parent */}
         <Route path="/parents/:id" element={<ProtectedRoute><ParentHomePage /></ProtectedRoute>} />
+        <Route path="/parents/:id/payments" element={<ProtectedRoute><ParentPaymentsPage /></ProtectedRoute>} />
 
         {/* PROTECTED — other */}
         <Route path="/templates" element={<ProtectedRoute><TemplateListPage /></ProtectedRoute>} />
@@ -134,6 +158,7 @@ function App() {
         <Route path="/templates/group/:groupId" element={<ProtectedRoute><TemplateGroupEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id" element={<ProtectedRoute><TemplateEditorPage /></ProtectedRoute>} />
         <Route path="/templates/:id/metadata" element={<ProtectedRoute><TemplateMetadataPage /></ProtectedRoute>} />
+        <Route path="/templates/:id/languages" element={<ProtectedRoute><TELanguagesPage /></ProtectedRoute>} />
 
         <Route path="/skills" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
@@ -156,7 +181,9 @@ function App() {
         <Route path="/tutors/:id/sms/:conversationId" element={<TutorSMSConversationPage />} />
         <Route path="/tutors/:id/post-tuition" element={<ProtectedRoute><PostTuitionListPage /></ProtectedRoute>} />
         <Route path="/tutors/:id/post-tuition/review" element={<ProtectedRoute><PostTuitionPage /></ProtectedRoute>} />
+        <Route path="/tutors/:id/payments" element={<ProtectedRoute><TutorPaymentsPage /></ProtectedRoute>} />
 
+        <Route path="/admin/payments" element={<ProtectedRoute><AdminPaymentsPage /></ProtectedRoute>} />
         <Route path="/admin/students" element={<ProtectedRoute><StudentListPage /></ProtectedRoute>} />
         <Route path="/admin/students/new" element={<ProtectedRoute><StudentCreatePage /></ProtectedRoute>} />
 
@@ -166,6 +193,7 @@ function App() {
         <Route path="/students/:studentId/test/:skillId" element={<ProtectedRoute><StudentQuestionPage /></ProtectedRoute>} />
         <Route path="/students/:id/booking" element={<ProtectedRoute><StudentBookingPage /></ProtectedRoute>} />
         <Route path="/students/:studentId/past-tests" element={<ProtectedRoute><PastTestsPage /></ProtectedRoute>} />
+        <Route path="/students/:studentId/assessment/:assessmentId" element={<ProtectedRoute><AssessmentQuestionPage /></ProtectedRoute>} />
         <Route path="/students/:id" element={<ProtectedRoute><StudentHomePage /></ProtectedRoute>} />
 
         <Route path="/knowledge" element={<ProtectedRoute><KnowledgeListPage /></ProtectedRoute>} />

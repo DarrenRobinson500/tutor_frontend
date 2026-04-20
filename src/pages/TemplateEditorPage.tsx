@@ -598,6 +598,11 @@ const handleToggleValidated = async () => {
     navigate(`/templates/${data.id}`);
   };
 
+      const handleShowLanguages = () => {
+        if (!metadata.id) return;
+        navigate(`/templates/${metadata.id}/languages`);
+      };
+
       const handleShowRelated = async () => {
         if (!metadata.id) return;
 
@@ -749,7 +754,7 @@ const handleToggleValidated = async () => {
       subjects={subjects}
       onSubjectChange={handleSubjectChange}
       onShowRelated={handleShowRelated}
-
+      onShowLanguages={handleShowLanguages}
     />
 
     <div className="container-fluid">

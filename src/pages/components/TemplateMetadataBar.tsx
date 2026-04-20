@@ -10,6 +10,7 @@ interface TemplateMetadataBarProps {
   onCopy: () => void;
   onCopyHarder: () => void;
   onShowRelated: () => void;
+  onShowLanguages: () => void;
   isSaving: boolean;
   saveSuccess: boolean;
   saveError: string | null;
@@ -34,6 +35,7 @@ export function TemplateMetadataBar({
   onCopy,
   onCopyHarder,
   onShowRelated,
+  onShowLanguages,
   onValidate,
   onPreview,
   onToSkill,
@@ -175,7 +177,14 @@ export function TemplateMetadataBar({
           className="btn btn-sm btn-outline-primary"
           onClick={onShowRelated}
         >
-          Related Templates
+          Difficulty
+        </button>
+
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={onShowLanguages}
+        >
+          Languages
         </button>
 
 

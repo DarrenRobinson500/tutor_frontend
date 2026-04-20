@@ -23,6 +23,8 @@ export default function ParentRegisterPage() {
   const [childYear, setChildYear] = useState("");
   const [childSchool, setChildSchool] = useState("");
   const [childMobile, setChildMobile] = useState("");
+  const [childPassword, setChildPassword] = useState("");
+  const [childConfirm, setChildConfirm] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -32,10 +34,11 @@ export default function ParentRegisterPage() {
     if (!parentEmail.trim()) return "Please enter your email address.";
     if (!parentMobile.trim()) return "Please enter your mobile number.";
     if (!parentPassword) return "Please choose a password.";
-    if (parentPassword.length < 8) return "Password must be at least 8 characters.";
     if (parentPassword !== parentConfirm) return "Passwords do not match.";
     if (!childFirst.trim() || !childLast.trim()) return "Please enter your child's full name.";
     if (!childYear) return "Please select your child's year level.";
+    if (!childPassword) return "Please choose a password for your child.";
+    if (childPassword !== childConfirm) return "Child's passwords do not match.";
     return null;
   }
 
@@ -67,6 +70,8 @@ export default function ParentRegisterPage() {
           child_year_level: childYear,
           child_school_name: childSchool.trim(),
           child_mobile: childMobile.trim(),
+          child_password: childPassword,
+          child_confirm_password: childConfirm,
           ...(refCode ? { referral_code: refCode } : {}),
         }),
       });
@@ -167,7 +172,7 @@ export default function ParentRegisterPage() {
                   <label htmlFor="p-password">Password</label>
                   <input
                     id="p-password" type="password" className="sm-input"
-                    placeholder="Min. 8 characters"
+                    placeholder="Choose a password"
                     value={parentPassword} onChange={(e) => setParentPassword(e.target.value)}
                     required autoComplete="new-password"
                   />
@@ -245,6 +250,27 @@ export default function ParentRegisterPage() {
                   placeholder="e.g. Pymble Ladies' College"
                   value={childSchool} onChange={(e) => setChildSchool(e.target.value)}
                 />
+              </div>
+
+              <div className="reg-row">
+                <div className="sm-form-group">
+                  <label htmlFor="c-password">Child's password</label>
+                  <input
+                    id="c-password" type="password" className="sm-input"
+                    placeholder="Choose a password"
+                    value={childPassword} onChange={(e) => setChildPassword(e.target.value)}
+                    required autoComplete="new-password"
+                  />
+                </div>
+                <div className="sm-form-group">
+                  <label htmlFor="c-confirm">Confirm child's password</label>
+                  <input
+                    id="c-confirm" type="password" className="sm-input"
+                    placeholder="Repeat password"
+                    value={childConfirm} onChange={(e) => setChildConfirm(e.target.value)}
+                    required autoComplete="new-password"
+                  />
+                </div>
               </div>
             </div>
 
