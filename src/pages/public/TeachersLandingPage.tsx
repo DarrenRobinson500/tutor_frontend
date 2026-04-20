@@ -13,7 +13,7 @@ export default function TeachersLandingPage() {
           </Link>
           <div className="tp-nav-links">
             <Link to="/login" className="tp-nav-link">Login</Link>
-            <Link to="/register/teacher" className="tp-nav-cta">Register Your Class</Link>
+            <Link to="/register/teacher" className="tp-nav-cta">Register</Link>
           </div>
         </div>
       </nav>
@@ -24,7 +24,7 @@ export default function TeachersLandingPage() {
           <div className="tp-hero-text">
             <div className="tp-hero-eyebrow">Free forever for teachers · NSW K–10 Mathematics</div>
             <h1 className="tp-hero-headline">
-              Your students have gaps.<br />
+              Your students have knowledge gaps.<br />
               <em>Find and fix them.</em>
             </h1>
             <p className="tp-hero-sub">
@@ -32,7 +32,7 @@ export default function TeachersLandingPage() {
             </p>
             <div className="tp-hero-ctas">
               <Link to="/register/teacher" className="sm-btn-primary">
-                Register Your Class
+                Register
               </Link>
               <a href="#how-it-works" className="sm-btn-secondary">
                 See How It Works →
@@ -181,7 +181,7 @@ export default function TeachersLandingPage() {
           </p>
           <div className="tp-hero-ctas">
             <Link to="/register/teacher" className="sm-btn-primary">
-              Register Your Class — It's Free
+              Register — It's Free
             </Link>
             <Link to="/contact" className="sm-btn-secondary">
               Have questions? Contact us →
