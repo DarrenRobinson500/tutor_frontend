@@ -1,15 +1,12 @@
 import debounce from "lodash.debounce";
+import Editor from "@monaco-editor/react";
 
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { TemplateMetadataBar } from "./components/TemplateMetadataBar";
-import { EditorPanel } from "./components/EditorPanel";
-import type { EditorHandle } from "./components/EditorPanel";
-import { ParameterHelper } from "./components/ParameterHelper";
-import { KnowledgeHelper } from "./components/KnowledgeHelper";
-import { DiagramHelper } from "./components/DiagramHelper";
-import { ValuesPanel } from "./components/ValuesPanel";
+import { SectionedEditorPanel } from "./components/SectionedEditorPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { Calculator } from "./components/Calculator";
 import { Layout } from "./components/Layout";
 import { apiFetch } from "../utils/apiFetch"
 import { usePreferenceStore } from "../utils/pref";
@@ -36,6 +33,9 @@ export function TemplateEditorPage() {
   const savedValidatedFilter = usePreferenceStore((s) =>
     s.get("template.validated_filter")
   );
+  const savedLanguageFilter = usePreferenceStore((s) =>
+    s.get("template.language_filter")
+  );
 
   const emptyMetadata = {
     id: null,
@@ -54,6 +54,7 @@ export function TemplateEditorPage() {
     skill: null,
     validated: false,
     validated_filter: savedValidatedFilter ?? "all",
+    language_filter: savedLanguageFilter ?? "en",
   };
 
 
@@ -71,15 +72,13 @@ export function TemplateEditorPage() {
 
   const [previewResult, setPreviewResult] = useState<any>(null);
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
-  const [showParamHelper, setShowParamHelper] = useState(false);
-  const [showKnowledgeHelper, setShowKnowledgeHelper] = useState(false);
-  const [showDiagramHelper, setShowDiagramHelper] = useState(false);
+  const [rawMode, setRawMode] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [isAiUpdating, setIsAiUpdating] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [notes, setNotes] = useState<any[]>([]);
   const [isAddingNote, setIsAddingNote] = useState(false);
-  const editorRef = useRef<EditorHandle>(null);
   const { getTemplate, saveTemplate } = useTemplateApi();
   const [templateLanguage, setTemplateLanguage] = useState<string>('en');
   const [parentTemplateId, setParentTemplateId] = useState<number | null>(null);
@@ -150,6 +149,8 @@ const handleToggleValidated = async () => {
   }
 };
 
+  const rawAutosaveRef = useRef<number | null>(null);
+
   // Debounced function
   const debouncedPreview = useRef(
     debounce(async (content: string, templateId?: number | null) => {
@@ -160,8 +161,8 @@ const handleToggleValidated = async () => {
       });
 
       const data = await res.json();
-      console.log("Preview response:", data.preview);
-      console.log("Sending content to preview:", content);
+//       console.log("Preview response:", data.preview);
+//       console.log("Sending content to preview:", content);
 
       // ⭐ Only update the preview — do NOT modify metadata
       setPreview(data.preview);
@@ -197,11 +198,13 @@ const handleToggleValidated = async () => {
       );
 
       // Load the filtered list so subjects/navigation work without needing a filter change
+      const currentLanguage = usePreferenceStore.getState().get("template.language_filter") ?? "en";
       const queryParams = new URLSearchParams({
         skill: String(tpl.skill_id ?? ""),
         grade: String(tpl.grade ?? ""),
         difficulty: String(tpl.difficulty ?? ""),
         validated: currentFilter,
+        language: currentLanguage,
       });
       const listRes = await apiFetch(`/api/templates/filtered/?${queryParams.toString()}`);
       const list = await listRes.json();
@@ -235,10 +238,12 @@ const handleToggleValidated = async () => {
     setMetadata(prev => ({ ...prev, skill, grade, validated_filter: currentFilter }));
 
     async function loadFiltered() {
+      const currentLanguage = usePreferenceStore.getState().get("template.language_filter") ?? "en";
       const qp = new URLSearchParams({
         skill: skillParam ?? "",
         grade: gradeParam ?? "",
         validated: currentFilter,
+        language: currentLanguage,
       });
       const listRes = await apiFetch(`/api/templates/filtered/?${qp.toString()}`);
       const list = await listRes.json();
@@ -411,6 +416,7 @@ const handleToggleValidated = async () => {
         grade: String(metadata.grade ?? ""),
         difficulty: String(metadata.difficulty ?? ""),
         validated: metadata.validated_filter ?? "all",
+        language: metadata.language_filter ?? "en",
       });
       const listRes = await apiFetch(`/api/templates/filtered/?${queryParams.toString()}`);
       const list = await listRes.json();
@@ -427,120 +433,6 @@ const handleToggleValidated = async () => {
   };
 
 
-
-  function handleAddPart() {
-    const lines = content.split("\n");
-    const partsIdx = lines.findIndex(l => /^ {2}parts:/.test(l));
-    const newPartLines = [
-      `    - text: ""`,
-      `      answer: ""`,
-      `      solution: ""`,
-    ];
-
-    if (partsIdx === -1) {
-      // No parts yet — insert before answers:/solution: root key, or append
-      const insertBefore = lines.findIndex(l => /^(answers|solution):/.test(l));
-      const partsBlock = [`  parts:`, ...newPartLines];
-      if (insertBefore >= 0) {
-        const newLines = [...lines.slice(0, insertBefore), ...partsBlock, ``, ...lines.slice(insertBefore)];
-        handleContentChange(newLines.join("\n"));
-      } else {
-        handleContentChange(content.trimEnd() + "\n" + partsBlock.join("\n") + "\n");
-      }
-    } else {
-      // Find last line belonging to the parts block (4+ space indent)
-      let lastPartLine = partsIdx;
-      for (let i = partsIdx + 1; i < lines.length; i++) {
-        if (lines[i].startsWith("    ")) {
-          lastPartLine = i;
-        } else if (lines[i].trim() !== "") {
-          break;
-        }
-      }
-      const newLines = [...lines.slice(0, lastPartLine + 1), ...newPartLines, ...lines.slice(lastPartLine + 1)];
-      handleContentChange(newLines.join("\n"));
-    }
-  }
-
-  function handleInsertParameter(yaml: string) {
-    const lines = content.split("\n");
-    const paramIdx = lines.findIndex(l => l.trim() === "parameters:");
-
-    if (paramIdx >= 0) {
-      // Find the end of the parameters block (first non-indented, non-empty line after it)
-      let insertIdx = paramIdx + 1;
-      while (insertIdx < lines.length && (lines[insertIdx].startsWith("  ") || lines[insertIdx].trim() === "")) {
-        insertIdx++;
-      }
-      const newLines = [
-        ...lines.slice(0, insertIdx),
-        yaml,
-        ...lines.slice(insertIdx),
-      ];
-      handleContentChange(newLines.join("\n"));
-    } else {
-      // No parameters block yet — prepend one
-      handleContentChange(`parameters:\n${yaml}\n\n${content}`);
-    }
-  }
-
-  function handleInsertKnowledge(snippet: string) {
-    const lines = content.split("\n");
-
-    // Find existing post_answer: line
-    const paIdx = lines.findIndex(l => /^post_answer:/.test(l));
-
-    if (paIdx >= 0) {
-      const line = lines[paIdx];
-
-      if (/^post_answer:\s*\|/.test(line)) {
-        // Already a block scalar — find end and append
-        let endIdx = paIdx + 1;
-        while (endIdx < lines.length) {
-          const el = lines[endIdx];
-          if (el.trim() === "" || el.startsWith("  ")) { endIdx++; continue; }
-          break;
-        }
-        while (endIdx > paIdx + 1 && lines[endIdx - 1].trim() === "") endIdx--;
-        const newLines = [...lines];
-        newLines.splice(endIdx, 0, `  ${snippet}`);
-        handleContentChange(newLines.join("\n"));
-      } else {
-        // Inline value — extract existing content and convert to block scalar
-        const existingVal = line.replace(/^post_answer:\s*/, "").replace(/^["']|["']$/g, "").trim();
-        const newLines = [...lines];
-        const replacement = existingVal
-          ? [`post_answer: |`, `  ${existingVal}`, `  ${snippet}`]
-          : [`post_answer: |`, `  ${snippet}`];
-        newLines.splice(paIdx, 1, ...replacement);
-        handleContentChange(newLines.join("\n"));
-      }
-      return;
-    }
-
-    // No post_answer yet — append after the last top-level line
-    handleContentChange(content.trimEnd() + `\npost_answer: '${snippet}'\n`);
-  }
-
-  function handleInsertDiagram(yaml: string) {
-    const lines = content.split("\n");
-    // Replace existing diagram: line if present
-    const existingIdx = lines.findIndex(l => l.trimStart().startsWith("diagram:"));
-    if (existingIdx >= 0) {
-      const newLines = [...lines];
-      newLines[existingIdx] = yaml;
-      handleContentChange(newLines.join("\n"));
-      return;
-    }
-    // Insert before answers: or solution: or at end of file
-    const insertBefore = lines.findIndex(l => /^(answers|solution):/.test(l.trim()));
-    if (insertBefore >= 0) {
-      const newLines = [...lines.slice(0, insertBefore), yaml, "", ...lines.slice(insertBefore)];
-      handleContentChange(newLines.join("\n"));
-    } else {
-      handleContentChange(content + "\n" + yaml);
-    }
-  }
 
   const handlePreview = async () => {
     setPreviewResult({
@@ -642,15 +534,22 @@ const handleToggleValidated = async () => {
         updated.validated_filter
       );
     }
+    if (updated.language_filter) {
+      usePreferenceStore.getState().set(
+        "template.language_filter",
+        updated.language_filter
+      );
+    }
 
     // If any of the filters change, reload the list
-    const isFilterChange = "skill" in updated || "grade" in updated || "difficulty" in updated || "validated_filter" in updated;
+    const isFilterChange = "skill" in updated || "grade" in updated || "difficulty" in updated || "validated_filter" in updated || "language_filter" in updated;
     if (isFilterChange) {
       const params = new URLSearchParams();
       if (newMeta.skill) params.set("skill", String(newMeta.skill));
       if (newMeta.grade) params.set("grade", String(newMeta.grade));
       if (newMeta.difficulty) params.set("difficulty", String(newMeta.difficulty));
       params.set("validated", newMeta.validated_filter ?? "all");
+      if (newMeta.language_filter && newMeta.language_filter !== "all") params.set("language", newMeta.language_filter);
 
       if (updated.grade) {
         const res = await apiFetch(`/api/skills/leaf/?grade=${updated.grade}`);
@@ -691,9 +590,9 @@ const handleToggleValidated = async () => {
     }
   };
 
-  useEffect(() => {
-    console.log("FULL PREVIEW OBJECT:", preview);
-  }, [preview]);
+//   useEffect(() => {
+//     console.log("FULL PREVIEW OBJECT:", preview);
+//   }, [preview]);
 
   useEffect(() => {
     if (!metadata.id) { setNotes([]); return; }
@@ -761,7 +660,7 @@ const handleToggleValidated = async () => {
       <div className="row" style={{ minHeight: "70vh" }}>
 
         {/* Panel 1: Editor (Template source) */}
-        <div className="col-md-4 d-flex flex-column">
+        <div className="col-md-6 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1 d-flex flex-column">
             <div className="card-header d-flex justify-content-between align-items-start gap-1 flex-wrap">
               <div className="d-flex align-items-center gap-2">
@@ -790,32 +689,15 @@ const handleToggleValidated = async () => {
               </div>
               <div className="d-flex gap-1 flex-wrap justify-content-end">
                 <button
-                  className="btn btn-sm btn-outline-secondary"
+                  className={`btn btn-sm ${rawMode ? "btn-warning" : "btn-outline-secondary"}`}
                   style={{ fontSize: 11 }}
-                  onClick={handleAddPart}
+                  onClick={() => {
+                    if (rawAutosaveRef.current) { window.clearTimeout(rawAutosaveRef.current); rawAutosaveRef.current = null; }
+                    setRawMode(v => !v);
+                  }}
+                  title="Toggle raw YAML editor for pasting a full template"
                 >
-                  ＋ Part
-                </button>
-                <button
-                  className={`btn btn-sm ${showParamHelper ? "btn-primary" : "btn-outline-secondary"}`}
-                  style={{ fontSize: 11 }}
-                  onClick={() => setShowParamHelper(v => !v)}
-                >
-                  ＋ Parameter
-                </button>
-                <button
-                  className={`btn btn-sm ${showKnowledgeHelper ? "btn-primary" : "btn-outline-secondary"}`}
-                  style={{ fontSize: 11 }}
-                  onClick={() => setShowKnowledgeHelper(v => !v)}
-                >
-                  ＋ Knowledge
-                </button>
-                <button
-                  className={`btn btn-sm ${showDiagramHelper ? "btn-primary" : "btn-outline-secondary"}`}
-                  style={{ fontSize: 11 }}
-                  onClick={() => setShowDiagramHelper(v => !v)}
-                >
-                  ＋ Diagram
+                  {rawMode ? "Sectioned" : "Raw"}
                 </button>
                 <button
                   className="btn btn-sm btn-outline-secondary"
@@ -859,58 +741,78 @@ const handleToggleValidated = async () => {
                 </button>
               </div>
             </div>
-            <div style={{ height: 570, overflow: "hidden", flexShrink: 0 }}>
-              <EditorPanel
-                ref={editorRef}
-                content={content}
-                onChange={handleContentChange}
-                validation={validationResult}
-                templateId={id ?? null}
-              />
+            <div style={{ flexShrink: 0 }}>
+              {rawMode ? (
+                <Editor
+                  height={570}
+                  defaultLanguage="yaml"
+                  value={content}
+                  onChange={(v) => {
+                    const val = v ?? "";
+                    handleContentChange(val);
+                    if (rawAutosaveRef.current) window.clearTimeout(rawAutosaveRef.current);
+                    rawAutosaveRef.current = window.setTimeout(() => {
+                      rawAutosaveRef.current = null;
+                      if (!id || val.trim().length < 5) return;
+                      apiFetch("/api/templates/autosave/", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ templateId: id, content: val }),
+                      }).catch(console.error);
+                    }, 1500);
+                  }}
+                  theme="vs-dark"
+                  options={{
+                    fontSize: 13,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    wordWrap: "on",
+                    lineNumbers: "on",
+                    tabSize: 2,
+                    insertSpaces: true,
+                    quickSuggestions: false,
+                    suggestOnTriggerCharacters: false,
+                    hover: { enabled: false },
+                    formatOnType: false,
+                    formatOnPaste: false,
+                    scrollbar: { vertical: "auto", horizontal: "hidden" },
+                  }}
+                />
+              ) : (
+                <SectionedEditorPanel
+                  content={content}
+                  onChange={handleContentChange}
+                  validation={validationResult}
+                  templateId={id ?? null}
+                  preview={preview}
+                  onKnowledgeChange={async () => {
+                    const res = await apiFetch("/api/templates/preview/", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ content, templateId: metadata.id }),
+                    });
+                    const data = await res.json();
+                    if (data.preview) setPreview(data.preview);
+                  }}
+                />
+              )}
             </div>
-            {showParamHelper && (
-              <ParameterHelper onInsert={handleInsertParameter} />
-            )}
-            {showDiagramHelper && (
-              <DiagramHelper onInsert={handleInsertDiagram} />
-            )}
-            {showKnowledgeHelper && (
-              <KnowledgeHelper
-                templateId={metadata.id ?? null}
-                onInsert={handleInsertKnowledge}
-                onKnowledgeChange={async () => {
-                  const res = await apiFetch("/api/templates/preview/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ content, templateId: metadata.id }),
-                  });
-                  const data = await res.json();
-                  if (data.preview) setPreview(data.preview);
-                }}
-              />
-            )}
           </div>
         </div>
 
-        {/* Panel 2: Values (Substituted YAML) */}
-        <div className="col-md-4 d-flex flex-column">
+        {/* Panel 2: Preview (Student view + Diagram) */}
+        <div className="col-md-6 d-flex flex-column">
           <div className="card shadow-sm flex-grow-1">
-            <div className="card-header">Question Definition (Values Populated)</div>
-            <div className="card-body overflow-auto">
-              <ValuesPanel
-                substitutedYaml={preview?.substituted_yaml ?? null}
-                diagramCode={preview?.diagram_code ?? null}
-                backendSvg={preview?.diagram_svg ?? null}
-              />
-
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <span>Student Preview</span>
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                style={{ fontSize: 11 }}
+                onClick={() => setShowCalculator(v => !v)}
+              >
+                {showCalculator ? "Hide calculator" : "Show calculator"}
+              </button>
             </div>
-          </div>
-        </div>
-
-        {/* Panel 3: Preview (Student view + Diagram) */}
-        <div className="col-md-4 d-flex flex-column">
-          <div className="card shadow-sm flex-grow-1">
-            <div className="card-header">Student Preview</div>
             <div
               className="card-body p-2 d-flex flex-column"
               style={{ overflow: "hidden" }}
@@ -924,7 +826,11 @@ const handleToggleValidated = async () => {
 //                   goNext();
                 }}
               />
-
+              {showCalculator && (
+                <div style={{ position: "fixed", right: 24, top: 80, zIndex: 1000, width: 286, transform: "scale(0.82)", transformOrigin: "top right" }}>
+                  <Calculator />
+                </div>
+              )}
 
             </div>
           </div>
@@ -934,7 +840,7 @@ const handleToggleValidated = async () => {
 
       {/* AI Prompt — below Panel 1 */}
       <div className="row mt-2">
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="d-flex gap-2 align-items-center">
             <label style={{ fontSize: 12, whiteSpace: "nowrap", margin: 0 }}>AI Prompt</label>
             <input
@@ -969,7 +875,7 @@ const handleToggleValidated = async () => {
       {/* Notes — below AI Prompt */}
       {metadata.id && (
         <div className="row mt-2">
-          <div className="col-md-4">
+          <div className="col-md-6">
             <div className="d-flex gap-2 align-items-center">
               <label style={{ fontSize: 12, whiteSpace: "nowrap", margin: 0 }}>Note</label>
               <input

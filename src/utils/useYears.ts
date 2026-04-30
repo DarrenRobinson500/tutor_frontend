@@ -3,9 +3,10 @@ import { apiFetch } from "./apiFetch";
 
 export interface Year {
   id: number;
-  code: string;   // stored value: "K", "1", ..., "10"
-  label: string;  // display name: "Kindergarten", "Year 1", ...
+  code: string;   // stored value: "K", "1", ..., "10", "11std", etc.
+  label: string;  // display name: "Kindergarten", "Year 1", "Year 11 Standard", ...
   order: number;
+  stage: string;  // "k10" or "s6"
 }
 
 let _cache: Year[] | null = null;

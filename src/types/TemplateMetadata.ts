@@ -30,6 +30,7 @@ export type TemplateMetadata = {
   skill: number | null;     // parent Skill-level node ID — used for filtering only
   validated: boolean;
   validated_filter?: "all" | "validated" | "unvalidated";
+  language_filter?: string;
   group?: number | null;
 
 }

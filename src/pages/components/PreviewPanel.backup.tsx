@@ -110,16 +110,12 @@ export function PreviewPanel({
   const [backendResult, setBackendResult] = useState<any>(null);
   const [localTemplateId, setLocalTemplateId] = useState<number | null>(null);
   const [textInput, setTextInput] = useState("");
-  const [surdCoeff, setSurdCoeff] = useState("");
-  const [surdRadicand, setSurdRadicand] = useState("");
   const navigate = useNavigate();
   const [formatError, setFormatError] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [notes, setNotes] = useState<any[]>([]);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const textInputRef = useRef<HTMLInputElement>(null);
-  const surdCoeffRef = useRef<HTMLInputElement>(null);
-  const surdRadicandRef = useRef<HTMLInputElement>(null);
   const [focusKey, setFocusKey] = useState(0);
   const [multiStepIndex, setMultiStepIndex] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Array<{ question: string; answer: string; correct: boolean }>>([]);
@@ -142,8 +138,6 @@ export function PreviewPanel({
     setSelectedAnswer(null);
     setBackendResult(null);
     setTextInput("");
-    setSurdCoeff("");
-    setSurdRadicand("");
     setFormatError(null);
     setMultiStepIndex(0);
     setCompletedSteps([]);
@@ -336,39 +330,7 @@ export function PreviewPanel({
     }
   }
 
-  // Parse LaTeX surd like "3\sqrt{5}", "\sqrt{3}", "4" → numeric value
-  const parseSurdAnswer = (s: string): number | null => {
-    const t = s.trim();
-    if (/^\d+$/.test(t)) return parseInt(t);
-    const m1 = t.match(/^\\sqrt\{(\d+)\}$/);
-    if (m1) return Math.sqrt(parseInt(m1[1]));
-    const m2 = t.match(/^(\d+)\\sqrt\{(\d+)\}$/);
-    if (m2) return parseInt(m2[1]) * Math.sqrt(parseInt(m2[2]));
-    return null;
-  };
-
-  // Parse student surd input: "3 * 5^0.5", "5^0.5", "3*sqrt(5)", "sqrt(5)", "4"
-  const parseSurdInput = (s: string): number | null => {
-    const t = s.trim().replace(/\s+/g, "");
-    if (/^\d+$/.test(t)) return parseInt(t);
-    const sqrtM = t.match(/^(\d+\*)?sqrt\((\d+)\)$/i);
-    if (sqrtM) return (sqrtM[1] ? parseInt(sqrtM[1]) : 1) * Math.sqrt(parseInt(sqrtM[2]));
-    const powM = t.match(/^(\d+\*)?(\d+)\^(?:0\.5+|\(0\.5\)|\(1\/2\))$/);
-    if (powM) return (powM[1] ? parseInt(powM[1]) : 1) * Math.sqrt(parseInt(powM[2]));
-    return null;
-  };
-
   function answersMatch(input: string, correct: any, tolerance = 1e-9): boolean {
-    // Surd comparison: correct answer is LaTeX like "3\sqrt{5}" or "\sqrt{3}"
-    if (String(correct).includes("\\sqrt{")) {
-      const cv = parseSurdAnswer(String(correct));
-      const iv = parseSurdInput(String(input));
-      if (cv !== null && iv !== null) return Math.abs(cv - iv) <= 1e-9;
-      return false;
-    }
-
-    // Parse mixed numbers from raw strings BEFORE normalization strips spaces.
-    // "10 11/15" → 10 + 11/15. Must run first.
     const parseMixed = (s: string): number | null => {
       const m = s.trim().match(/^(-?\d+)\s+(\d+)\/(\d+)$/);
       if (!m) return null;
@@ -388,28 +350,10 @@ export function PreviewPanel({
       if (na !== null && nb !== null) return Math.abs(na - nb) <= tolerance;
     }
 
-    const normalize = (s: any) => {
-      let v = String(s).trim().toLowerCase().replace(/\s+/g, "").replace(/\*\*/g, "^").replace(/,(?=\d{3})/g, "");
-      // x^(-n) → x^-n  (sympy wraps negative exponents in parens)
-      v = v.replace(/\^\((-?[\w]+)\)/gi, "^$1");
-      // x^{-n} → x^-n  (LaTeX brace notation)
-      v = v.replace(/\^\{(-?[\w]+)\}/gi, "^$1");
-      // x^1 = x, x^0 = 1
-      v = v.replace(/^([a-z]\w*)\^1$/i, "$1");
-      v = v.replace(/^([a-z]\w*)\^0$/i, "1");
-      // 1/x^n  ↔  x^-n  (fraction form ≡ negative index)
-      const fracIdx = v.match(/^1\/([a-z]\w*)\^(\d+)$/i);
-      if (fracIdx) v = `${fracIdx[1]}^-${fracIdx[2]}`;
-      // x^-n  →  canonical (already in right form; handles case where stored answer uses ^-)
-      return v;
-    };
+    const normalize = (s: any) => String(s).trim().toLowerCase().replace(/\s+/g, "").replace(/\*\*/g, "^");
     const a = normalize(input);
     const b = normalize(correct);
-    console.log("[answersMatch]", { rawInput: input, rawCorrect: correct, normalized_a: a, normalized_b: b });
 
-    // If the student entered a fraction, it must be fully simplified.
-    // Check BEFORE exact-string match so that entering "12/60" when the
-    // template answer is also "12/60" is still rejected.
     if (a.includes("/") && !a.includes("x") && !a.includes("×")) {
       const fracParts = a.split("/");
       if (fracParts.length === 2) {
@@ -423,16 +367,9 @@ export function PreviewPanel({
     }
 
     if (a === b) return true;
-
-    // If the correct answer has a leading $ (currency formatting) but the student
-    // didn't type one, also accept the answer without the $ prefix.
     if (b.startsWith("$") && !a.startsWith("$") && a === b.slice(1)) return true;
-
-    // Require format match: a percentage answer must be entered as a percentage
     if (b.endsWith("%") && !a.endsWith("%")) return false;
 
-    // Parse a ratio like "1:2" → [1, 2] as integers (no simplification).
-    // The student's ratio must already be in simplified form.
     const parseRatio = (s: string): number[] | null => {
       if (!s.includes(":")) return null;
       const parts = s.split(":").map(p => Number(p.trim()));
@@ -442,13 +379,11 @@ export function PreviewPanel({
     const gcdOf = (x: number, y: number): number => y === 0 ? x : gcdOf(y, x % y);
     const ra = parseRatio(a), rb = parseRatio(b);
     if (ra !== null && rb !== null && ra.length === rb.length) {
-      // Reject the student's answer if it isn't already fully simplified.
       const studentGcd = ra.map(Math.round).reduce(gcdOf);
       if (studentGcd !== 1) return false;
       return ra.every((v, i) => Math.abs(v - rb[i]) < 1e-9);
     }
 
-    // Parse a single number, fraction like "3/4", or percentage like "50%"
     const parseFraction = (s: string): number | null => {
       if (s.endsWith("%")) {
         const digits = s.slice(0, -1);
@@ -460,8 +395,6 @@ export function PreviewPanel({
         const [num, den] = s.split("/").map(Number);
         return isNaN(num) || isNaN(den) || den === 0 ? null : num / den;
       }
-      // Use strict check — parseFloat("3x+2") would return 3, which is wrong
-      // Also accept leading-dot decimals like ".5" (treat as "0.5")
       if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(s)) return null;
       const n = parseFloat(s);
       return isNaN(n) ? null : n;
@@ -475,7 +408,6 @@ export function PreviewPanel({
       return true;
     };
 
-    // Parse a product expression like "2x2x5x5"; returns {product, allPrime}
     const parseProduct = (s: string): { product: number; allPrime: boolean } | null => {
       const parts = s.split(/[x×*]/);
       if (parts.length < 2) return null;
@@ -493,7 +425,6 @@ export function PreviewPanel({
     const pa = parseProduct(a);
     const pb = parseProduct(b) ?? { product: parseFraction(b) ?? NaN, allPrime: true };
 
-    // If the student entered a product, all factors must be prime
     if (pa !== null) {
       if (!pa.allPrime) return false;
       if (pb.product !== null && !isNaN(pb.product)) {
@@ -501,7 +432,6 @@ export function PreviewPanel({
       }
     }
 
-    // Parse plain-text mixed number like "2 1/3"
     const parseMixedNumber = (s: string): number | null => {
       const parts = s.trim().split(/\s+/);
       if (parts.length !== 2) return null;
@@ -514,7 +444,6 @@ export function PreviewPanel({
       return whole + num / den;
     };
 
-    // Parse power expression like "5^2" → 25
     const parsePower = (s: string): number | null => {
       const m = s.match(/^(\d+)\^(\d+)$/);
       if (!m) return null;
@@ -522,26 +451,6 @@ export function PreviewPanel({
     };
     const pa2 = parsePower(a), pb2 = parsePower(b) ?? parseFraction(b);
     if (pa2 !== null && pb2 !== null) return Math.abs(pa2 - pb2) <= tolerance;
-
-    // Parse scientific notation: "3.2 × 10^3", "3.2 x 10^3", "3.2e3", "3.2e+3", "3.2e-3"
-    const parseSci = (s: string): number | null => {
-      // e-notation: 3.2e3, 3.2e+3, 3.2E-3
-      const eMatch = s.match(/^(-?\d+(\.\d+)?)[eE]([+-]?\d+)$/);
-      if (eMatch) return parseFloat(eMatch[1]) * Math.pow(10, parseInt(eMatch[3]));
-      // "a × 10^b" or "a x 10^b" or "a * 10^b" (caret notation)
-      const timesMatch = s.match(/^(-?\d+(\.\d+)?)\s*[×x\*]\s*10\^([+-]?\d+)$/);
-      if (timesMatch) return parseFloat(timesMatch[1]) * Math.pow(10, parseInt(timesMatch[3]));
-      // "a × 10⁻³" unicode superscript form (what the formatter outputs)
-      const supMap: Record<string, string> = {"⁰":"0","¹":"1","²":"2","³":"3","⁴":"4","⁵":"5","⁶":"6","⁷":"7","⁸":"8","⁹":"9","⁺":"+","⁻":"-"};
-      const uniMatch = s.match(/^(-?\d+(\.\d+)?)\s*×\s*10([⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+)$/);
-      if (uniMatch) {
-        const expStr = uniMatch[3].split("").map(c => supMap[c] ?? c).join("");
-        return parseFloat(uniMatch[1]) * Math.pow(10, parseInt(expStr));
-      }
-      return null;
-    };
-    const sa = parseSci(a), sb = parseSci(b) ?? parseFraction(b);
-    if (sa !== null && sb !== null) return Math.abs(sa - sb) <= tolerance;
 
     const na = parseFraction(a) ?? parseMixedNumber(a);
     const nb = parseFraction(b) ?? parseMixedNumber(b);
@@ -557,12 +466,6 @@ export function PreviewPanel({
         return "Please enter your answer as a fraction, e.g. 7/20";
       if (/^-?\d+\s+\d+\/\d+$/.test(s))
         return "Please enter as an improper fraction, not a mixed number — e.g. 7/3 not 2 1/3";
-    }
-    if (format === "scientific_notation") {
-      const validSci = /^-?\d+(\.\d+)?[eE][+-]?\d+$/.test(s)
-        || /^-?\d+(\.\d+)?\s*[×x\*]\s*10\^[+-]?\d+$/.test(s)
-        || /^-?\d+(\.\d+)?\s*×\s*10[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻]+$/.test(s);
-      if (!validSci) return "Enter in scientific notation, e.g. 3.2 × 10³ or 3.2e3";
     }
     if (format === "integer" && !/^-?\d+$/.test(s))
       return "Please enter a whole number, e.g. 42";
@@ -582,15 +485,8 @@ export function PreviewPanel({
       if (mixedMatch && parseInt(mixedMatch[2]) >= parseInt(mixedMatch[3]))
         return "The fractional part must be proper — numerator less than denominator (e.g. 2 1/3)";
     }
-    if (format === "equation" && !/^[A-Za-z0-9]+(\^-?[A-Za-z0-9]+)?$|^\d+\/[A-Za-z][A-Za-z0-9]*(\^[0-9]+)?$/.test(s))
-      return "Please enter a base and optional power, e.g. x^-3 or 1/x^3";
-    if (format === "surd") {
-      const t = s.replace(/\s+/g, "");
-      const valid = /^\d+$/.test(t)
-        || /^(\d+\*)?sqrt\(\d+\)$/i.test(t)
-        || /^(\d+\*)?(\d+)\^(?:0\.5+|\(0\.5\)|\(1\/2\))$/.test(t);
-      if (!valid) return "Enter e.g. 3 * 5^0.5 or 3*sqrt(5) for 3√5, or a whole number for a perfect square";
-    }
+    if (format === "equation" && !/^[A-Za-z0-9]+(\^[A-Za-z0-9]+)?$/.test(s))
+      return "Please enter a base and optional power, e.g. 5^2 or A^3";
     return null;
   }
 
@@ -599,7 +495,6 @@ export function PreviewPanel({
     if (fmtErr) { setFormatError(fmtErr); return; }
     setFormatError(null);
 
-    // Multi-step mode (AlgebraTable with multiple blanks)
     const multiStep = preview?.multi_step;
     if (multiStep?.steps?.length) {
       const step = multiStep.steps[multiStepIndex];
@@ -625,11 +520,9 @@ export function PreviewPanel({
           }
         }
       }
-      // Incorrect: just show "Incorrect — try again"; student retypes to clear it
       return;
     }
 
-    // Single-answer mode
     if (!correctInputAnswer) return;
     const correct = answersMatch(textInput, correctInputAnswer.text, answerTolerance);
     const answerObj = { text: textInput };
@@ -638,35 +531,6 @@ export function PreviewPanel({
 
     if (mode === "student") {
       onImmediateAnswer?.(textInput, correct);
-      const result = await recordAttempt(answerObj, correct);
-      if (correct) {
-        setTimeout(() => { onStudentNext?.(result); }, 2000);
-      } else {
-        setShowIncorrectFeedback(true);
-        setBackendResult(result);
-      }
-    }
-    if (mode === "editor" && correct) {
-      setTimeout(() => { loadNextEditorPreview(); }, 1000);
-    }
-  }
-
-  async function handleSurdSubmit() {
-    const coeff = surdCoeff.trim() === "" ? 1 : parseInt(surdCoeff);
-    const radicand = surdRadicand.trim() === "" ? 1 : parseInt(surdRadicand);
-    if (isNaN(coeff) || coeff === 0 || isNaN(radicand) || radicand < 1) {
-      setFormatError("Enter a whole number (non-zero) for the coefficient and a positive whole number for the radicand");
-      return;
-    }
-    setFormatError(null);
-    const effectiveInput = radicand === 1 ? String(coeff) : `${coeff}*sqrt(${radicand})`;
-    if (!correctInputAnswer) return;
-    const correct = answersMatch(effectiveInput, correctInputAnswer.text, answerTolerance);
-    const answerObj = { text: effectiveInput };
-    setSelected(0);
-    setIsCorrect(correct);
-    if (mode === "student") {
-      onImmediateAnswer?.(effectiveInput, correct);
       const result = await recordAttempt(answerObj, correct);
       if (correct) {
         setTimeout(() => { onStudentNext?.(result); }, 2000);
@@ -765,7 +629,6 @@ export function PreviewPanel({
   const isMultiStep = Boolean(multiStep?.steps?.length);
   const activeStep = isMultiStep ? multiStep!.steps[multiStepIndex] : null;
   const diagramSvg = activeStep?.svg || preview.diagram_svg;
-  // Main question text always shown; per-step question shown below it when present
   const mainQuestion = safeLatex(preview.question);
   const stepQuestion = (isMultiStep && activeStep?.question)
     ? safeLatex(activeStep.question)
@@ -781,7 +644,7 @@ export function PreviewPanel({
     decimal:         "Enter as a decimal to one decimal place, e.g. 5.0",
     ratio:           "Enter as a ratio, e.g. 3:2",
     percent:         "Enter as a percentage, e.g. 35%",
-    equation:        "Enter e.g. x^-3 or 1/x^3 — press ^ or xⁿ for the power, / for a fraction",
+    equation:        "Enter a base and power, e.g. 5^2 (press ^ or the xⁿ button to enter the power)",
     proper_fraction: "Enter as a whole number, proper fraction (e.g. 3/4), or mixed number (e.g. 2 1/3)",
   };
   const formatInstruction = activeStep?.format_instruction
@@ -871,41 +734,6 @@ export function PreviewPanel({
                   disabled={isCorrect === true}
                   autoFocus={mode === "student"}
                 />
-              ) : answerFormat === "surd" ? (
-                <>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="form-control"
-                    style={{ width: 72, textAlign: "center", backgroundColor: "#fff9c4" }}
-                    value={surdCoeff}
-                    onChange={e => {
-                      setSurdCoeff(e.target.value);
-                      setFormatError(null);
-                      if (isCorrect === false) { setSelected(null); setIsCorrect(null); }
-                    }}
-                    onKeyDown={e => { if (e.key === "Enter") surdRadicandRef.current?.focus(); }}
-                    disabled={isCorrect === true}
-                    ref={surdCoeffRef}
-                    autoFocus={mode === "student"}
-                  />
-                  <span style={{ fontSize: 26, lineHeight: 1, userSelect: "none" }}>√</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    className="form-control"
-                    style={{ width: 72, textAlign: "center", backgroundColor: "#fff9c4" }}
-                    value={surdRadicand}
-                    onChange={e => {
-                      setSurdRadicand(e.target.value);
-                      setFormatError(null);
-                      if (isCorrect === false) { setSelected(null); setIsCorrect(null); }
-                    }}
-                    onKeyDown={e => { if (e.key === "Enter") handleSurdSubmit(); }}
-                    disabled={isCorrect === true}
-                    ref={surdRadicandRef}
-                  />
-                </>
               ) : (
               <input
                 type="text"
@@ -927,7 +755,7 @@ export function PreviewPanel({
               )}
               <button
                 className="btn btn-primary btn-sm"
-                onClick={answerFormat === "surd" ? handleSurdSubmit : handleTextSubmit}
+                onClick={handleTextSubmit}
                 disabled={isCorrect === true}
               >
                 Submit

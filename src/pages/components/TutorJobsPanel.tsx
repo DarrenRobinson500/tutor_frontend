@@ -54,6 +54,18 @@ export function TutorJobsPanel({ tutorId }: { tutorId: string }) {
 
     const derived: DerivedJob[] = [];
 
+    // Check if tutor has any availability set
+    const availData = await apiFetch(`/api/tutors/${tutorId}/availability/`)
+      .then(r => r.json())
+      .catch(() => ({ availability: [] }));
+    if (!(availData.availability?.length > 0)) {
+      derived.push({
+        kind: "derived",
+        label: "Set available hours",
+        to: `/tutors/${tutorId}/schedule`,
+      });
+    }
+
     activeStudents.forEach(s => {
       if (!s.year_level) {
         derived.push({

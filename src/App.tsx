@@ -27,6 +27,7 @@ import { StudentBookingPage } from "./pages/StudentBookingPage";
 import { StudentCreatePage } from "./pages/StudentCreatePage";
 import { StudentFocusPage } from "./pages/StudentFocusPage";
 import SkillsPage from "./pages/SkillsPage";
+import SkillsS6Page from "./pages/SkillsS6Page";
 import { SkillOverviewPage } from "./pages/SkillOverviewPage";
 import { SkillDetailEditPage } from "./pages/SkillDetailEditPage";
 import { TemplateMetadataPage } from "./pages/TemplateMetadataPage";
@@ -161,6 +162,7 @@ function App() {
         <Route path="/templates/:id/languages" element={<ProtectedRoute><TELanguagesPage /></ProtectedRoute>} />
 
         <Route path="/skills" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
+        <Route path="/skills-s6" element={<ProtectedRoute><SkillsS6Page /></ProtectedRoute>} />
         <Route path="/skills/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />
         <Route path="/skills/:id" element={<ProtectedRoute><SkillsPage /></ProtectedRoute>} />
         <Route path="/skills/:parentId/new" element={<ProtectedRoute><SkillCreatePage /></ProtectedRoute>} />

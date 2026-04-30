@@ -34,18 +34,24 @@ interface MatrixResponse {
   skills: SkillRow[];
 }
 
-export function SkillsMatrix() {
+interface SkillsMatrixProps {
+  courseSet?: string;   // "s6" for Stage 6; omit for K-10
+  prefKey?: string;     // preference key for persisting selected grade
+}
+
+export function SkillsMatrix({ courseSet, prefKey = "skills.selected_grade" }: SkillsMatrixProps) {
   const [data, setData] = useState<MatrixResponse | null>(null);
   const navigate = useNavigate();
-  const savedGrade = usePreferenceStore(s => s.get("skills.selected_grade"));
+  const savedGrade = usePreferenceStore(s => s.get(prefKey));
   const [selectedGrade, setSelectedGrade] = useState<string | number | null>(savedGrade ?? null);
 
   useEffect(() => {
     const grade = selectedGrade ?? "All";
-    apiFetch(`/api/skills/matrix/?grade=${grade}`)
+    const csParam = courseSet ? `&course_set=${courseSet}` : "";
+    apiFetch(`/api/skills/matrix/?grade=${grade}${csParam}`)
       .then(res => res.json())
       .then(data => setData(data));
-  }, [selectedGrade]);
+  }, [selectedGrade, courseSet]);
 
   async function handleViewTemplate(skillId: number, grade: string | number) {
     try {
@@ -87,7 +93,7 @@ export function SkillsMatrix() {
             className={`btn ${selectedGrade === g ? "btn-primary" : "btn-outline-primary"}`}
             onClick={() => {
               setSelectedGrade(g);
-              usePreferenceStore.getState().set("skills.selected_grade", g);
+              usePreferenceStore.getState().set(prefKey, g);
             }}
           >
             {g}
@@ -97,7 +103,7 @@ export function SkillsMatrix() {
           className={`btn ${selectedGrade === null ? "btn-secondary" : "btn-outline-secondary"}`}
           onClick={() => {
             setSelectedGrade(null);
-            usePreferenceStore.getState().set("skills.selected_grade", null);
+            usePreferenceStore.getState().set(prefKey, null);
           }}
         >
           All

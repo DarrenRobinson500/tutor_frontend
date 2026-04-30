@@ -157,12 +157,6 @@ export function TeacherClassPage() {
           >
             {showImport ? "Cancel" : "+ Import Students"}
           </button>
-          <button
-            className="btn btn-outline-secondary"
-            onClick={() => navigate(`/teachers/${teacherId}/classes/${classId}/gap-report`)}
-          >
-            Gap Report
-          </button>
         </div>
 
         {/* ── Import panel ─────────────────────────── */}

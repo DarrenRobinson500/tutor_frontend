@@ -339,6 +339,7 @@ export function SkillOverviewPage() {
                       const detailTotal = detailSkills.length;
                       const detailCovered = detailSkills.filter(d => validatedSkillDetails.has(d.description)).length;
                       const missingDetails = detailSkills.filter(d => !coveredSkillDetails.has(d.description));
+                      const coveredDetails = detailSkills.filter(d => coveredSkillDetails.has(d.description));
                       return (
                         <div key={diff} className="col-md-4">
                           <div className="card h-100">
@@ -418,6 +419,43 @@ export function SkillOverviewPage() {
                                           onClick={() => createEmptyForDetail(String(g), diff, detail)}
                                         >
                                           {creatingEmptySlot === key ? "Creating…" : "Create Empty"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                                {coveredDetails.map(detail => {
+                                  const key = `${g}:${diff}:${detail.id}`;
+                                  const isCreating = creatingSlot === key;
+                                  return (
+                                    <div
+                                      key={`extra-${detail.id}`}
+                                      className="rounded p-2"
+                                      style={{ border: "1px solid #dee2e6", background: "#f8f9fa" }}
+                                    >
+                                      <div className="small text-secondary mb-1" style={{ lineHeight: 1.3 }}>{detail.description}</div>
+                                      <div className="d-flex gap-1 flex-wrap">
+                                        <button
+                                          className="btn btn-sm btn-outline-secondary"
+                                          onClick={() => navigate(
+                                            `/templates/new?skill_id=${skillId}&grade=${encodeURIComponent(String(g))}&difficulty=${encodeURIComponent(diff)}&skill_detail_id=${detail.id}`
+                                          )}
+                                        >
+                                          Add - Image
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-outline-secondary"
+                                          disabled={isCreating}
+                                          onClick={() => createForDetail(String(g), diff, detail)}
+                                        >
+                                          {isCreating ? "Creating…" : "Add Template"}
+                                        </button>
+                                        <button
+                                          className="btn btn-sm btn-outline-secondary"
+                                          disabled={creatingEmptySlot === key}
+                                          onClick={() => createEmptyForDetail(String(g), diff, detail)}
+                                        >
+                                          {creatingEmptySlot === key ? "Creating…" : "Add Empty"}
                                         </button>
                                       </div>
                                     </div>

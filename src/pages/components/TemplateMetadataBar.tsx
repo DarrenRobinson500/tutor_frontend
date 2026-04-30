@@ -106,6 +106,25 @@ export function TemplateMetadataBar({
 
         <select
           className="form-select form-select-sm"
+          style={{ width: "120px", flexShrink: 0 }}
+          value={metadata.language_filter ?? "en"}
+          onChange={(e) => onChange({ language_filter: e.target.value })}
+        >
+          <option value="all">All languages</option>
+          <option value="en">English</option>
+          <option value="zh">Chinese</option>
+          <option value="ar">Arabic</option>
+          <option value="vi">Vietnamese</option>
+          <option value="ko">Korean</option>
+          <option value="hi">Hindi</option>
+          <option value="es">Spanish</option>
+          <option value="fr">French</option>
+          <option value="it">Italian</option>
+          <option value="pt">Portuguese</option>
+        </select>
+
+        <select
+          className="form-select form-select-sm"
           style={{ width: "110px", flexShrink: 0 }}
           value={metadata.difficulty ?? ""}
           onChange={(e) => onChange({ difficulty: e.target.value })}
@@ -154,24 +173,7 @@ export function TemplateMetadataBar({
           {metadata.validated ? "Validated" : "Validate"}
         </button>
 
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary"
-          onClick={handleCopy}
-          style={{ minWidth: 70 }}
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-primary"
-          onClick={onCopyHarder}
-          title="Duplicate this template and increment difficulty (easy→medium→hard)"
-          disabled={metadata.difficulty === "hard"}
-        >
-          Create harder version
-        </button>
+        <div style={{ width: 16 }} />
 
         <button
           className="btn btn-sm btn-outline-primary"
@@ -187,6 +189,24 @@ export function TemplateMetadataBar({
           Languages
         </button>
 
+        <div style={{ width: 16 }} />
+
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-primary"
+          onClick={handleCopy}
+          style={{ minWidth: 70 }}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => navigate("/templates/new")}
+          title="Create template from image"
+        >
+          New Template from Image
+        </button>
 
         <div style={{ width: 16 }} />
 
@@ -200,13 +220,7 @@ export function TemplateMetadataBar({
           </button>
         )}
 
-        <button
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => navigate("/templates/new")}
-          title="Create template from image"
-        >
-          New Template
-        </button>
+
       </div>
     </div>
   );

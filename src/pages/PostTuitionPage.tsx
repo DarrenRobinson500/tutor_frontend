@@ -261,7 +261,7 @@ export function PostTuitionPage() {
           <div className="card-header d-flex align-items-center gap-2">
             <span className="badge bg-primary">1</span>
             <span className="fw-semibold">Send Progress Message</span>
-            {messageSent && <span className="badge bg-success ms-auto">Sent</span>}
+            {messageSent && <span className="badge bg-primary ms-auto">Sent</span>}
           </div>
           <div className="card-body">
             <p className="text-muted mb-3">
@@ -316,7 +316,7 @@ export function PostTuitionPage() {
           <div className="card-header d-flex align-items-center gap-2">
             <span className="badge bg-primary">2</span>
             <span className="fw-semibold">Update Student Focus Areas</span>
-            {focusAreasApproved && <span className="badge bg-success ms-auto">Approved</span>}
+            {focusAreasApproved && <span className="badge bg-primary ms-auto">Approved</span>}
           </div>
           <div className="card-body">
             {focusLoading ? (
@@ -409,7 +409,7 @@ export function PostTuitionPage() {
                     </div>
                   ) : (
                     <button
-                      className={`btn btn-sm ${focusAreasApproved ? "btn-success" : "btn-primary"}`}
+                      className={`btn btn-sm ${focusAreasApproved ? "btn-primary" : "btn-primary"}`}
                       onClick={handleApproveFocusAreas}
                       disabled={focusAreasApproved || paymentLoading || focusAreas.length === 0}
                     >
@@ -427,7 +427,7 @@ export function PostTuitionPage() {
           <div className="card-header d-flex align-items-center gap-2">
             <span className="badge bg-primary">3</span>
             <span className="fw-semibold">Request Payment</span>
-            {payment?.already_applied && <span className="badge bg-success ms-auto">Applied</span>}
+            {payment?.already_applied && <span className="badge bg-primary ms-auto">Applied</span>}
           </div>
           <div className="card-body">
             {!messageSent || !focusAreasApproved ? (

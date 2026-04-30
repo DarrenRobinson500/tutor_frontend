@@ -22,7 +22,7 @@ export function ParameterHelper({ onInsert }: Props) {
   // integer
   const [intMin,      setIntMin]      = useState(2);
   const [intMax,      setIntMax]      = useState(12);
-  const [intSize,     setIntSize]     = useState("none");   // "none" | "small" | "medium" | "large"
+  const [intSize,     setIntSize]     = useState("small");  // "none" | "small" | "medium" | "large"
   const [intSign,     setIntSign]     = useState("pos");    // "pos" | "neg" | "pos_neg"
   const [intBrackets, setIntBrackets] = useState(false);
 

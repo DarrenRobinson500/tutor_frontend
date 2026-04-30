@@ -1,37 +1,65 @@
 import { useState, useRef, useEffect } from "react";
 
 interface PowerInputProps {
-  value: string;                  // "5^2" or "5" (base only)
+  value: string;                  // "x^-3", "1/x^3", or "x"
   onChange: (v: string) => void;
   onSubmit: () => void;
   disabled?: boolean;
   autoFocus?: boolean;
 }
 
-export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: PowerInputProps) {
-  const parseValue = (v: string) =>
-    v.includes("^") ? v.split("^") : [v, ""];
+function parseValue(v: string): { frac: string; base: string; exp: string; isFrac: boolean } {
+  if (v.includes("/")) {
+    const slash = v.indexOf("/");
+    const frac = v.slice(0, slash);
+    const denom = v.slice(slash + 1);
+    const caret = denom.indexOf("^");
+    if (caret >= 0) {
+      return { frac, base: denom.slice(0, caret), exp: denom.slice(caret + 1), isFrac: true };
+    }
+    return { frac, base: denom, exp: "", isFrac: true };
+  }
+  const caret = v.indexOf("^");
+  if (caret >= 0) {
+    return { frac: "", base: v.slice(0, caret), exp: v.slice(caret + 1), isFrac: false };
+  }
+  return { frac: "", base: v, exp: "", isFrac: false };
+}
 
-  const [base, setBase] = useState(() => parseValue(value)[0]);
-  const [exp,  setExp]  = useState(() => parseValue(value)[1]);
+export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: PowerInputProps) {
+  const init = parseValue(value);
+  const [frac, setFrac] = useState(init.frac);
+  const [base, setBase] = useState(init.base);
+  const [exp,  setExp]  = useState(init.exp);
+  const [isFrac, setIsFrac] = useState(init.isFrac);
   const [mode, setMode] = useState<"base" | "exp">("base");
   const [focused, setFocused] = useState(false);
   const displayRef = useRef<HTMLDivElement>(null);
+  const ownChangeRef = useRef(false);
 
-  // When value changes externally (e.g. reset), re-parse
   useEffect(() => {
-    const [b, e] = parseValue(value);
-    setBase(b);
-    setExp(e);
-    setMode("base");
+    const p = parseValue(value);
+    setFrac(p.frac); setBase(p.base); setExp(p.exp); setIsFrac(p.isFrac);
+    // Only reset mode on external value changes, not ones we emitted ourselves.
+    if (!ownChangeRef.current) setMode("base");
+    ownChangeRef.current = false;
   }, [value]);
 
   useEffect(() => {
-    if (autoFocus) displayRef.current?.focus();
+    if (!autoFocus) return;
+    const timer = setTimeout(() => displayRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
   }, [autoFocus]);
 
-  function emit(b: string, e: string) {
-    onChange(e ? `${b}^${e}` : b);
+  function emit(f: string, b: string, e: string, fr: boolean) {
+    let v: string;
+    if (fr) {
+      v = e ? `${f}/${b}^${e}` : b ? `${f}/${b}` : f;
+    } else {
+      v = e ? `${b}^${e}` : b;
+    }
+    ownChangeRef.current = true;
+    onChange(v);
   }
 
   function handleKeyDown(ev: React.KeyboardEvent<HTMLDivElement>) {
@@ -39,7 +67,15 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
 
     if (ev.key === "Enter") { ev.preventDefault(); onSubmit(); return; }
 
-    if (ev.key === "^" || ev.key === "ArrowUp") {
+    // '/' enters fraction mode: what was typed as base becomes the numerator
+    if (ev.key === "/" && !isFrac) {
+      ev.preventDefault();
+      setFrac(base); setBase(""); setIsFrac(true); setMode("base");
+      emit(base, "", "", true);
+      return;
+    }
+
+    if ((ev.key === "^" || ev.key === "ArrowUp") && mode !== "exp") {
       ev.preventDefault();
       setMode("exp");
       return;
@@ -50,29 +86,32 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
       if (mode === "exp") {
         if (exp.length > 0) {
           const next = exp.slice(0, -1);
-          setExp(next);
-          emit(base, next);
+          setExp(next); emit(frac, base, next, isFrac);
         } else {
           setMode("base");
         }
       } else {
-        const next = base.slice(0, -1);
-        setBase(next);
-        emit(next, exp);
+        if (base.length > 0) {
+          const next = base.slice(0, -1);
+          setBase(next); emit(frac, next, exp, isFrac);
+        } else if (isFrac) {
+          // Backspace past empty denominator: restore numerator to base, exit fraction mode
+          setBase(frac); setFrac(""); setIsFrac(false);
+          emit("", frac, exp, false);
+        }
       }
       return;
     }
 
-    if (/^[A-Za-z0-9]$/.test(ev.key)) {
+    const allowNeg = ev.key === "-" && mode === "exp" && exp === "";
+    if (/^[A-Za-z0-9]$/.test(ev.key) || allowNeg) {
       ev.preventDefault();
       if (mode === "base") {
         const next = base + ev.key;
-        setBase(next);
-        emit(next, exp);
+        setBase(next); emit(frac, next, exp, isFrac);
       } else {
         const next = exp + ev.key;
-        setExp(next);
-        emit(base, next);
+        setExp(next); emit(frac, base, next, isFrac);
       }
     }
   }
@@ -80,7 +119,6 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
   const inExp  = mode === "exp";
   const showExp = inExp || exp.length > 0;
 
-  // Blinking cursor block
   const cursor = (
     <span
       style={{
@@ -128,7 +166,15 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
             lineHeight: 1.3,
           }}
         >
-          {/* Base */}
+          {/* Numerator (fraction mode only) */}
+          {isFrac && (
+            <>
+              <span style={{ color: "#000" }}>{frac || "?"}</span>
+              <span style={{ padding: "0 6px", color: "#555", fontWeight: 300 }}>/</span>
+            </>
+          )}
+
+          {/* Base (or denominator base) */}
           <span style={{ color: (!inExp && base === "") ? "#bbb" : "#000" }}>
             {base || (!inExp ? "?" : "")}
           </span>
@@ -156,7 +202,7 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
           type="button"
           disabled={disabled}
           onMouseDown={ev => {
-            ev.preventDefault(); // keep focus on display
+            ev.preventDefault();
             setMode("exp");
             displayRef.current?.focus();
           }}
@@ -175,6 +221,13 @@ export function PowerInput({ value, onChange, onSubmit, disabled, autoFocus }: P
         >
           x<sup style={{ fontSize: 10 }}>n</sup>
         </button>
+
+        {/* ── ½ fraction mode hint (only when not already in fraction mode) ── */}
+        {!isFrac && (
+          <span style={{ fontSize: 11, color: "#999", alignSelf: "center" }}>
+            press / for fraction
+          </span>
+        )}
 
       </div>
     </>

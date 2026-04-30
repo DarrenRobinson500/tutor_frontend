@@ -64,6 +64,14 @@ export function TutorHomePage() {
       </p>
 
       <div className="d-flex gap-2 mb-3">
+
+        <button
+          className={`btn ${lookingForStudents ? "btn-primary" : "btn-outline-primary"}`}
+          onClick={toggleLooking}
+        >
+          {lookingForStudents ? "Looking for students" : "Not looking for students"}
+        </button>
+
         <button
           className="btn btn-outline-primary"
           onClick={() =>
@@ -72,23 +80,12 @@ export function TutorHomePage() {
         >
           Edit My Details
         </button>
+
         <button
-          className={`btn ${lookingForStudents ? "btn-success" : "btn-outline-secondary"}`}
-          onClick={toggleLooking}
-        >
-          {lookingForStudents ? "Looking for students" : "Not looking for students"}
-        </button>
-        <button
-          className="btn btn-outline-secondary"
+          className="btn btn-outline-primary"
           onClick={() => window.location.href = `/tutors/${id}/schedule`}
         >
           Set available hours
-        </button>
-        <button
-          className="btn btn-outline-secondary"
-          onClick={() => window.location.href = `/tutors/${id}/payments`}
-        >
-          Payments
         </button>
       </div>
       <hr />

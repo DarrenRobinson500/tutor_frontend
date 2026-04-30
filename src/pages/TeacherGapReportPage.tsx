@@ -48,8 +48,8 @@ export function TeacherGapReportPage() {
 
         {/* ── Header ───────────────────────────────── */}
         <div className="d-flex align-items-center gap-2 mb-1">
-          <Link to={`/teachers/${teacherId}/classes/${classId}`} className="btn btn-sm btn-outline-secondary">
-            ← Back to {report.class.name}
+          <Link to={`/teachers/${teacherId}`} className="btn btn-sm btn-outline-secondary">
+            ← Back
           </Link>
           <h2 className="mb-0">Gap Report — {report.class.name}</h2>
           <span className="badge bg-secondary">Year {report.class.year_level}</span>

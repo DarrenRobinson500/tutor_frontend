@@ -65,14 +65,39 @@ function splitBareLatex(text: string): Array<{ type: "text" | "math"; content: s
   return result;
 }
 
+// Add comma thousand-separators to integers with 4+ digits in plain text.
+// Only matches bare integers (not inside decimals, fractions, or after a digit).
+function formatLargeIntegers(text: string): string {
+  return text.replace(/(?<![\d.])\b(\d{4,})\b(?![\d.])/g, (n) => parseInt(n, 10).toLocaleString("en-AU"));
+}
+
+// Splits a plain string on ^{...} and ^X (caret superscripts) for inline rendering.
+function splitSuperscripts(text: string): Array<{ type: "text" | "sup"; content: string }> {
+  const result: Array<{ type: "text" | "sup"; content: string }> = [];
+  const regex = /\s*\^\s*\{([^}]*)\}|\s*\^\s*\(([^)]*)\)|\s*\^\s*(-?[a-zA-Z0-9]+)/g;
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    if (m.index > last) result.push({ type: "text", content: text.slice(last, m.index) });
+    result.push({ type: "sup", content: m[1] ?? m[2] ?? m[3] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) result.push({ type: "text", content: text.slice(last) });
+  return result;
+}
+
 // Renders a text segment (possibly containing bare LaTeX) with optional bold wrapping.
 function renderTextSegment(text: string, bold: boolean, key: string | number): React.ReactElement {
   const subParts = splitBareLatex(text);
-  const nodes = subParts.map((sp, j) =>
-    sp.type === "math"
-      ? renderInlineMath(sp.content, `${key}-${j}`)
-      : <span key={`${key}-${j}`} style={{ whiteSpace: "pre-wrap" }}>{sp.content}</span>
-  );
+  const nodes = subParts.flatMap((sp, j) => {
+    if (sp.type === "math") return [renderInlineMath(sp.content, `${key}-${j}`)];
+    // Split plain text on caret superscripts before rendering
+    return splitSuperscripts(sp.content).map((seg, k) =>
+      seg.type === "sup"
+        ? <sup key={`${key}-${j}-${k}`}>{seg.content}</sup>
+        : <span key={`${key}-${j}-${k}`} style={{ whiteSpace: "pre-wrap" }}>{formatLargeIntegers(seg.content)}</span>
+    );
+  });
   if (bold) return <strong key={key}>{nodes}</strong>;
   return <React.Fragment key={key}>{nodes}</React.Fragment>;
 }

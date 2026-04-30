@@ -154,6 +154,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to="/admin/payments">Payments</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/admin/sms">Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/skills-s6">Skills S6</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/feedback">Feedback</Link></li>
@@ -170,6 +171,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/payments`}>Payments</Link></li>
                   <li className="nav-item"><Link className="nav-link" to={`/tutors/${user.id}/sms`}>Messages</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/skills-s6">Skills S6</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/docs">Docs</Link></li>
@@ -187,6 +189,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 <>
                   <li className="nav-item"><Link className="nav-link" to={`/teachers/${user.id}`}>Home</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/skills">Skills</Link></li>
+                  <li className="nav-item"><Link className="nav-link" to="/skills-s6">Skills S6</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/templates">Templates</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/knowledge">Knowledge</Link></li>
                   <li className="nav-item"><Link className="nav-link" to="/docs">Docs</Link></li>
